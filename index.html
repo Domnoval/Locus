@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Locus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper:#f3f1eb; --ink:#171815; --muted:#64665f; --panel:#e8e5dc;
+      --line:#c9c6bc; --strong:#a8a49a; --accent:#ca432c; --accent-ink:#fff8f2;
+      --canvas:#faf9f5; --grid:#ddd9cf; --ghost:#c5c1b7; --geometry:#20211e;
+      --focus:#176b70; --z-axis:#9b6c10; --perspective:#7f5f86; --shadow:0 18px 46px rgba(34,31,25,.12);
+    }
+    @media (prefers-color-scheme:dark){
+      :root:not([data-theme="light"]) { color-scheme:dark; --paper:#121411; --ink:#ecebe4; --muted:#a7aaa1; --panel:#1d201c;
+        --line:#343831; --strong:#50564b; --accent:#f06a4c; --accent-ink:#1a100d;
+        --canvas:#181b17; --grid:#2b3029; --ghost:#4d5249; --geometry:#f1eee4;
+        --focus:#62b9b3; --z-axis:#e0ad48; --perspective:#c69fcd; --shadow:0 20px 50px rgba(0,0,0,.34); }
+    }
+    :root[data-theme="dark"]{ color-scheme:dark; --paper:#121411; --ink:#ecebe4; --muted:#a7aaa1; --panel:#1d201c;
+        --line:#343831; --strong:#50564b; --accent:#f06a4c; --accent-ink:#1a100d;
+        --canvas:#181b17; --grid:#2b3029; --ghost:#4d5249; --geometry:#f1eee4;
+        --focus:#62b9b3; --z-axis:#e0ad48; --perspective:#c69fcd; --shadow:0 20px 50px rgba(0,0,0,.34); }
+    :root[data-theme="light"]{ color-scheme:light }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--paper);color:var(--ink)}
+    body{font-family:"DM Sans",sans-serif;overflow-x:hidden}
+    button,select,input{font:inherit;color:inherit}
+    button{border:0}
+    .app{min-height:100vh;display:grid;grid-template-columns:286px minmax(0,1fr);gap:18px;padding:18px;max-width:1500px;margin:auto}
+    .sidebar{display:flex;flex-direction:column;gap:10px;min-width:0}
+    .panel{background:var(--panel);border:1px solid var(--line);padding:16px}
+    .panel:first-child{border-radius:20px 20px 7px 7px}
+    .panel:last-child{border-radius:7px 7px 20px 20px}
+    .label{font:500 10px/1.2 "IBM Plex Mono",monospace;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+    select{width:100%;appearance:none;background:var(--canvas);border:1px solid var(--strong);border-radius:8px;padding:11px 36px 11px 12px;background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 16px) 16px,calc(100% - 11px) 16px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+    .pattern-note{font-size:12px;line-height:1.45;color:var(--muted);margin:9px 1px 0}
+    .segmented{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--line);padding:3px;border-radius:9px}
+    .segmented.two{grid-template-columns:repeat(2,1fr)}
+    .segmented button{padding:8px 4px;background:var(--panel);font-size:12px;cursor:pointer;border-radius:6px}
+    .segmented button.active{background:var(--ink);color:var(--paper)}
+    .perspective-controls{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+    .perspective-controls[hidden]{display:none}
+    .picker-note{font-size:11px;line-height:1.45;color:var(--muted);margin:10px 0 0}
+    .control{margin-top:14px}.control:first-child{margin-top:0}
+    .control-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;font-size:12px}
+    .value{font:500 11px "IBM Plex Mono",monospace;color:var(--muted)}
+    input[type=range]{width:100%;height:18px;margin:0;accent-color:var(--accent);background:transparent}
+    .toggle-row{display:flex;gap:7px;flex-wrap:wrap}
+    .chip{background:transparent;border:1px solid var(--strong);padding:7px 9px;border-radius:999px;font-size:11px;cursor:pointer}
+    .chip.active{background:var(--focus);border-color:var(--focus);color:#fff}
+    .chip:disabled{opacity:.38;cursor:not-allowed}.chip[hidden]{display:none}
+    .tip{margin-top:auto;padding:14px 15px;color:var(--muted);font-size:11px;line-height:1.5;border:1px dashed var(--strong);border-radius:12px}
+    kbd{font:10px "IBM Plex Mono",monospace;border:1px solid var(--strong);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--panel);color:var(--ink)}
+    .workspace{min-width:0;display:grid;grid-template-rows:auto minmax(460px,1fr) auto;gap:10px}
+    .workspace-head{display:flex;align-items:end;justify-content:space-between;gap:18px;padding:4px 4px 0}
+    .construction-label{font:500 11px "IBM Plex Mono",monospace;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+    h1{font-size:clamp(24px,3vw,42px);font-weight:500;letter-spacing:-.045em;margin:3px 0 0;line-height:1}
+    .head-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+    .action{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 13px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;white-space:nowrap}
+    .action.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+    .action svg{width:15px;height:15px}
+    .action:disabled,.step-button:disabled{opacity:.38;cursor:not-allowed}
+    .history-actions{display:flex;gap:3px;background:var(--line);padding:3px;border-radius:9px}
+    .history-actions .action{min-width:38px;padding:7px;background:var(--panel);border:0;border-radius:6px}
+    .canvas-wrap{position:relative;min-height:460px;background:var(--canvas);border:1px solid var(--line);border-radius:7px 24px 24px 24px;box-shadow:var(--shadow);overflow:hidden;touch-action:none;cursor:grab}
+    .canvas-wrap.dragging{cursor:grabbing}
+    #geometry{width:100%;height:100%;display:block;min-height:460px}
+    .canvas-badge{position:absolute;left:15px;top:15px;font:500 10px "IBM Plex Mono",monospace;color:var(--muted);background:color-mix(in srgb,var(--canvas) 88%,transparent);padding:6px 8px;border:1px solid var(--line);border-radius:5px;pointer-events:none}
+    .status-line{position:absolute;left:15px;right:15px;bottom:14px;display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.035em;color:var(--muted);pointer-events:none}
+    .status-line span{background:color-mix(in srgb,var(--canvas) 90%,transparent);border:1px solid var(--line);border-radius:5px;padding:5px 7px}
+    .axis-key{position:absolute;right:15px;top:15px;font:10px "IBM Plex Mono",monospace;color:var(--muted);display:flex;gap:9px;background:color-mix(in srgb,var(--canvas) 88%,transparent);padding:6px 8px;border:1px solid var(--line);border-radius:5px;pointer-events:none}
+    .axis-key span::before{content:"";display:inline-block;width:8px;height:2px;margin:0 4px 3px 0;background:currentColor}.axis-key .x{color:var(--accent)}.axis-key .y{color:var(--focus)}.axis-key .z{color:var(--z-axis)}
+    #perspectiveLayer [data-picker]{cursor:grab}
+    #perspectiveLayer .horizon-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
+    #perspectiveLayer .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
+    #perspectiveLayer .vp-dot{fill:var(--perspective);pointer-events:none}
+    #perspectiveLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);pointer-events:none}
+    #overlayLayer{pointer-events:none}
+    #overlayLayer .study-frame{fill:color-mix(in srgb,var(--canvas) 92%,transparent);stroke:var(--strong);stroke-width:1;stroke-dasharray:5 6}
+    #overlayLayer .study-label,#overlayLayer .draft-label,#guideLayer .draft-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--muted);letter-spacing:.08em;paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round}
+    #overlayLayer .study-rule{stroke:var(--strong);stroke-width:.8;stroke-dasharray:3 5}
+    .steps{display:grid;grid-template-columns:auto minmax(150px,1fr) auto auto auto;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+    .timeline{min-width:0}
+    .timeline-meta{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:3px}
+    .step-caption{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .step-breakpoints{height:5px;margin:1px 2px 0;position:relative}
+    .step-breakpoints i{position:absolute;top:0;width:1px;height:5px;background:var(--strong)}
+    .step-button{width:36px;height:36px;border-radius:7px;background:var(--canvas);border:1px solid var(--line);cursor:pointer;display:grid;place-items:center;font-size:17px}
+    .step-readout{font:500 11px "IBM Plex Mono",monospace;min-width:72px;text-align:right;color:var(--muted)}
+    .speed-select{width:auto;min-width:72px;padding:8px 28px 8px 9px;font:500 11px "IBM Plex Mono",monospace;background-position:calc(100% - 13px) 13px,calc(100% - 9px) 13px;background-size:4px 4px,4px 4px}
+    .play{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.show{opacity:1;transform:translate(-50%,0)}
+
+    [hidden]{display:none!important}
+    .studio{position:fixed;inset:0 0 0 auto;margin:0;width:min(440px,100vw);height:100%;max-width:none;max-height:none;border:0;border-left:1px solid var(--line);background:var(--panel);color:var(--ink);padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);z-index:20;box-shadow:var(--shadow);overflow:auto}
+    .studio[open]{display:block}
+    .st-head{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .st-head h2{margin:2px 0 0;font-size:22px;font-weight:500;letter-spacing:-.03em}
+    .st-body{padding:14px 16px 28px;display:grid;gap:18px}
+    .st-body section{display:grid;gap:9px}
+    .st-body .label{margin:0}
+    .st-preview{background:var(--canvas);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:6px}
+    #studioPreview{display:block;width:100%;height:clamp(240px,42vh,440px)}
+    #studioPreview path[stroke]:not([fill="#000"]){vector-effect:non-scaling-stroke;stroke-width:1.1px}
+    .st-stats{margin:-6px 0 0;font:500 11px/1.55 "IBM Plex Mono",monospace;color:var(--muted);font-variant-numeric:tabular-nums}
+    .st-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+    .st-field{display:grid;gap:4px;font-size:12px}
+    .st-field input,.st-field select,.st-num input{width:100%;background:var(--canvas);border:1px solid var(--strong);border-radius:7px;padding:8px 9px;font:500 12px "IBM Plex Mono",monospace;color:var(--ink)}
+    .st-layer{display:grid;grid-template-columns:minmax(0,1fr) 92px 34px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+    .st-check{display:flex;gap:9px;align-items:flex-start;cursor:pointer;min-width:0}.st-check input{margin-top:3px;accent-color:var(--focus)}
+    .st-check span{display:grid;min-width:0}.st-check b{font-size:13px;font-weight:600}.st-check small{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .st-num{position:relative;display:block}.st-num input{padding-right:30px}.st-num i{position:absolute;right:9px;top:50%;transform:translateY(-50%);font:500 10px "IBM Plex Mono",monospace;color:var(--muted);font-style:normal;pointer-events:none}
+    .st-layer input[type=color]{width:34px;height:34px;padding:0;border:1px solid var(--strong);border-radius:7px;background:none;cursor:pointer}
+    .st-actions{display:flex;flex-wrap:wrap;gap:7px}.st-actions .action{flex:1 1 auto}
+    .st-note{font-size:11px;line-height:1.5;color:var(--muted);margin:0}
+    @media(min-width:1180px){body.studio-open .app{margin-right:440px;margin-left:0}}
+    @media(max-width:820px){
+      .app{display:flex;flex-direction:column;padding:10px;gap:12px}.workspace{display:contents}.workspace-head{order:0;align-items:start}.canvas-wrap{order:1;min-height:min(62vh,560px);border-radius:7px 20px 20px 20px}.canvas-wrap #geometry{min-height:min(62vh,560px)}.steps{order:2}.sidebar{order:3;display:grid;grid-template-columns:1fr 1fr;gap:8px}.panel:first-child,.panel:last-child,.panel{border-radius:12px}.tip{display:none}.head-actions>.action:not(.primary){display:none}.history-actions .action{display:inline-flex}
+    }
+    @media(max-width:540px){
+      .app{padding:8px}.workspace-head{padding:4px 2px}.construction-label{font-size:10px}h1{font-size:25px}.head-actions{gap:5px}.head-actions .action{padding:9px 11px}.history-actions .action{min-width:34px;padding:6px}.canvas-wrap{min-height:52vh}.canvas-wrap #geometry{min-height:52vh}.axis-key{display:none}.status-line{left:8px;right:8px;bottom:8px;gap:4px}.status-line span{padding:4px 5px}.steps{grid-template-columns:auto minmax(85px,1fr) auto auto;padding:8px;gap:6px}.speed-select{grid-column:2/5;width:100%}.sidebar{grid-template-columns:1fr}.panel{padding:14px}.step-readout{min-width:50px;font-size:10px}.step-caption{font-size:11px}}
+    @media(prefers-reduced-motion:reduce){.toast{transition:none}}
+    @media print{.sidebar,.head-actions,.steps,.canvas-badge,.axis-key{display:none}.app{display:block;padding:0}.workspace-head{margin-bottom:12px}.canvas-wrap{box-shadow:none;border:0;height:90vh}}
+  </style>
+</head>
+<body>
+<main class="app">
+  <aside class="sidebar" aria-label="Drawing controls">
+    <section class="panel">
+      <label class="label" for="pattern">Construction</label>
+      <select id="pattern">
+        <option value="seed">Seed of Life</option>
+        <option value="flower">Flower of Life</option>
+        <option value="metatron">Metatron’s Cube</option>
+        <option value="metatron3d">Metatron’s Cube · 3D</option>
+        <option value="tetrahedron">Platonic · Tetrahedron</option>
+        <option value="cube">Platonic · Cube</option>
+        <option value="octahedron">Platonic · Octahedron</option>
+        <option value="dodecahedron">Platonic · Dodecahedron</option>
+        <option value="icosahedron">Platonic · Icosahedron</option>
+        <option value="vesica">Vesica Piscis</option>
+        <option value="yantra">Nine-fold Yantra</option>
+      </select>
+      <p class="pattern-note" id="patternNote">Seven equal circles unfold from a single radius.</p>
+    </section>
+    <section class="panel">
+      <span class="label">View</span>
+      <div class="segmented" id="viewMode" role="group" aria-label="Projection mode">
+        <button data-mode="plan">Plan</button><button data-mode="axon">Axon</button><button class="active" data-mode="perspective">Perspective</button>
+      </div>
+      <div class="control"><div class="control-head"><label for="rotation">Rotation</label><span class="value" id="rotationValue">0°</span></div><input id="rotation" type="range" min="-180" max="180" value="0"></div>
+      <div class="control"><div class="control-head"><label for="tilt">Tilt</label><span class="value" id="tiltValue">34°</span></div><input id="tilt" type="range" min="0" max="72" value="34"></div>
+      <div class="control"><div class="control-head"><label for="depth">Z depth</label><span class="value" id="depthValue">45</span></div><input id="depth" type="range" min="0" max="100" value="45"></div>
+      <div class="perspective-controls" id="perspectiveControls">
+        <span class="label">Perspective system</span>
+        <div class="segmented" id="perspectiveMode" role="group" aria-label="Perspective point count">
+          <button class="active" data-points="1">1 point</button><button data-points="2">2 point</button><button data-points="3">3 point</button>
+        </div>
+        <div class="control"><div class="control-head"><label for="horizon">Horizon</label><span class="value" id="horizonValue">50%</span></div><input id="horizon" type="range" min="70" max="630" value="350"></div>
+        <div class="toggle-row">
+          <button class="chip active" id="perspectiveLinesBtn" type="button">Perspective lines</button>
+          <button class="chip active" id="autoRotateBtn" type="button">Auto rotate</button>
+        </div>
+        <p class="picker-note">Drag the horizon or numbered points directly on the drawing. Dragging the form pauses auto-rotation.</p>
+      </div>
+    </section>
+    <section class="panel">
+      <span class="label">Primitive set</span>
+      <div class="segmented two" id="primitiveMode" role="group" aria-label="Primitive set">
+        <button class="active" data-primitive="flat">Circles + squares</button><button data-primitive="solid">Spheres + cubes</button>
+      </div>
+      <p class="picker-note" id="primitiveNote">Planar circles with square center marks.</p>
+      <span class="label" style="margin-top:16px">Drawing</span>
+      <div class="toggle-row">
+        <button class="chip active" data-toggle="guides">Guides</button>
+        <button class="chip active" data-toggle="points">Centers</button>
+        <button class="chip" data-toggle="mirror">Mirror</button>
+        <button class="chip" data-toggle="darkline">Ink accent</button>
+        <button class="chip" data-toggle="fruit" id="fruitChip" hidden>Fruit circles · r/2</button>
+      </div>
+      <div class="control"><div class="control-head"><label for="weight">Line weight</label><span class="value" id="weightValue">1.4</span></div><input id="weight" type="range" min="6" max="34" value="14"></div>
+      <span class="label" style="margin-top:16px">Drafting overlays</span>
+      <div class="toggle-row">
+        <button class="chip" data-toggle="phi" id="phiChip">Golden ratio</button>
+        <button class="chip" data-toggle="dimensions">Dimensions</button>
+        <button class="chip" data-toggle="multiView">Plan study</button>
+      </div>
+      <p class="picker-note" id="overlayNote">Layer whirling φ squares (pentagonal figures only), symbolic measurements, and an orthographic plan beneath the active view.</p>
+    </section>
+    <p class="tip">Drag the drawing to rotate it. Use <kbd>←</kbd> <kbd>→</kbd> to move through the construction.</p>
+  </aside>
+
+  <section class="workspace">
+    <header class="workspace-head">
+      <div><div class="construction-label" id="phaseLabel">Foundation · Circle 1</div><h1 id="patternTitle">Seed of Life</h1></div>
+      <div class="head-actions">
+        <div class="history-actions" aria-label="Edit history">
+          <button class="action" id="undoBtn" title="Undo" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a6 6 0 0 1 6 6"/></svg></button>
+          <button class="action" id="redoBtn" title="Redo" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 7 5 5-5 5"/><path d="M19 12h-8a6 6 0 0 0-6 6"/></svg></button>
+        </div>
+        <button class="action" id="copyBtn" title="Copy SVG markup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copy SVG</button>
+        <button class="action primary" id="studioBtn" title="Print, plotter and stencil outputs at real size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 21V9"/></svg>Studio</button>
+        <button class="action" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>Export</button>
+      </div>
+    </header>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <svg id="geometry" viewBox="0 0 900 700" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
+        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g>
+      </svg>
+      <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
+      <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
+      <div class="status-line" id="statusLine" aria-live="polite"></div>
+    </div>
+
+    <div class="steps">
+      <button class="step-button" id="prevBtn" aria-label="Previous step">←</button>
+      <div class="timeline">
+        <div class="timeline-meta"><span class="step-caption" id="stepCaption">Origin</span><span class="step-readout" id="stepReadout">01 / 07</span></div>
+        <label class="sr-only" for="step">Construction step</label><input id="step" type="range" min="1" max="7" value="1">
+        <div class="step-breakpoints" id="stepBreakpoints" aria-hidden="true"></div>
+      </div>
+      <button class="step-button" id="nextBtn" aria-label="Next step">→</button>
+      <button class="step-button play" id="playBtn" aria-label="Play construction">▶</button>
+      <label class="sr-only" for="speed">Playback speed</label><select class="speed-select" id="speed" title="Playback speed"><option value="1100">0.5×</option><option value="650" selected>1×</option><option value="360">2×</option></select>
+    </div>
+  </section>
+</main>
+<dialog class="studio" id="studio" aria-labelledby="stTitle">
+  <div class="st-head"><div><span class="label">Real size · real tools</span><h2 id="stTitle">Studio</h2></div><button class="action" id="stClose" aria-label="Close studio">✕</button></div>
+  <div class="st-body">
+    <div class="segmented" id="stModes" role="group" aria-label="Output type"><button data-v="print">Print</button><button data-v="plotter">Plotter</button><button data-v="stencil">Stencil</button></div>
+    <div class="st-preview"><svg id="studioPreview" role="img" aria-label="The output drawn to scale on its sheet, with a 1.75 m figure for scale on large sizes"></svg></div>
+    <p class="st-stats" id="studioStats"></p>
+    <div class="st-actions"><button class="action primary" id="stDownload">Download</button></div>
+    <p class="st-note" data-for="print">Vector at true size, one layer per group, pen widths in millimetres. Opens in Illustrator, Inkscape or Affinity at the right dimensions.</p>
+    <p class="st-note" data-for="plotter">One path per stroke, one numbered layer per pen, overlapping chords merged so no line is drawn twice, and strokes ordered to keep pen-up travel short. Layer numbers work with AxiDraw’s layer mode.</p>
+    <p class="st-note" data-for="stencil">Each layer becomes its own sheet. Lines become slots of the width you set, and every stretch of slot between two crossings keeps at least one bridge, so no piece can drop out. Black is cut. The corner crosses are cut too, so you can register each sheet on the wall.</p>
+    <section><span class="label">Size</span>
+      <label class="st-field">Sheet<select id="stPage"></select></label>
+      <div class="st-row" id="stCustom"><label class="st-field">Width mm<input type="number" id="stW" min="50" step="1"></label><label class="st-field">Height mm<input type="number" id="stH" min="50" step="1"></label></div>
+      <div class="st-row"><div class="segmented two" id="stOrient" role="group" aria-label="Orientation"><button data-v="portrait">Portrait</button><button data-v="landscape">Landscape</button></div><label class="st-field">Margin mm<input type="number" id="stMargin" min="0" step="1"></label></div>
+    </section>
+    <section><span class="label">Layers · pen width · colour</span><div id="stLayers"></div></section>
+    <section data-for="stencil"><span class="label">Stencil</span>
+      <div class="st-row"><label class="st-field">Slot width mm<input type="number" id="stSlot" min="0.5" step="0.5"></label><label class="st-field">Bridge mm<input type="number" id="stBridge" min="0.5" step="0.5"></label><label class="st-field">Bridge every ≤ mm<input type="number" id="stSpan" min="10" step="10"></label></div>
+    </section>
+    <section data-for="print stencil"><span class="label">Tile onto smaller sheets</span>
+      <div class="st-row"><label class="st-field">Sheet<select id="stSheet"></select></label><label class="st-field">Overlap mm<input type="number" id="stOverlap" min="0" step="1"></label></div>
+      <p class="st-note">For printing a big piece at home or cutting it from stock Mylar. Each tile is labelled by row and column; line up the teal crosses in the overlaps.</p>
+    </section>
+    <section><span class="label">Images</span>
+      <div class="st-actions"><button class="action" id="stPng4">PNG 4× (screen)</button><button class="action" id="stScreenSvg">Screen SVG</button></div>
+      <div class="st-row"><label class="st-field">Print PNG resolution<select id="stDpi"><option value="150">150 dpi</option><option value="300">300 dpi</option><option value="600">600 dpi</option></select></label><button class="action" id="stPngPrint" style="align-self:end">Print PNG</button></div>
+    </section>
+    <button class="chip" id="stReset" type="button" style="justify-self:start">Reset studio settings</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(() => {
+  const NS='http://www.w3.org/2000/svg';
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
+  const state={pattern:'seed',mode:'perspective',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:34,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
+  const notes={seed:'Seven equal circles unfold from a single radius.',flower:'A hexagonal lattice grows outward; every circle passes through its neighbours’ centres.',metatron:'Thirteen centers joined into a map of every direction.',metatron3d:'Thirteen spatial nodes reveal the cube as a layered three-dimensional lattice.',tetrahedron:'Four vertices and six equal edges — the simplex of three-dimensional space.',cube:'Eight vertices form six equal square faces.',octahedron:'Six vertices form eight equal triangular faces.',dodecahedron:'Twenty vertices form twelve regular pentagonal faces.',icosahedron:'Twelve vertices form twenty equal triangular faces.',vesica:'Two equal circles meet at each other’s center; the lens between them stands √3 tall for every 1 wide.',yantra:'Nine interlocking triangles, four rising and five descending, converge on a single bindu.'};
+  const titles={seed:'Seed of Life',flower:'Flower of Life',metatron:'Metatron’s Cube',metatron3d:'Metatron’s Cube · 3D',tetrahedron:'Tetrahedron',cube:'Cube',octahedron:'Octahedron',dodecahedron:'Dodecahedron',icosahedron:'Icosahedron',vesica:'Vesica Piscis',yantra:'Nine-fold Yantra'};
+  const maxSteps={seed:7,flower:20,metatron:18,metatron3d:18,tetrahedron:8,cube:8,octahedron:8,dodecahedron:8,icosahedron:8,vesica:5,yantra:10};
+  const solidPhases=['Vertices','Edges','Edges','Edges','Edges','Edges','Full frame','Circumsphere'];
+  const PENTAGONAL=['dodecahedron','icosahedron'],SPATIAL=['metatron3d','tetrahedron','cube','octahedron','dodecahedron','icosahedron'];
+  const yantraDefs=[[false,205,5],[true,202,-4],[false,168,18],[true,171,-18],[false,137,-8],[true,139,10],[false,109,17],[true,112,-17],[false,80,0]];
+  const ordinals=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
+  const phases={seed:['Origin','First orbit','Second orbit','Triad','Four directions','Sixfold field','Completion'],flower:['Origin','First orbit','Seed ring','Seed ring','Seed ring','Seed ring','Seed complete',...Array(11).fill('Second ring'),'Lattice complete','Boundary · 3d'],metatron:['Origin','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring complete','Outer ring','Outer ring','Outer ring','Outer ring','Outer ring','Thirteen centers','Radial chords','Inner web','Outer web','All 78 chords','Completion'],metatron3d:['Origin','X axis','X axis','Y axis','Y axis','Z axis','Octahedron nodes','Crown ring','Crown ring','Crown ring','Crown ring','Crown ring','Thirteen nodes','Axial chords','Octahedron web','Cube frame','Outer web','Bounding sphere'],tetrahedron:solidPhases,cube:solidPhases,octahedron:solidPhases,dodecahedron:solidPhases,icosahedron:solidPhases,vesica:['First circle','Second circle','Shared axis','Vesica lens','√3 proportion'],yantra:['Bindu',...yantraDefs.map((d,i)=>`${ordinals[i]} triangle · ${d[0]?'▲ Shiva':'▼ Shakti'}`)]};
+  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
+  const undoStack=[],redoStack=[];let pendingSnapshot=null;
+  const snapshot=()=>Object.fromEntries(historyKeys.map(k=>[k,state[k]]));
+  const sameSnapshot=(a,b)=>historyKeys.every(k=>a[k]===b[k]);
+  function updateHistoryButtons(){els.undo.disabled=!undoStack.length;els.redo.disabled=!redoStack.length}
+  function beginChange(){if(!pendingSnapshot)pendingSnapshot=snapshot()}
+  function commitChange(){if(pendingSnapshot&&!sameSnapshot(pendingSnapshot,snapshot())){undoStack.push(pendingSnapshot);if(undoStack.length>100)undoStack.shift();redoStack.length=0}pendingSnapshot=null;updateHistoryButtons()}
+  function stopPlayback(){state.playing=false;clearInterval(timer);els.play.textContent='▶';els.play.setAttribute('aria-label','Play construction')}
+  function syncAllControls(){
+    els.pattern.value=state.pattern;els.step.value=state.step;els.rotation.value=state.rotation;els.tilt.value=state.tilt;els.depth.value=state.depth;els.weight.value=Math.round(state.weight*10);els.horizon.value=state.horizon;
+    $$('#viewMode button').forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));$$('#primitiveMode button').forEach(x=>x.classList.toggle('active',x.dataset.primitive===state.primitive));$$('#perspectiveMode button').forEach(x=>x.classList.toggle('active',+x.dataset.points===state.perspectivePoints));
+    $$('.chip[data-toggle]').forEach(x=>x.classList.toggle('active',state[x.dataset.toggle]));$('#perspectiveLinesBtn').classList.toggle('active',state.perspectiveLines);els.autoRotate.classList.toggle('active',state.autoRotate);
+    $('#fruitChip').hidden=state.pattern!=='metatron';const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=notes[state.pattern];$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube center marks.':'Planar circles with square center marks.';syncValues();
+  }
+  function syncPressed(){$$('.chip,.segmented button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')))}
+  function restoreSnapshot(s){stopPlayback();inertia=0;Object.assign(state,s);syncAllControls();render();updateHistoryButtons()}
+  function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restoreSnapshot(undoStack.pop())}
+  function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restoreSnapshot(redoStack.pop())}
+  const svgEl=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e};
+  const clear=e=>{while(e.firstChild)e.removeChild(e.firstChild)};
+  const axial=(q,r,s=90)=>({x:s*Math.sqrt(3)*(q+r/2),y:s*1.5*r,z:0});
+  function project(p){
+    let {x,y,z=0}=p; const rz=state.rotation*Math.PI/180, tx=(state.mode==='plan'?0:state.tilt)*Math.PI/180;
+    let x1=x*Math.cos(rz)-y*Math.sin(rz), y1=x*Math.sin(rz)+y*Math.cos(rz);
+    if(state.mirror)x1=-x1;
+    if(state.mode==='perspective'){
+      if(state.perspectivePoints===1){
+        const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx),f=690,d=f+z2+state.depth*1.7,sc=f/Math.max(220,d);
+        return {x:state.vp1X+x1*sc,y:state.horizon+y2*sc,z:z2,sc};
+      }
+      const cx=(state.vpLeft+state.vpRight)/2,f=Math.max(190,(state.vpRight-state.vpLeft)/2),yaw=Math.PI/4;
+      const yt=y1*Math.cos(tx)-z*Math.sin(tx),zt=y1*Math.sin(tx)+z*Math.cos(tx);
+      let xr=x1*Math.cos(yaw)-zt*Math.sin(yaw),zr=x1*Math.sin(yaw)+zt*Math.cos(yaw),yr=yt;
+      if(state.perspectivePoints===3){
+        const direction=state.vp3Y>=state.horizon?1:-1,span=Math.max(80,Math.abs(state.vp3Y-state.horizon)),pitch=direction*Math.min(.58,Math.max(.15,f/span*.34));
+        const y3=yr*Math.cos(pitch)-zr*Math.sin(pitch);zr=yr*Math.sin(pitch)+zr*Math.cos(pitch);yr=y3;
+      }
+      const d=f+zr+state.depth*1.45,sc=f/Math.max(145,d),skew=state.perspectivePoints===3?(state.vp3X-cx)/Math.max(140,Math.abs(state.vp3Y-state.horizon))*.22:0;
+      return {x:cx+xr*sc+yr*sc*skew,y:state.horizon+yr*sc,z:zr,sc};
+    }
+    const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx);
+    return {x:450+x1,y:350+y2,z:z2,sc:1};
+  }
+  function pathFrom(points,close=false){return points.map((p,i)=>{const v=project(p);return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');}
+  let RES=1; // sample-density multiplier; Studio raises it so circles stay smooth at print scale
+  function circlePoints(c,r,segments=96,plane='xy'){segments=Math.max(8,Math.round(segments*RES));return Array.from({length:segments},(_,i)=>{const a=i/segments*Math.PI*2,co=Math.cos(a)*r,si=Math.sin(a)*r,x=c.x,y=c.y,z=c.z||0;if(plane==='xz')return{x:x+co,y,z:z+si};if(plane==='yz')return{x,y:y+co,z:z+si};return{x:x+co,y:y+si,z}})}
+  function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p.dataset.kind=cls;layer.appendChild(p);return p}
+  function addLine(a,b,cls='main',extra={}){return addPath(els.shapes,[a,b],cls,false,extra)}
+  function addCircle(c,r,layer=els.shapes,cls='main',extra={}){
+    const outline=addPath(layer,circlePoints(c,r),cls,true,extra);
+    if(state.primitive==='solid'&&cls!=='boundary'){
+      addPath(layer,circlePoints(c,r,72,'xz'),'sphere-ring',true,extra);
+      addPath(layer,circlePoints(c,r,72,'yz'),'sphere-ring',true,extra);
+    }
+    return outline;
+  }
+  function addCube(c,size=10){
+    const h=size/2,z=c.z||0,vertices=[[-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],[-h,-h,h],[h,-h,h],[h,h,h],[-h,h,h]].map(([x,y,d])=>({x:c.x+x,y:c.y+y,z:z+d}));
+    [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b])=>addPath(els.points,[vertices[a],vertices[b]],'cube'));
+  }
+  function point(c,i){
+    if(state.primitive==='solid'){addCube(c,13);return}
+    const s=5,z=c.z||0;addPath(els.points,[{x:c.x-s,y:c.y-s,z},{x:c.x+s,y:c.y-s,z},{x:c.x+s,y:c.y+s,z},{x:c.x-s,y:c.y+s,z}],'node',true);
+    const p=project(c),dot=svgEl('circle',{cx:p.x,cy:p.y,r:1.35,fill:'var(--accent)'});dot.dataset.index=i;els.points.appendChild(dot);
+  }
+  function drawGrid(){clear(els.grid);if(!state.guides)return;for(let x=-360;x<=360;x+=45)addPath(els.grid,[{x,y:-300,z:-25},{x,y:300,z:-25}],'grid');for(let y=-270;y<=270;y+=45)addPath(els.grid,[{x:-405,y,z:-25},{x:405,y,z:-25}],'grid');addPath(els.grid,[{x:-400,y:0},{x:400,y:0}],'axis-x');addPath(els.grid,[{x:0,y:-310},{x:0,y:310}],'axis-y');if(state.mode!=='plan')addPath(els.grid,[{x:0,y:0,z:-255},{x:0,y:0,z:255}],'axis-z')}
+  function activeVanishingPoints(){if(state.perspectivePoints===1)return [{x:state.vp1X,y:state.horizon}];const points=[{x:state.vpLeft,y:state.horizon},{x:state.vpRight,y:state.horizon}];if(state.perspectivePoints===3)points.push({x:state.vp3X,y:state.vp3Y});return points}
+  function screenLine(x1,y1,x2,y2,kind='perspective-line',extra={}){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke',...extra});line.dataset.kind=kind;els.perspective.appendChild(line);return line}
+  function drawPerspective(){clear(els.perspective);if(state.mode!=='perspective')return;const vps=activeVanishingPoints();
+    screenLine(0,state.horizon,900,state.horizon,'horizon');
+    const hg=svgEl('g',{'data-picker':'horizon','aria-label':'Horizon picker','role':'button'});hg.appendChild(svgEl('circle',{cx:24,cy:state.horizon,r:9,class:'horizon-handle'}));const ht=svgEl('text',{x:39,y:state.horizon+4,class:'vp-label'});ht.textContent='HORIZON';hg.appendChild(ht);els.perspective.appendChild(hg);
+    if(state.perspectiveLines){const anchors=state.perspectivePoints===1?[[250,165],[650,165],[250,535],[650,535]]:[[315,200],[585,200],[315,500],[585,500]];vps.forEach((vp,i)=>anchors.filter((_,n)=>state.perspectivePoints===1||n%2===i%2||i===2).forEach(a=>screenLine(vp.x,vp.y,a[0],a[1])))}
+    vps.forEach((vp,i)=>{const g=svgEl('g',{'data-picker':`vp-${i}`,'aria-label':`Vanishing point ${i+1}`,'role':'button'});g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:10,class:'vp-handle'}));g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:2.6,class:'vp-dot'}));const t=svgEl('text',{x:vp.x+14,y:vp.y-12,class:'vp-label'});t.textContent=`VP ${i+1}`;g.appendChild(t);els.perspective.appendChild(g)})
+  }
+  function drawSeed(flower=false){
+    if(flower){
+      // Flower of Life: radius = lattice spacing d, so each circle passes through its six neighbours' centres.
+      // Order: centre, ring 1 (the Seed of Life), ring 2, each ring walked by angle. Boundary at 3d.
+      const d=100,centers=[];
+      for(let q=-2;q<=2;q++)for(let rr=-2;rr<=2;rr++){if(Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))<=2){const p=axial(q,rr,d/Math.sqrt(3));centers.push({...p,z:state.depth*((q-rr)%3)*.13,ring:Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))})}}
+      const ang=c=>((Math.atan2(c.y,c.x)%(2*Math.PI))+2*Math.PI+1e-9)%(2*Math.PI);
+      centers.sort((a,b)=>a.ring-b.ring||ang(a)-ang(b));
+      centers.slice(0,Math.min(state.step,19)).forEach((c,i)=>{addCircle(c,d,els.shapes);if(state.points)point(c,i)});
+      if(state.step>=20)addCircle({x:0,y:0,z:0},3*d,els.guides,'boundary');
+      return;
+    }
+    const r=112,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*(i%2?-.22:.22)}))];
+    centers.slice(0,state.step).forEach((c,i)=>{addCircle(c,r,els.shapes);if(state.points)point(c,i)});
+  }
+  function drawMetatron(){const r=92,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*.12})),...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*2,y:Math.sin(i*Math.PI/3)*r*2,z:-state.depth*.18}))];
+    const circleCount=Math.min(state.step,13),cr=state.fruit?r/2:r; centers.slice(0,circleCount).forEach((c,i)=>{addCircle(c,cr,els.guides,'construction');if(state.points)point(c,i)});
+    const drawn=new Set(),chord=(i,j,k)=>{const key=i<j?i*13+j:j*13+i;if(drawn.has(key))return;drawn.add(key);addLine(centers[i],centers[j],k)};
+    if(state.step>=14)for(let i=1;i<7;i++)chord(0,i);
+    if(state.step>=15)for(let i=1;i<7;i++)chord(i,1+(i%6));
+    if(state.step>=16)for(let i=1;i<7;i++){chord(i,i+6);chord(i,7+(i%6))}
+    // every pair of the 13 centres: 78 chords, including the six √3·r chords of the inner hexagram
+    if(state.step>=17)for(let i=0;i<13;i++)for(let j=i+1;j<13;j++)chord(i,j,'web');
+    if(state.step>=18)addCircle({x:0,y:0,z:0},2*r+cr,els.guides,'boundary');
+  }
+  function polyData(type){
+    const phi=(1+Math.sqrt(5))/2,inv=1/phi;let vertices=[];
+    if(type==='tetrahedron')vertices=[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]];
+    if(type==='cube')for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
+    if(type==='octahedron')vertices=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    if(type==='icosahedron')vertices=[[0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],[1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],[phi,0,1],[phi,0,-1],[-phi,0,1],[-phi,0,-1]];
+    if(type==='dodecahedron'){
+      for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
+      for(const a of[-1,1])for(const b of[-1,1])vertices.push([0,a*inv,b*phi],[a*inv,b*phi,0],[a*phi,0,b*inv]);
+    }
+    let min=Infinity;for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(d>.001&&d<min)min=d}
+    const edges=[];for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(Math.abs(d-min)<.015)edges.push([i,j])}
+    return{vertices,edges};
+  }
+  function scaledPoly(type,size=170){const data=polyData(type),radius=Math.max(...data.vertices.map(v=>Math.hypot(...v))),scale=size/radius;return{vertices:data.vertices.map(([x,y,z])=>({x:x*scale,y:y*scale,z:z*scale})),edges:data.edges}}
+  function drawPolyhedron(type){
+    const R=type==='dodecahedron'?178:170,data=scaledPoly(type,R),max=maxSteps[type],edgeCount=Math.ceil(data.edges.length*Math.min(1,Math.max(0,state.step-1)/(max-2))),visible=new Set();
+    data.edges.slice(0,edgeCount).forEach(([a,b])=>{addLine(data.vertices[a],data.vertices[b]);visible.add(a);visible.add(b)});
+    if(state.step===1)data.vertices.forEach((_,i)=>visible.add(i));
+    if(state.points)visible.forEach(i=>point(data.vertices[i],i));
+    if(state.guides&&state.step>=max){['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},R,84,plane),'boundary',true))}
+  }
+  function drawMetatron3D(){
+    const r=88,centers=[{x:0,y:0,z:0},{x:r,y:0,z:0},{x:-r,y:0,z:0},{x:0,y:r,z:0},{x:0,y:-r,z:0},{x:0,y:0,z:r},{x:0,y:0,z:-r},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*1.72,y:Math.sin(i*Math.PI/3)*r*1.72,z:(i%2?1:-1)*r*.72}))];
+    centers.slice(0,Math.min(state.step,13)).forEach((c,i)=>{addCircle(c,38,els.guides,'construction');if(state.points)point(c,i)});
+    if(state.step>=14)for(let i=1;i<centers.length;i++)addLine(centers[0],centers[i]);
+    if(state.step>=15)for(let i=1;i<=6;i++)for(let j=i+1;j<=6;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d<r*1.5)addLine(centers[i],centers[j],'web')}
+    if(state.step>=16){const cube=scaledPoly('cube',145);cube.edges.forEach(([a,b])=>addLine(cube.vertices[a],cube.vertices[b],'main'))}
+    if(state.step>=17)for(let i=1;i<centers.length;i++)for(let j=i+1;j<centers.length;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d>r*1.45&&d<r*2.7)addLine(centers[i],centers[j],'web')}
+    if(state.step>=18)['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},218,96,plane),'boundary',true));
+  }
+  function drawVesica(){const r=165,cs=[{x:-r/2,y:0,z:state.depth*.12},{x:r/2,y:0,z:-state.depth*.12}],h=r*Math.sqrt(3)/2;addCircle(cs[0],r);if(state.step>=2)addCircle(cs[1],r);if(state.step>=3)addLine({x:-r*1.6,y:0},{x:r*1.6,y:0},'axis-x');
+    // the lens is two arcs: each circle's arc between the shared points (0,±h), lying on its own circle
+    const arcN=Math.round(48*RES),arc=(c,a0,a1)=>Array.from({length:arcN+1},(_,i)=>{const a=(a0+(a1-a0)*i/arcN)*Math.PI/180;return{x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r,z:c.z}});
+    if(state.step>=4){addPath(els.shapes,arc(cs[0],-60,60),'lens');addPath(els.shapes,arc(cs[1],120,240),'lens')}
+    if(state.step>=5){addLine({x:0,y:-h},{x:0,y:h},'axis-y');const top=project({x:0,y:-h}),mid=project({x:r/2,y:0});addScreenText(els.guides,top.x,top.y-26,'h ÷ w = √3 ≈ 1.732');addScreenText(els.guides,mid.x+10,mid.y-8,'w = r','start')}
+    if(state.points){point(cs[0],0);if(state.step>=2)point(cs[1],1)}}
+  function tri(up,scale,offset=0,z=0){const h=scale*.9;return up?[{x:0,y:-h+offset,z},{x:scale,y:h*.62+offset,z},{x:-scale,y:h*.62+offset,z}]:[{x:0,y:h+offset,z},{x:scale,y:-h*.62+offset,z},{x:-scale,y:-h*.62+offset,z}]}
+  function drawYantra(){if(state.points)point({x:0,y:0},0);yantraDefs.slice(0,Math.max(0,state.step-1)).forEach((d,i)=>addPath(els.shapes,tri(d[0],d[1],d[2],state.depth*((i%3)-1)*.15),'main',true));if(state.guides){addCircle({x:0,y:0},238,els.guides,'boundary');addCircle({x:0,y:0},250,els.guides,'boundary')}const p=project({x:0,y:0});els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:3.4,fill:'var(--accent)'}))}
+  function drawActivePattern(){
+    if(state.pattern==='seed')drawSeed(false);if(state.pattern==='flower')drawSeed(true);if(state.pattern==='metatron')drawMetatron();if(state.pattern==='metatron3d')drawMetatron3D();if(['tetrahedron','cube','octahedron','dodecahedron','icosahedron'].includes(state.pattern))drawPolyhedron(state.pattern);if(state.pattern==='vesica')drawVesica();if(state.pattern==='yantra')drawYantra();
+  }
+  function addScreenLine(layer,x1,y1,x2,y2,kind){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke'});line.dataset.kind=kind;layer.appendChild(line);return line}
+  function addScreenText(layer,x,y,text,anchor='middle',cls='draft-label'){const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;layer.appendChild(t);return t}
+  function drawPhiOverlay(){
+    if(!state.phi||!PENTAGONAL.includes(state.pattern))return;const phi=(1+Math.sqrt(5))/2,w=360,h=w/phi,x=-w/2,y=-h/2;
+    addPath(els.guides,[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],'phi',true);
+    // whirling squares: cut left, top, right, bottom, repeat. Each square carries a quarter arc; the arcs join into one spiral.
+    let b={x,y,w,h};const spiral=[],arc=(cx,cy,s,a0)=>{const n=Math.round(24*RES);for(let i=spiral.length?1:0;i<=n;i++){const a=(a0+90*i/n)*Math.PI/180;spiral.push({x:cx+Math.cos(a)*s,y:cy+Math.sin(a)*s,z:0})}};
+    for(let i=0;i<10;i++){const side=i%4;
+      if(side===0){const s=b.h;addPath(els.guides,[{x:b.x+s,y:b.y},{x:b.x+s,y:b.y+b.h}],'phi');arc(b.x+s,b.y+s,s,180);b={x:b.x+s,y:b.y,w:b.w-s,h:b.h}}
+      if(side===1){const s=b.w;addPath(els.guides,[{x:b.x,y:b.y+s},{x:b.x+b.w,y:b.y+s}],'phi');arc(b.x,b.y+s,s,270);b={x:b.x,y:b.y+s,w:b.w,h:b.h-s}}
+      if(side===2){const s=b.h;addPath(els.guides,[{x:b.x+b.w-s,y:b.y},{x:b.x+b.w-s,y:b.y+b.h}],'phi');arc(b.x+b.w-s,b.y,s,0);b={x:b.x,y:b.y,w:b.w-s,h:b.h}}
+      if(side===3){const s=b.w;addPath(els.guides,[{x:b.x,y:b.y+b.h-s},{x:b.x+b.w,y:b.y+b.h-s}],'phi');arc(b.x+b.w,b.y+b.h-s,s,90);b={x:b.x,y:b.y,w:b.w,h:b.h-s}}
+    }
+    addPath(els.guides,spiral,'phi-spiral');
+    const tag=project({x:x+w,y:y+h,z:0});addScreenText(els.guides,tag.x-8,tag.y-10,'φ · 1.618','end');
+  }
+  function drawDimensions(){
+    if(!state.dimensions)return;let span=220;if(state.pattern==='vesica')span=275;if(state.pattern==='flower')span=235;if(state.pattern==='yantra')span=270;
+    const dimension=(a,b,label,ox,oy)=>{const p=project(a),q=project(b),x1=p.x+ox,y1=p.y+oy,x2=q.x+ox,y2=q.y+oy;addScreenLine(els.guides,p.x,p.y,x1,y1,'extension');addScreenLine(els.guides,q.x,q.y,x2,y2,'extension');addScreenLine(els.guides,x1,y1,x2,y2,'dimension');const ang=Math.atan2(y2-y1,x2-x1),tick=5;[ [x1,y1],[x2,y2] ].forEach(([x,y])=>addScreenLine(els.guides,x-Math.sin(ang)*tick,y+Math.cos(ang)*tick,x+Math.sin(ang)*tick,y-Math.cos(ang)*tick,'dimension'));addScreenText(els.guides,(x1+x2)/2,(y1+y2)/2-7,label)};
+    dimension({x:-span,y:span*.78,z:0},{x:span,y:span*.78,z:0},'2R',0,24);dimension({x:span,y:-span*.78,z:0},{x:span,y:span*.78,z:0},state.mode==='plan'?'φR':'Z / φR',24,0);
+  }
+  function makePlanStudy(){
+    const holder=svgEl('g');holder.appendChild(svgEl('rect',{x:16,y:405,width:274,height:250,rx:5,class:'study-frame'}));
+    const inner=svgEl('g',{transform:'translate(18 420) scale(.3)'}),parts={grid:svgEl('g'),perspective:svgEl('g'),guides:svgEl('g'),shapes:svgEl('g'),points:svgEl('g')};Object.values(parts).forEach(g=>inner.appendChild(g));holder.appendChild(inner);
+    const savedRefs={grid:els.grid,perspective:els.perspective,guides:els.guides,shapes:els.shapes,points:els.points},saved={mode:state.mode,rotation:state.rotation,tilt:state.tilt,depth:state.depth,dimensions:state.dimensions,multiView:state.multiView};Object.assign(els,parts);state.mode='plan';state.rotation=0;state.tilt=0;state.depth=0;state.dimensions=false;state.multiView=false;drawActivePattern();if(state.phi)drawPhiOverlay();styleLayers(inner);Object.assign(els,savedRefs);Object.assign(state,saved);
+    addScreenText(holder,31,428,'PLAN · ORTHOGRAPHIC','start','study-label');addScreenLine(holder,153,405,153,350,'study-rule');addScreenText(holder,153,647,titles[state.pattern].toUpperCase(),'middle','study-label');return holder;
+  }
+  function drawDraftingOverlays(){clear(els.overlay);if(state.multiView&&state.mode!=='plan')els.overlay.appendChild(makePlanStudy())}
+  function drawStepBreakpoints(){
+    clear(els.breakpoints);const list=phases[state.pattern],max=list.length;let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
+  }
+  function styleLayers(scope=document){
+    const root=getComputedStyle(document.documentElement);const geom=state.darkline?root.getPropertyValue('--accent').trim():root.getPropertyValue('--geometry').trim();
+    [...scope.querySelectorAll('[data-kind]')].forEach(p=>{const k=p.dataset.kind;let stroke=geom,opacity=1,w=state.weight; if(k==='grid'){stroke='var(--grid)';opacity=.65;w=.6}if(k==='axis-x'){stroke='var(--accent)';opacity=.45;w=.8}if(k==='axis-y'){stroke='var(--focus)';opacity=.45;w=.8}if(k==='axis-z'){stroke='var(--z-axis)';opacity=.78;w=1.15}if(k==='horizon'){stroke='var(--perspective)';opacity=.72;w=1}if(k==='perspective-line'){stroke='var(--perspective)';opacity=.3;w=.8;p.setAttribute('stroke-dasharray','5 6')}if(k==='construction'){stroke='var(--ghost)';opacity=.72;w=Math.max(.7,state.weight*.75)}if(k==='boundary'){stroke='var(--accent)';opacity=.55;w=.9}if(k==='web'){opacity=.62;w=Math.max(.65,state.weight*.72)}if(k==='lens'){stroke='var(--accent)';w=state.weight*1.35}if(k==='sphere-ring'){stroke=geom;opacity=.34;w=Math.max(.65,state.weight*.72)}if(k==='node'){stroke='var(--accent)';opacity=.9;w=.9}if(k==='cube'){stroke='var(--accent)';opacity=.88;w=.85}if(k==='phi'){stroke='var(--z-axis)';opacity=.34;w=.8;p.setAttribute('stroke-dasharray','3 5')}if(k==='phi-spiral'){stroke='var(--z-axis)';opacity=.78;w=1.2}if(k==='dimension'){stroke='var(--accent)';opacity=.8;w=.8}if(k==='extension'){stroke='var(--accent)';opacity=.35;w=.65;p.setAttribute('stroke-dasharray','3 4')}p.setAttribute('fill','none');p.setAttribute('stroke',stroke);p.setAttribute('stroke-width',w);p.setAttribute('opacity',opacity);p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round')});
+  }
+  let lastStatus='',onRendered=null;
+  function render(){clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();styleLayers();drawDraftingOverlays();
+    const max=maxSteps[state.pattern],phase=phases[state.pattern][state.step-1]||'Completion';els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
+    const projection=state.mode==='perspective'?`${state.perspectivePoints}-pt`:state.mode;const status=`<span>${titles[state.pattern]}</span><span>${projection}</span><span>${state.primitive==='solid'?'wireframe solids':'planar forms'}</span><span>${state.weight.toFixed(1)} pt</span><span>${state.darkline?'accent ink':'neutral ink'}</span>`;if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}
+    if(onRendered)onRendered();
+  }
+  function setPattern(v){state.pattern=v;state.step=1;state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
+  els.pattern.addEventListener('change',e=>{beginChange();setPattern(e.target.value);commitChange()});
+  $$('#viewMode button').forEach(b=>b.addEventListener('click',()=>{if(state.mode===b.dataset.mode)return;beginChange();state.mode=b.dataset.mode;syncAllControls();render();commitChange()}));
+  $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
+  $$('#perspectiveMode button').forEach(b=>b.addEventListener('click',()=>{const value=+b.dataset.points;if(state.perspectivePoints===value)return;beginChange();state.perspectivePoints=value;syncAllControls();render();commitChange()}));
+  function rangeHistory(el){el.addEventListener('pointerdown',beginChange);el.addEventListener('keydown',beginChange);el.addEventListener('change',commitChange);el.addEventListener('blur',commitChange)}
+  rangeHistory(els.horizon);els.horizon.addEventListener('input',e=>{state.horizon=+e.target.value;syncValues();render()});
+  $('#perspectiveLinesBtn').addEventListener('click',e=>{beginChange();state.perspectiveLines=!state.perspectiveLines;e.currentTarget.classList.toggle('active',state.perspectiveLines);syncPressed();render();commitChange()});
+  els.autoRotate.addEventListener('click',()=>{beginChange();state.autoRotate=!state.autoRotate;els.autoRotate.classList.toggle('active',state.autoRotate);syncPressed();render();commitChange()});
+  function syncValues(){$('#rotationValue').textContent=`${Math.round(state.rotation)}°`;$('#tiltValue').textContent=`${Math.round(state.tilt)}°`;$('#depthValue').textContent=Math.round(state.depth);$('#weightValue').textContent=state.weight.toFixed(1);$('#horizonValue').textContent=`${Math.round((1-state.horizon/700)*100)}%`}
+  [['rotation',1],['tilt',1],['depth',1],['weight',.1]].forEach(([id,scale])=>{rangeHistory(els[id]);els[id].addEventListener('input',e=>{state[id]=+e.target.value*scale;if(id==='weight')state.weight=+e.target.value/10;syncValues();render()})});
+  $$('.chip[data-toggle]').forEach(b=>b.addEventListener('click',()=>{beginChange();const k=b.dataset.toggle;state[k]=!state[k];b.classList.toggle('active',state[k]);syncPressed();render();commitChange()}));
+  rangeHistory(els.step);els.step.addEventListener('input',e=>{stopPlayback();state.step=+e.target.value;render()});
+  $('#prevBtn').addEventListener('click',()=>{if(state.step<=1)return;beginChange();stopPlayback();state.step--;render();commitChange()});
+  $('#nextBtn').addEventListener('click',()=>{if(state.step>=maxSteps[state.pattern])return;beginChange();stopPlayback();state.step++;render();commitChange()});
+  function next(){state.step=state.step>=maxSteps[state.pattern]?1:state.step+1;render()}
+  let timer;function startPlayback(){clearInterval(timer);timer=setInterval(next,+els.speed.value)}
+  els.play.addEventListener('click',()=>{state.playing=!state.playing;els.play.textContent=state.playing?'Ⅱ':'▶';els.play.setAttribute('aria-label',state.playing?'Pause construction':'Play construction');clearInterval(timer);if(state.playing)startPlayback()});
+  els.speed.addEventListener('change',()=>{if(state.playing)startPlayback()});
+  els.undo.addEventListener('click',undo);els.redo.addEventListener('click',redo);
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key==='ArrowRight'&&state.step<maxSteps[state.pattern]){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
+  function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
+  let drag=null,inertia=0,lastFrame=performance.now();
+  els.wrap.addEventListener('pointerdown',e=>{beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
+  els.wrap.addEventListener('pointermove',e=>{if(!drag)return;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
+  const endDrag=()=>{if(drag&&!drag.picker)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange()};els.wrap.addEventListener('pointerup',endDrag);els.wrap.addEventListener('pointercancel',endDrag);
+  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const isSpatial=SPATIAL.includes(state.pattern);if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
+  function downloadableSvg(){
+    // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
+    // and inline the class rules the live page gets from CSS.
+    const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
+    const clone=els.svg.cloneNode(true);clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
+    clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
+    const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
+    const style=svgEl('style');style.textContent=[
+      'path{fill:none}',`text{font-family:${mono}}`,
+      `.horizon-handle,.vp-handle{fill:${T('canvas')};stroke:${T('perspective')};stroke-width:1.4}`,
+      `.vp-dot{fill:${T('perspective')}}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
+      `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
+      `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
+      `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`].join('\n');
+    const bg=svgEl('rect',{width:'900',height:'700',fill:T('canvas')});clone.insertBefore(bg,clone.firstChild);clone.insertBefore(style,clone.firstChild);
+    return new XMLSerializer().serializeToString(clone)}
+  const saver=window.claude?.use?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);
+  async function download(name,blob){const dl=await saver;if(dl){try{await dl.save({filename:name,data:blob});showToast(`Saved ${name}`)}catch(e){if(e?.code!=='declined')showToast('Save unavailable here — use Copy SVG')}return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+  $('#exportBtn').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
+  $('#copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(downloadableSvg());showToast('SVG copied to clipboard')}catch{showToast('Copy unavailable — use Export')}});
+  function showToast(msg){els.toast.textContent=msg;els.toast.classList.add('show');setTimeout(()=>els.toast.classList.remove('show'),1800)}
+  /* ================= Studio: physical outputs =================
+     Everything here reads the drawing that is on screen (the current figure, step and view),
+     re-renders it at a sample density that suits the physical size, and packages it for
+     print, pen plotter or hand-cut stencil. Units inside this block are millimetres. */
+  const PAGES=[
+    {id:'a3',label:'A3 · 297 × 420 mm',w:297,h:420},{id:'a2',label:'A2 · 420 × 594 mm',w:420,h:594},
+    {id:'a1',label:'A1 · 594 × 841 mm',w:594,h:841},{id:'a0',label:'A0 · 841 × 1189 mm',w:841,h:1189},
+    {id:'2a0',label:'2A0 · 1189 × 1682 mm',w:1189,h:1682},{id:'18x24',label:'18 × 24 in',w:457.2,h:609.6},
+    {id:'24x36',label:'24 × 36 in',w:609.6,h:914.4},{id:'36x48',label:'36 × 48 in',w:914.4,h:1219.2},
+    {id:'48x48',label:'48 × 48 in panel',w:1219.2,h:1219.2},{id:'4x8',label:'4 × 8 ft sheet',w:1219.2,h:2438.4},
+    {id:'mural3',label:'Wall · 3 × 3 m',w:3000,h:3000},{id:'mural6',label:'Wall · 6 × 4 m',w:4000,h:6000},
+    {id:'custom',label:'Custom…'}];
+  const SHEETS=[{id:'off',label:'Off · one sheet'},{id:'letter',label:'Letter',w:215.9,h:279.4},{id:'a4',label:'A4',w:210,h:297},
+    {id:'tabloid',label:'Tabloid 11 × 17',w:279.4,h:431.8},{id:'a3',label:'A3',w:297,h:420},{id:'mylar',label:'Mylar 24 × 36',w:609.6,h:914.4}];
+  const LAYERS=[
+    {id:'construction',label:'Construction',hint:'circles & axes · UV underlayer'},
+    {id:'figure',label:'Figure',hint:'the geometry'},
+    {id:'accent',label:'Accent',hint:'lens, boundary, spiral'},
+    {id:'marks',label:'Centre marks',hint:'nodes & bindu'},
+    {id:'drafting',label:'Drafting',hint:'grid, φ squares, dimensions'}];
+  const studioDefaults={mode:'print',page:'48x48',orient:'portrait',cw:1000,ch:1000,margin:50,
+    layers:{construction:{on:true,pen:0.5,color:'#8f8a7c'},figure:{on:true,pen:1.2,color:'#171815'},accent:{on:true,pen:1.2,color:'#ca432c'},marks:{on:false,pen:0.5,color:'#ca432c'},drafting:{on:false,pen:0.3,color:'#9b6c10'}},
+    slot:4,bridge:5,span:160,sheet:'off',overlap:20,dpi:300,human:true};
+  const ST=(()=>{try{const v=JSON.parse(localStorage.getItem('sg-studio')||'null');if(v)return {...studioDefaults,...v,layers:{...studioDefaults.layers,...(v.layers||{})}}}catch{}return structuredClone(studioDefaults)})();
+  const saveST=()=>{try{localStorage.setItem('sg-studio',JSON.stringify(ST))}catch{}};
+  const f2=n=>+n.toFixed(2),fmtLen=mm=>mm>=1000?`${(mm/1000).toFixed(2)} m`:`${Math.round(mm)} mm`;
+
+  function pageSize(){let w,h;if(ST.page==='custom'){w=+ST.cw||1000;h=+ST.ch||1000}else{const p=PAGES.find(p=>p.id===ST.page)||PAGES[8];w=p.w;h=p.h}
+    if((ST.orient==='landscape')!==(w>h))[w,h]=[h,w];return {W:w,H:h}}
+
+  // --- read the drawing back out of the SVG ---
+  let harvesting=false;
+  function layerOf(kind,src){
+    if(src==='grid')return 'drafting';
+    if(kind==='main'||kind==='web'||kind==='bindu')return 'figure';
+    if(kind==='lens'||kind==='boundary'||kind==='phi-spiral')return 'accent';
+    if(kind==='construction'||kind==='sphere-ring'||kind.startsWith('axis-'))return 'construction';
+    if(kind==='node'||kind==='cube'||kind==='dot')return 'marks';
+    return 'drafting'}
+  function harvest(res){
+    harvesting=true;const saved=RES;RES=res;render();const out=[];
+    [['grid',els.grid],['guides',els.guides],['shapes',els.shapes],['points',els.points]].forEach(([src,g])=>{
+      g.querySelectorAll('path[data-kind],line[data-kind]').forEach(el=>{const kind=el.dataset.kind;let pts,closed=false;
+        if(el.tagName==='line')pts=[[+el.getAttribute('x1'),+el.getAttribute('y1')],[+el.getAttribute('x2'),+el.getAttribute('y2')]];
+        else{const d=el.getAttribute('d');closed=/Z\s*$/.test(d);const n=d.match(/-?\d*\.?\d+(?:e-?\d+)?/g).map(Number);pts=[];for(let i=0;i+1<n.length;i+=2)pts.push([n[i],n[i+1]])}
+        if(pts.length>1)out.push({layer:layerOf(kind,src),kind,pts,closed})});
+      // filled dots: the Yantra's bindu belongs to the figure; the tiny centre dots are marks
+      if(src==='points')g.querySelectorAll('circle').forEach(c=>{const r=+c.getAttribute('r'),cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy'),kind=r>=3?'bindu':'dot',n=Math.max(12,Math.round(24*res));
+        out.push({layer:layerOf(kind,src),kind,closed:true,fill:true,pts:Array.from({length:n},(_,i)=>[cx+Math.cos(i/n*2*Math.PI)*r,cy+Math.sin(i/n*2*Math.PI)*r])})})});
+    RES=saved;render();harvesting=false;return out}
+
+  // --- fit to the page, at a resolution that keeps chords within tolerance ---
+  let geoCache={key:'',geo:null};
+  function geometry(tol){
+    const {W,H}=pageSize(),on=LAYERS.filter(l=>ST.layers[l.id].on).map(l=>l.id);
+    const key=JSON.stringify([snapshot(),W,H,ST.margin,on,tol]);if(geoCache.key===key)return geoCache.geo;
+    const bbox=list=>{let a=[1e9,1e9,-1e9,-1e9];list.forEach(s=>s.pts.forEach(([x,y])=>{if(x<a[0])a[0]=x;if(y<a[1])a[1]=y;if(x>a[2])a[2]=x;if(y>a[3])a[3]=y}));return a};
+    let raw=harvest(1).filter(s=>on.includes(s.layer));if(!raw.length){geoCache={key,geo:null};return null}
+    let b=bbox(raw);const bw=Math.max(1,b[2]-b[0]),bh=Math.max(1,b[3]-b[1]),m=Math.min(ST.margin,Math.min(W,H)/3),s=Math.min((W-2*m)/bw,(H-2*m)/bh);
+    const rmm=s*Math.max(bw,bh)/2,N=Math.PI/Math.acos(Math.max(-1,1-tol/Math.max(rmm,tol))),res=Math.min(16,Math.max(1,N/96));
+    if(res>1.05)raw=harvest(res).filter(s=>on.includes(s.layer));
+    const ox=(W-bw*s)/2-b[0]*s,oy=(H-bh*s)/2-b[1]*s;
+    const strokes=raw.map(st=>({...st,pts:st.pts.map(([x,y])=>[x*s+ox,y*s+oy])}));
+    const geo={W,H,s,res,strokes,span:[bw*s,bh*s]};geoCache={key,geo};return geo}
+
+  const dOf=(pts,closed)=>'M'+pts.map(p=>f2(p[0])+' '+f2(p[1])).join('L')+(closed?'Z':'');
+  const svgOpen=(W,H,title)=>`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(W)}mm" height="${f2(H)}mm" viewBox="0 0 ${f2(W)} ${f2(H)}"><title>${title}</title>`;
+  const esc=t=>t.replace(/[<&>]/g,c=>({'<':'&lt;','&':'&amp;','>':'&gt;'}[c]));
+  const fileTitle=()=>`${titles[state.pattern]} · step ${state.step} · ${state.mode}`;
+
+  // --- print: one group per layer, real pen widths in mm ---
+  function printInner(g){let out='';LAYERS.forEach(L=>{const cfg=ST.layers[L.id];if(!cfg.on)return;const list=g.strokes.filter(s=>s.layer===L.id);if(!list.length)return;
+    const lines=list.filter(s=>!s.fill).map(s=>dOf(s.pts,s.closed)).join(''),fills=list.filter(s=>s.fill).map(s=>dOf(s.pts,true)).join('');
+    out+=`<g id="${L.id}" inkscape:groupmode="layer" inkscape:label="${L.label}">`+(lines?`<path d="${lines}" fill="none" stroke="${cfg.color}" stroke-width="${cfg.pen}" stroke-linecap="round" stroke-linejoin="round"/>`:'')+(fills?`<path d="${fills}" fill="${cfg.color}"/>`:'')+'</g>'});return out}
+
+  // --- plotter: merge collinear overdraw, one path per stroke, a numbered layer per pen, short pen-up travel ---
+  function mergeLines(list){const keep=[],groups=new Map();
+    list.forEach(s=>{if(s.pts.length!==2||s.fill){keep.push(s);return}const [a,b]=s.pts;let dx=b[0]-a[0],dy=b[1]-a[1];const L=Math.hypot(dx,dy);if(L<1e-6)return;dx/=L;dy/=L;if(dx<-1e-9||(Math.abs(dx)<1e-9&&dy<0)){dx=-dx;dy=-dy}
+      const off=a[0]*-dy+a[1]*dx,key=`${Math.round(Math.atan2(dy,dx)*2000)}|${Math.round(off*10)}`;const t0=a[0]*dx+a[1]*dy,t1=b[0]*dx+b[1]*dy;
+      if(!groups.has(key))groups.set(key,{dx,dy,off,iv:[]});groups.get(key).iv.push([Math.min(t0,t1),Math.max(t0,t1)])});
+    groups.forEach(g=>{g.iv.sort((p,q)=>p[0]-q[0]);let cur=null;const flush=()=>{if(cur)keep.push({pts:[[cur[0]*g.dx-g.off*g.dy,cur[0]*g.dy+g.off*g.dx],[cur[1]*g.dx-g.off*g.dy,cur[1]*g.dy+g.off*g.dx]],closed:false})};
+      g.iv.forEach(iv=>{if(cur&&iv[0]<=cur[1]+0.05)cur[1]=Math.max(cur[1],iv[1]);else{flush();cur=[...iv]}});flush()});
+    return keep}
+  function orderStrokes(list,start=[0,0]){const todo=list.map(s=>({...s,pts:[...s.pts]})),out=[];let at=start,travel=0,draw=0;
+    while(todo.length){let best=0,bd=Infinity,bi=0,rev=false;
+      todo.forEach((s,i)=>{if(s.closed){s.pts.forEach((p,k)=>{const d=Math.hypot(p[0]-at[0],p[1]-at[1]);if(d<bd){bd=d;best=i;bi=k;rev=false}})}
+        else{const a=s.pts[0],b=s.pts[s.pts.length-1],da=Math.hypot(a[0]-at[0],a[1]-at[1]),db=Math.hypot(b[0]-at[0],b[1]-at[1]);if(da<bd){bd=da;best=i;rev=false;bi=0}if(db<bd){bd=db;best=i;rev=true;bi=0}}});
+      const s=todo.splice(best,1)[0];if(s.closed)s.pts=[...s.pts.slice(bi),...s.pts.slice(0,bi),s.pts[bi]];else if(rev)s.pts.reverse();
+      travel+=bd;for(let i=1;i<s.pts.length;i++)draw+=Math.hypot(s.pts[i][0]-s.pts[i-1][0],s.pts[i][1]-s.pts[i-1][1]);at=s.pts[s.pts.length-1];out.push(s)}
+    return {list:out,travel,draw,end:at}}
+  function plotterPlan(g){const layers=[];let at=[0,0],travel=0,draw=0,n=0;
+    LAYERS.forEach(L=>{const cfg=ST.layers[L.id];if(!cfg.on)return;const list=mergeLines(g.strokes.filter(s=>s.layer===L.id).map(s=>({...s,closed:s.closed||s.fill})));if(!list.length)return;
+      const o=orderStrokes(list,at);at=o.end;travel+=o.travel;draw+=o.draw;n+=o.list.length;layers.push({L,cfg,list:o.list,travel:o.travel})});
+    return {layers,travel,draw,n}}
+  function plotterInner(plan,preview){let out='';plan.layers.forEach((p,i)=>{
+      out+=`<g id="pen-${i+1}" inkscape:groupmode="layer" inkscape:label="${i+1} ${p.L.label} · ${p.cfg.pen} mm" fill="none" stroke="${p.cfg.color}" stroke-width="${p.cfg.pen}" stroke-linecap="round" stroke-linejoin="round">`+p.list.map(s=>`<path d="${dOf(s.pts,false)}"/>`).join('')+'</g>'});
+    if(preview){let at=[0,0],d='';plan.layers.forEach(p=>p.list.forEach(s=>{d+=`M${f2(at[0])} ${f2(at[1])}L${f2(s.pts[0][0])} ${f2(s.pts[0][1])}`;at=s.pts[s.pts.length-1]}));out+=`<path d="${d}" fill="none" stroke="#3aa0a0" stroke-width="${Math.max(.4,plan.scale||.6)}" stroke-dasharray="4 4" opacity=".7"/>`}
+    return out}
+
+  // --- stencil: slots of real width, a bridge on every edge between crossings, so no island can fall out ---
+  function crossings(strokes){
+    const segs=[];strokes.forEach((s,si)=>{let acc=0;const P=s.closed?[...s.pts,s.pts[0]]:s.pts;s.len=0;s.cum=[0];
+      for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);segs.push({si,a,b,l0:acc,l});acc+=l;s.cum.push(acc)}s.len=acc;s.cuts=[]});
+    if(!segs.length)return;const avg=segs.reduce((t,g)=>t+g.l,0)/segs.length,cell=Math.max(2,avg*3),grid=new Map();
+    segs.forEach((g,k)=>{const x0=Math.floor(Math.min(g.a[0],g.b[0])/cell),x1=Math.floor(Math.max(g.a[0],g.b[0])/cell),y0=Math.floor(Math.min(g.a[1],g.b[1])/cell),y1=Math.floor(Math.max(g.a[1],g.b[1])/cell);
+      for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const key=x+','+y;if(!grid.has(key))grid.set(key,[]);grid.get(key).push(k)}});
+    const seen=new Set();
+    grid.forEach(ids=>{for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const A=segs[ids[i]],B=segs[ids[j]];if(A.si===B.si)continue;
+      const key=ids[i]<ids[j]?ids[i]*1e7+ids[j]:ids[j]*1e7+ids[i];if(seen.has(key))continue;seen.add(key);
+      const rx=A.b[0]-A.a[0],ry=A.b[1]-A.a[1],sx=B.b[0]-B.a[0],sy=B.b[1]-B.a[1],den=rx*sy-ry*sx;if(Math.abs(den)<1e-12)continue;
+      const qx=B.a[0]-A.a[0],qy=B.a[1]-A.a[1],t=(qx*sy-qy*sx)/den,u=(qx*ry-qy*rx)/den;
+      if(t>=-1e-9&&t<=1+1e-9&&u>=-1e-9&&u<=1+1e-9){strokes[A.si].cuts.push(A.l0+t*A.l);strokes[B.si].cuts.push(B.l0+u*B.l)}}})}
+  function slicePts(s,a,b){const P=s.closed?[...s.pts,s.pts[0]]:s.pts,L=s.len,out=[];
+    const at=t=>{t=s.closed?((t%L)+L)%L:Math.max(0,Math.min(L,t));let i=1;while(i<s.cum.length-1&&s.cum[i]<t)i++;const l0=s.cum[i-1],l1=s.cum[i],k=l1>l0?(t-l0)/(l1-l0):0;return[P[i-1][0]+(P[i][0]-P[i-1][0])*k,P[i-1][1]+(P[i][1]-P[i-1][1])*k]};
+    out.push(at(a));for(let lap=(s.closed?-1:0);lap<(s.closed?2:1);lap++)for(let i=0;i<s.cum.length;i++){const c=s.cum[i]+lap*L;if(c>a+1e-6&&c<b-1e-6)out.push(P[i])}out.push(at(b));
+    return out.filter((p,i)=>!i||Math.hypot(p[0]-out[i-1][0],p[1]-out[i-1][1])>1e-6)}
+  function outline(pts,w){const h=w/2,n=pts.length,Lf=[],Rt=[];
+    for(let i=0;i<n;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)],p=pts[i];let tx=b[0]-a[0],ty=b[1]-a[1];const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;let k=1;
+      if(i>0&&i<n-1){const d1x=p[0]-a[0],d1y=p[1]-a[1],d2x=b[0]-p[0],d2y=b[1]-p[1],l1=Math.hypot(d1x,d1y)||1,l2=Math.hypot(d2x,d2y)||1,c=(d1x*d2x+d1y*d2y)/(l1*l2);k=1/Math.max(.5,Math.sqrt((1+c)/2))}
+      Lf.push([p[0]-ty*h*k,p[1]+tx*h*k]);Rt.push([p[0]+ty*h*k,p[1]-tx*h*k])}
+    return [...Lf,...Rt.reverse()]}
+  function stencilSheets(g){const sheets=[];const w=+ST.slot,bw=+ST.bridge,span=Math.max(bw*3,+ST.span);
+    LAYERS.forEach(L=>{if(!ST.layers[L.id].on)return;const src=g.strokes.filter(s=>s.layer===L.id);if(!src.length)return;
+      const holes=src.filter(s=>s.fill).map(s=>s.pts),strokes=mergeLines(src.filter(s=>!s.fill)).map(s=>({pts:s.pts,closed:s.closed}));
+      crossings(strokes);let bridges=0;const slots=[];
+      strokes.forEach(s=>{if(s.len<1e-6)return;const c=[...new Set(s.cuts.map(t=>Math.round(t*100)/100))].sort((p,q)=>p-q);
+        const nodes=s.closed?(c.length?c:[0]):[0,...c.filter(t=>t>0.01&&t<s.len-0.01),s.len];const edges=[];
+        if(s.closed){for(let i=0;i<nodes.length;i++){const a=nodes[i],b=i+1<nodes.length?nodes[i+1]:nodes[0]+s.len;edges.push([a,b])}}else for(let i=1;i<nodes.length;i++)edges.push([nodes[i-1],nodes[i]]);
+        const lone=s.closed&&!c.length;const iv=[];
+        edges.forEach(([a,b])=>{const l=b-a;if(l<=bw){return}const n=Math.max(lone?2:1,Math.ceil(l/span));bridges+=n;let from=a;
+          for(let k=0;k<n;k++){const mid=a+l*(k+.5)/n;iv.push([from,mid-bw/2]);from=mid+bw/2}iv.push([from,b])});
+        // join cuts that meet at a crossing so each slot runs through it in one piece
+        const merged=[];iv.filter(v=>v[1]-v[0]>0.2).forEach(v=>{const last=merged[merged.length-1];if(last&&Math.abs(last[1]-v[0])<1e-6)last[1]=v[1];else merged.push([...v])});
+        if(s.closed&&merged.length>1){const f=merged[0],l=merged[merged.length-1];if(Math.abs(l[1]-(f[0]+s.len))<1e-6){f[0]=l[0]-s.len;merged.pop()}}
+        merged.forEach(([a,b])=>slots.push(outline(slicePts(s,a,b),w)))});
+      sheets.push({L,slots,holes,bridges,edgesCut:slots.length})});
+    return sheets}
+  function regMarks(W,H,w){const m=Math.max(8,Math.min(ST.margin/2,40)),arm=Math.min(12,m*.8),h=Math.max(.8,w/2),P=[[m,m],[W-m,m],[m,H-m],[W-m,H-m]];
+    return P.map(([x,y])=>dOf([[x-arm,y-h],[x+arm,y-h],[x+arm,y+h],[x-arm,y+h]],true)+dOf([[x-h,y-arm],[x+h,y-arm],[x+h,y+arm],[x-h,y+arm]],true)).join('')}
+  function stencilInner(sheet,W,H,label=true){const d=sheet.slots.map(p=>dOf(p,true)).join('')+sheet.holes.map(p=>dOf(p,true)).join('');
+    return `<g id="stencil-${sheet.L.id}" inkscape:groupmode="layer" inkscape:label="Stencil · ${sheet.L.label}"><path d="${d}" fill="#000" fill-rule="nonzero"/><path d="${regMarks(W,H,+ST.slot)}" fill="#000"/>`+
+      (label?`<text x="${f2(W/2)}" y="${f2(Math.max(6,ST.margin/2))}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="${f2(Math.max(3,Math.min(10,ST.margin/5)))}" fill="#888">${esc(sheet.L.label.toUpperCase())} · ${esc(titles[state.pattern])} · ${f2(W)}×${f2(H)} mm · slot ${ST.slot} · bridge ${ST.bridge}</text>`:'')+'</g>'}
+
+  // --- tiling: split the page onto printable sheets with overlap and shared registration crosses ---
+  function tilePlan(W,H){const sh=SHEETS.find(s=>s.id===ST.sheet);if(!sh||!sh.w)return null;const ov=+ST.overlap,edge=6,best=[[sh.w,sh.h],[sh.h,sh.w]].map(([sw,shh])=>{const tw=sw-2*edge,th=shh-2*edge,cols=Math.max(1,Math.ceil((W-ov)/(tw-ov))),rows=Math.max(1,Math.ceil((H-ov)/(th-ov)));return{sw,sh:shh,tw,th,cols,rows,n:cols*rows}}).sort((a,b)=>a.n-b.n)[0];
+    return {...best,ov,edge,label:sh.label}}
+  function tileMarks(tp,W,H){let d='';const a=6,h=.35;const xs=[],ys=[];for(let c=1;c<tp.cols;c++)xs.push(c*(tp.tw-tp.ov)+tp.ov/2);for(let r=1;r<tp.rows;r++)ys.push(r*(tp.th-tp.ov)+tp.ov/2);
+    const cross=(x,y)=>{d+=`M${f2(x-a)} ${f2(y)}H${f2(x+a)}M${f2(x)} ${f2(y-a)}V${f2(y+a)}`};
+    xs.forEach(x=>{for(let r=0;r<tp.rows;r++)cross(x,r*(tp.th-tp.ov)+tp.th/2)});ys.forEach(y=>{for(let c=0;c<tp.cols;c++)cross(c*(tp.tw-tp.ov)+tp.tw/2,y)});xs.forEach(x=>ys.forEach(y=>cross(x,y)));
+    return d?`<path d="${d}" fill="none" stroke="#1f8b8b" stroke-width="${h}"/>`:''}
+  function tiles(inner,W,H,name){const tp=tilePlan(W,H);if(!tp)return [];const files=[],marks=tileMarks(tp,W,H);
+    for(let r=0;r<tp.rows;r++)for(let c=0;c<tp.cols;c++){const x=c*(tp.tw-tp.ov),y=r*(tp.th-tp.ov),id=`r${r+1}c${c+1}`;
+      const svg=svgOpen(tp.sw,tp.sh,`${fileTitle()} · tile ${id}`)+`<defs><clipPath id="t"><rect x="0" y="0" width="${f2(tp.tw)}" height="${f2(tp.th)}"/></clipPath></defs>`+
+        `<g transform="translate(${tp.edge} ${tp.edge})"><g clip-path="url(#t)"><g transform="translate(${f2(-x)} ${f2(-y)})">${inner}${marks}</g></g>`+
+        `<rect x="0" y="0" width="${f2(tp.tw)}" height="${f2(tp.th)}" fill="none" stroke="#bbb" stroke-width=".2" stroke-dasharray="2 2"/></g>`+
+        `<text x="${tp.edge}" y="${tp.edge-1.5}" font-family="ui-monospace,Menlo,monospace" font-size="3.2" fill="#666">${esc(name)} · ROW ${r+1} / ${tp.rows} · COL ${c+1} / ${tp.cols} · overlap ${tp.ov} mm · align the teal crosses</text></svg>`;
+      files.push({name:`${id}.svg`,data:svg})}
+    return files}
+
+  // --- zip (stored, no compression): enough to hand over many sheets at once ---
+  const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+  function zip(files){const enc=new TextEncoder(),parts=[],central=[];let off=0;
+    files.forEach(f=>{const name=enc.encode(f.name),data=typeof f.data==='string'?enc.encode(f.data):f.data;let c=0xFFFFFFFF;for(let i=0;i<data.length;i++)c=CRC[(c^data[i])&255]^(c>>>8);c=(c^0xFFFFFFFF)>>>0;
+      const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint32(14,c,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);
+      const ce=new DataView(new ArrayBuffer(46));ce.setUint32(0,0x02014b50,true);ce.setUint16(4,20,true);ce.setUint16(6,20,true);ce.setUint32(16,c,true);ce.setUint32(20,data.length,true);ce.setUint32(24,data.length,true);ce.setUint16(28,name.length,true);ce.setUint32(42,off,true);
+      parts.push(h,name,data);central.push(ce,name);off+=30+name.length+data.length});
+    const size=central.reduce((t,p)=>t+(p.byteLength??p.length),0),end=new DataView(new ArrayBuffer(22));end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,size,true);end.setUint32(16,off,true);
+    return new Blob([...parts,...central,end],{type:'application/zip'})}
+
+  // --- UI ---
+  const sEl=id=>document.getElementById(id),dlg=sEl('studio'),preview=sEl('studioPreview'),statsEl=sEl('studioStats');
+  const baseName=()=>`${state.pattern}-step${state.step}-${Math.round(pageSize().W)}x${Math.round(pageSize().H)}mm`;
+  sEl('stPage').innerHTML=PAGES.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
+  sEl('stSheet').innerHTML=SHEETS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
+  sEl('stLayers').innerHTML=LAYERS.map(L=>`<div class="st-layer"><label class="st-check"><input type="checkbox" id="stOn-${L.id}"><span><b>${L.label}</b><small>${L.hint}</small></span></label>`+
+    `<label class="st-num" title="Pen / line width"><input type="number" id="stPen-${L.id}" min="0.05" max="50" step="0.05"><i>mm</i></label><input type="color" id="stCol-${L.id}" aria-label="${L.label} colour"></div>`).join('');
+  function syncStudio(){sEl('stPage').value=ST.page;sEl('stOrient').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===ST.orient));
+    sEl('stCustom').hidden=ST.page!=='custom';sEl('stW').value=ST.cw;sEl('stH').value=ST.ch;sEl('stMargin').value=ST.margin;
+    LAYERS.forEach(L=>{const c=ST.layers[L.id];sEl('stOn-'+L.id).checked=c.on;sEl('stPen-'+L.id).value=c.pen;sEl('stCol-'+L.id).value=c.color});
+    sEl('stSlot').value=ST.slot;sEl('stBridge').value=ST.bridge;sEl('stSpan').value=ST.span;sEl('stSheet').value=ST.sheet;sEl('stOverlap').value=ST.overlap;sEl('stDpi').value=ST.dpi;
+    sEl('stModes').querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.v===ST.mode);b.setAttribute('aria-pressed',b.dataset.v===ST.mode)});
+    dlg.querySelectorAll('[data-for]').forEach(x=>x.hidden=!x.dataset.for.split(' ').includes(ST.mode));
+    sEl('stDownload').textContent=ST.mode==='print'?'Download print SVG':ST.mode==='plotter'?'Download plotter SVG':'Download stencil set (.zip)'}
+  function human(x,base,hmm){const s=hmm/1750,hd=`<circle cx="${f2(x+225*s)}" cy="${f2(base-1620*s)}" r="${f2(115*s)}"/>`,
+      body=`<path d="M${f2(x+95*s)} ${f2(base-1460*s)}h${f2(260*s)}l${f2(95*s)} ${f2(560*s)}h${f2(-70*s)}l${f2(-70*s)} ${f2(-360*s)}v${f2(1260*s)}h${f2(-90*s)}v${f2(-720*s)}h${f2(-40*s)}v${f2(720*s)}h${f2(-90*s)}v${f2(-1260*s)}l${f2(-70*s)} ${f2(360*s)}h${f2(-70*s)}z"/>`;
+    return `<g fill="currentColor" opacity=".38">${hd}${body}</g><text x="${f2(x+225*s)}" y="${f2(base+Math.max(14,hmm*.05))}" text-anchor="middle" font-size="${f2(Math.max(10,hmm*.04))}" fill="currentColor" opacity=".6">1.75 m</text>`}
+  let lastPlan=null,lastSheets=null;
+  function updatePreview(){if(!dlg.open)return;syncStudio();const tol=ST.mode==='stencil'?0.35:0.1,g=geometry(tol);
+    if(!g){preview.innerHTML='';statsEl.textContent='Nothing to output: turn on a layer that has lines at this step.';return}
+    const {W,H}=g,showHuman=Math.max(W,H)>=800,gap=Math.max(W,H)*.06,vbH=Math.max(H,showHuman?1800:0),pad=Math.max(W,H)*.03;
+    let inner='',stats='',sheetsW=W;const unit=`1 unit = ${(g.s).toFixed(2)} mm · figure ${fmtLen(g.span[0])} × ${fmtLen(g.span[1])}`;
+    if(ST.mode==='print'){inner=printInner(g);stats=`${fmtLen(W)} × ${fmtLen(H)} · ${unit} · ${g.strokes.length} strokes`}
+    if(ST.mode==='plotter'){const plan=plotterPlan(g);plan.scale=Math.max(W,H)/600;lastPlan=plan;inner=plotterInner(plan,true);
+      const mins=(plan.draw/25+plan.travel/60)/60;stats=`${plan.layers.length} pen${plan.layers.length===1?'':'s'} · ${plan.n} strokes · pen down ${fmtLen(plan.draw)} · travel ${fmtLen(plan.travel)} (dashed) · about ${mins<90?Math.round(mins)+' min':(mins/60).toFixed(1)+' h'} at 25 mm/s`}
+    if(ST.mode==='stencil'){const sheets=stencilSheets(g);lastSheets=sheets;
+      const sgap=Math.max(W,H)*.05;sheetsW=sheets.length*W+(sheets.length-1)*sgap;
+      inner=sheets.map((sh,i)=>`<g transform="translate(${f2(i*(W+sgap))} 0)"><rect width="${f2(W)}" height="${f2(H)}" fill="#fff" stroke="#999" stroke-width="${f2(Math.max(W,H)/900)}"/>${stencilInner(sh,W,H,false)}<text x="${f2(W/2)}" y="${f2(H+Math.max(W,H)*.06)}" text-anchor="middle" font-size="${f2(Math.max(W,H)*.045)}" fill="currentColor" opacity=".7">${i+1} · ${sh.L.label}</text></g>`).join('');
+      stats=`${sheets.length} sheet${sheets.length===1?'':'s'} (${sheets.map(s=>s.L.label).join(', ')}) · ${sheets.reduce((t,s)=>t+s.slots.length,0)} slots · ${sheets.reduce((t,s)=>t+s.bridges,0)} bridges · every region is tied to its neighbours, so nothing falls out`}
+    const tp=tilePlan(W,H);let tileOverlay='';if(tp){for(let c=1;c<tp.cols;c++){const x=c*(tp.tw-tp.ov);tileOverlay+=`<rect x="${f2(x)}" y="0" width="${f2(tp.ov)}" height="${f2(H)}"/>`}for(let r=1;r<tp.rows;r++){const y=r*(tp.th-tp.ov);tileOverlay+=`<rect x="0" y="${f2(y)}" width="${f2(W)}" height="${f2(tp.ov)}"/>`}
+      tileOverlay=`<g fill="#1f8b8b" opacity=".16">${tileOverlay}</g>`;stats+=` · tiled onto ${tp.n} × ${tp.label} (${tp.cols} × ${tp.rows})`}
+    const page=ST.mode==='stencil'?'':`<rect width="${f2(W)}" height="${f2(H)}" fill="#fff" stroke="#999" stroke-width="${f2(Math.max(W,H)/900)}"/>`;
+    const hx=sheetsW+gap,fullW=sheetsW+(showHuman?gap+460:0),below=Math.max(showHuman?Math.max(20,H*.08):0,ST.mode==='stencil'?Math.max(W,H)*.09:0);preview.setAttribute('viewBox',`${f2(-pad)} ${f2(Math.min(0,H-vbH)-pad)} ${f2(fullW+2*pad)} ${f2(vbH+2*pad+below)}`);
+    preview.innerHTML=page+inner+tileOverlay+(showHuman?human(hx,H,1750):'');statsEl.textContent=stats}
+  let previewTimer=null;const schedulePreview=()=>{clearTimeout(previewTimer);previewTimer=setTimeout(updatePreview,220)};
+  onRendered=()=>{if(!harvesting&&dlg.open)schedulePreview()};
+  function openStudio(){if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active');syncPressed()}dlg.show();document.body.classList.add('studio-open');syncStudio();updatePreview()}
+  function closeStudio(){dlg.close();document.body.classList.remove('studio-open')}
+  sEl('studioBtn').addEventListener('click',()=>dlg.open?closeStudio():openStudio());sEl('stClose').addEventListener('click',closeStudio);
+  dlg.addEventListener('keydown',e=>{if(e.key==='Escape')closeStudio()});
+  const bind=(id,fn,ev='change')=>sEl(id).addEventListener(ev,e=>{fn(e.target);saveST();updatePreview()});
+  bind('stPage',t=>ST.page=t.value);bind('stW',t=>ST.cw=Math.max(50,+t.value||1000));bind('stH',t=>ST.ch=Math.max(50,+t.value||1000));bind('stMargin',t=>ST.margin=Math.max(0,+t.value||0));
+  sEl('stOrient').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ST.orient=b.dataset.v;saveST();updatePreview()}));
+  sEl('stModes').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ST.mode=b.dataset.v;saveST();updatePreview()}));
+  LAYERS.forEach(L=>{bind('stOn-'+L.id,t=>ST.layers[L.id].on=t.checked);bind('stPen-'+L.id,t=>ST.layers[L.id].pen=Math.max(.05,+t.value||.5));bind('stCol-'+L.id,t=>ST.layers[L.id].color=t.value)});
+  bind('stSlot',t=>ST.slot=Math.max(.5,+t.value||4));bind('stBridge',t=>ST.bridge=Math.max(.5,+t.value||5));bind('stSpan',t=>ST.span=Math.max(10,+t.value||160));
+  bind('stSheet',t=>ST.sheet=t.value);bind('stOverlap',t=>ST.overlap=Math.max(0,+t.value||0));bind('stDpi',t=>ST.dpi=+t.value);
+  sEl('stReset').addEventListener('click',()=>{Object.assign(ST,structuredClone(studioDefaults));saveST();updatePreview()});
+
+  // --- downloads ---
+  function doDownload(){const g=geometry(ST.mode==='stencil'?0.35:0.1);if(!g){showToast('Turn on a layer with lines first');return}const {W,H}=g,name=baseName();
+    if(ST.mode==='print'){const inner=printInner(g),svg=svgOpen(W,H,esc(fileTitle()))+inner+'</svg>',t=tiles(inner,W,H,'PRINT');
+      if(t.length)download(`${name}-print.zip`,zip([{name:`${name}-print.svg`,data:svg},...t.map(f=>({name:`tiles/${f.name}`,data:f.data}))]));else download(`${name}-print.svg`,new Blob([svg],{type:'image/svg+xml'}))}
+    if(ST.mode==='plotter'){const plan=plotterPlan(g),svg=svgOpen(W,H,esc(fileTitle())+' · plotter')+`<desc>One path per stroke. Layers are numbered in pen order. Pen-down ${Math.round(plan.draw)} mm, travel ${Math.round(plan.travel)} mm.</desc>`+plotterInner(plan,false)+'</svg>';
+      download(`${name}-plotter.svg`,new Blob([svg],{type:'image/svg+xml'}))}
+    if(ST.mode==='stencil'){const sheets=stencilSheets(g),files=[];files.push({name:`${name}-all-layers.svg`,data:svgOpen(W,H,esc(fileTitle())+' · stencil set')+sheets.map(s=>stencilInner(s,W,H)).join('')+'</svg>'});
+      sheets.forEach((s,i)=>{const inner=stencilInner(s,W,H);files.push({name:`${i+1}-${s.L.id}.svg`,data:svgOpen(W,H,esc(fileTitle())+' · '+s.L.label)+inner+'</svg>'});tiles(inner,W,H,s.L.label.toUpperCase()).forEach(f=>files.push({name:`tiles/${i+1}-${s.L.id}/${f.name}`,data:f.data}))});
+      download(`${name}-stencil.zip`,zip(files))}}
+  sEl('stDownload').addEventListener('click',doDownload);
+  function rasterize(svg,w,h,bg){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.drawImage(img,0,0,w,h);c.toBlob(b=>b?res(b):rej(new Error('canvas')),'image/png')};img.onerror=rej;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
+  sEl('stPng4').addEventListener('click',async()=>{try{download(`${state.pattern}-step-${state.step}@4x.png`,await rasterize(downloadableSvg(),3600,2800))}catch{showToast('PNG render failed')}});
+  sEl('stPngPrint').addEventListener('click',async()=>{const g=geometry(0.1);if(!g)return;const {W,H}=g;let dpi=+ST.dpi;const MAX=16384,AREA=2.4e8;
+    dpi=Math.min(dpi,MAX/(Math.max(W,H)/25.4),Math.sqrt(AREA/((W/25.4)*(H/25.4))));const w=Math.round(W/25.4*dpi),h=Math.round(H/25.4*dpi);
+    const svg=svgOpen(W,H,esc(fileTitle())).replace(/width="[^"]+mm" height="[^"]+mm"/,`width="${w}" height="${h}"`)+printInner(g)+'</svg>';
+    try{download(`${baseName()}@${Math.round(dpi)}dpi.png`,await rasterize(svg,w,h,'#ffffff'));if(dpi<+ST.dpi-1)showToast(`Capped at ${Math.round(dpi)} dpi (${w}×${h} px, the browser's limit). Use the SVG for full resolution.`)}catch{showToast('PNG too large for this browser — use the SVG')}});
+  sEl('stScreenSvg').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}-screen.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
+  window.__studio={geometry,plotterPlan,stencilSheets,pageSize,ST,tilePlan,tiles,zip,printInner,crossings,updatePreview};
+
+  syncAllControls();updateHistoryButtons();render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Sacred Geometry App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper:#f3f1eb; --ink:#171815; --muted:#64665f; --panel:#e8e5dc;
+      --line:#c9c6bc; --strong:#a8a49a; --accent:#ca432c; --accent-ink:#fff8f2;
+      --canvas:#faf9f5; --grid:#ddd9cf; --ghost:#c5c1b7; --geometry:#20211e;
+      --focus:#176b70; --z-axis:#9b6c10; --perspective:#7f5f86; --shadow:0 18px 46px rgba(34,31,25,.12);
+    }
+    @media (prefers-color-scheme:dark){
+      :root:not([data-theme="light"]) { color-scheme:dark; --paper:#121411; --ink:#ecebe4; --muted:#a7aaa1; --panel:#1d201c;
+        --line:#343831; --strong:#50564b; --accent:#f06a4c; --accent-ink:#1a100d;
+        --canvas:#181b17; --grid:#2b3029; --ghost:#4d5249; --geometry:#f1eee4;
+        --focus:#62b9b3; --z-axis:#e0ad48; --perspective:#c69fcd; --shadow:0 20px 50px rgba(0,0,0,.34); }
+    }
+    :root[data-theme="dark"]{ color-scheme:dark; --paper:#121411; --ink:#ecebe4; --muted:#a7aaa1; --panel:#1d201c;
+        --line:#343831; --strong:#50564b; --accent:#f06a4c; --accent-ink:#1a100d;
+        --canvas:#181b17; --grid:#2b3029; --ghost:#4d5249; --geometry:#f1eee4;
+        --focus:#62b9b3; --z-axis:#e0ad48; --perspective:#c69fcd; --shadow:0 20px 50px rgba(0,0,0,.34); }
+    :root[data-theme="light"]{ color-scheme:light }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--paper);color:var(--ink)}
+    body{font-family:"DM Sans",sans-serif;overflow-x:hidden}
+    button,select,input{font:inherit;color:inherit}
+    button{border:0}
+    .app{min-height:100vh;display:grid;grid-template-columns:286px minmax(0,1fr);gap:18px;padding:18px;max-width:1500px;margin:auto}
+    .sidebar{display:flex;flex-direction:column;gap:10px;min-width:0}
+    .panel{background:var(--panel);border:1px solid var(--line);padding:16px}
+    .panel:first-child{border-radius:20px 20px 7px 7px}
+    .panel:last-child{border-radius:7px 7px 20px 20px}
+    .label{font:500 10px/1.2 "IBM Plex Mono",monospace;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+    select{width:100%;appearance:none;background:var(--canvas);border:1px solid var(--strong);border-radius:8px;padding:11px 36px 11px 12px;background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 16px) 16px,calc(100% - 11px) 16px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+    .pattern-note{font-size:12px;line-height:1.45;color:var(--muted);margin:9px 1px 0}
+    .segmented{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--line);padding:3px;border-radius:9px}
+    .segmented.two{grid-template-columns:repeat(2,1fr)}
+    .segmented button{padding:8px 4px;background:var(--panel);font-size:12px;cursor:pointer;border-radius:6px}
+    .segmented button.active{background:var(--ink);color:var(--paper)}
+    .perspective-controls{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+    .perspective-controls[hidden]{display:none}
+    .picker-note{font-size:11px;line-height:1.45;color:var(--muted);margin:10px 0 0}
+    .control{margin-top:14px}.control:first-child{margin-top:0}
+    .control-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;font-size:12px}
+    .value{font:500 11px "IBM Plex Mono",monospace;color:var(--muted)}
+    input[type=range]{width:100%;height:18px;margin:0;accent-color:var(--accent);background:transparent}
+    .toggle-row{display:flex;gap:7px;flex-wrap:wrap}
+    .chip{background:transparent;border:1px solid var(--strong);padding:7px 9px;border-radius:999px;font-size:11px;cursor:pointer}
+    .chip.active{background:var(--focus);border-color:var(--focus);color:#fff}
+    .chip:disabled{opacity:.38;cursor:not-allowed}.chip[hidden]{display:none}
+    .tip{margin-top:auto;padding:14px 15px;color:var(--muted);font-size:11px;line-height:1.5;border:1px dashed var(--strong);border-radius:12px}
+    kbd{font:10px "IBM Plex Mono",monospace;border:1px solid var(--strong);border-bottom-width:2px;border-radius:4px;padding:1px 4px;background:var(--panel);color:var(--ink)}
+    .workspace{min-width:0;display:grid;grid-template-rows:auto minmax(460px,1fr) auto;gap:10px}
+    .workspace-head{display:flex;align-items:end;justify-content:space-between;gap:18px;padding:4px 4px 0}
+    .construction-label{font:500 11px "IBM Plex Mono",monospace;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+    h1{font-size:clamp(24px,3vw,42px);font-weight:500;letter-spacing:-.045em;margin:3px 0 0;line-height:1}
+    .head-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+    .action{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 13px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;font-size:12px;white-space:nowrap}
+    .action.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+    .action svg{width:15px;height:15px}
+    .action:disabled,.step-button:disabled{opacity:.38;cursor:not-allowed}
+    .history-actions{display:flex;gap:3px;background:var(--line);padding:3px;border-radius:9px}
+    .history-actions .action{min-width:38px;padding:7px;background:var(--panel);border:0;border-radius:6px}
+    .canvas-wrap{position:relative;min-height:460px;background:var(--canvas);border:1px solid var(--line);border-radius:7px 24px 24px 24px;box-shadow:var(--shadow);overflow:hidden;touch-action:none;cursor:grab}
+    .canvas-wrap.dragging{cursor:grabbing}
+    #geometry{width:100%;height:100%;display:block;min-height:460px}
+    .canvas-badge{position:absolute;left:15px;top:15px;font:500 10px "IBM Plex Mono",monospace;color:var(--muted);background:color-mix(in srgb,var(--canvas) 88%,transparent);padding:6px 8px;border:1px solid var(--line);border-radius:5px;pointer-events:none}
+    .status-line{position:absolute;left:15px;right:15px;bottom:14px;display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.035em;color:var(--muted);pointer-events:none}
+    .status-line span{background:color-mix(in srgb,var(--canvas) 90%,transparent);border:1px solid var(--line);border-radius:5px;padding:5px 7px}
+    .axis-key{position:absolute;right:15px;top:15px;font:10px "IBM Plex Mono",monospace;color:var(--muted);display:flex;gap:9px;background:color-mix(in srgb,var(--canvas) 88%,transparent);padding:6px 8px;border:1px solid var(--line);border-radius:5px;pointer-events:none}
+    .axis-key span::before{content:"";display:inline-block;width:8px;height:2px;margin:0 4px 3px 0;background:currentColor}.axis-key .x{color:var(--accent)}.axis-key .y{color:var(--focus)}.axis-key .z{color:var(--z-axis)}
+    #perspectiveLayer [data-picker]{cursor:grab}
+    #perspectiveLayer .horizon-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
+    #perspectiveLayer .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
+    #perspectiveLayer .vp-dot{fill:var(--perspective);pointer-events:none}
+    #perspectiveLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);pointer-events:none}
+    #overlayLayer{pointer-events:none}
+    #overlayLayer .study-frame{fill:color-mix(in srgb,var(--canvas) 92%,transparent);stroke:var(--strong);stroke-width:1;stroke-dasharray:5 6}
+    #overlayLayer .study-label,#overlayLayer .draft-label,#guideLayer .draft-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--muted);letter-spacing:.08em;paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round}
+    #overlayLayer .study-rule{stroke:var(--strong);stroke-width:.8;stroke-dasharray:3 5}
+    .steps{display:grid;grid-template-columns:auto minmax(150px,1fr) auto auto auto;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+    .timeline{min-width:0}
+    .timeline-meta{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:3px}
+    .step-caption{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .step-breakpoints{height:5px;margin:1px 2px 0;position:relative}
+    .step-breakpoints i{position:absolute;top:0;width:1px;height:5px;background:var(--strong)}
+    .step-button{width:36px;height:36px;border-radius:7px;background:var(--canvas);border:1px solid var(--line);cursor:pointer;display:grid;place-items:center;font-size:17px}
+    .step-readout{font:500 11px "IBM Plex Mono",monospace;min-width:72px;text-align:right;color:var(--muted)}
+    .speed-select{width:auto;min-width:72px;padding:8px 28px 8px 9px;font:500 11px "IBM Plex Mono",monospace;background-position:calc(100% - 13px) 13px,calc(100% - 9px) 13px;background-size:4px 4px,4px 4px}
+    .play{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:8px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:820px){
+      .app{display:flex;flex-direction:column;padding:10px;gap:12px}.workspace{display:contents}.workspace-head{order:0;align-items:start}.canvas-wrap{order:1;min-height:min(62vh,560px);border-radius:7px 20px 20px 20px}.canvas-wrap #geometry{min-height:min(62vh,560px)}.steps{order:2}.sidebar{order:3;display:grid;grid-template-columns:1fr 1fr;gap:8px}.panel:first-child,.panel:last-child,.panel{border-radius:12px}.tip{display:none}.head-actions>.action:not(.primary){display:none}.history-actions .action{display:inline-flex}
+    }
+    @media(max-width:540px){
+      .app{padding:8px}.workspace-head{padding:4px 2px}.construction-label{font-size:10px}h1{font-size:25px}.head-actions{gap:5px}.head-actions .action{padding:9px 11px}.history-actions .action{min-width:34px;padding:6px}.canvas-wrap{min-height:52vh}.canvas-wrap #geometry{min-height:52vh}.axis-key{display:none}.status-line{left:8px;right:8px;bottom:8px;gap:4px}.status-line span{padding:4px 5px}.steps{grid-template-columns:auto minmax(85px,1fr) auto auto;padding:8px;gap:6px}.speed-select{grid-column:2/5;width:100%}.sidebar{grid-template-columns:1fr}.panel{padding:14px}.step-readout{min-width:50px;font-size:10px}.step-caption{font-size:11px}}
+    @media(prefers-reduced-motion:reduce){.toast{transition:none}}
+    @media print{.sidebar,.head-actions,.steps,.canvas-badge,.axis-key{display:none}.app{display:block;padding:0}.workspace-head{margin-bottom:12px}.canvas-wrap{box-shadow:none;border:0;height:90vh}}
+  </style>
+</head>
+<body>
+<main class="app">
+  <aside class="sidebar" aria-label="Drawing controls">
+    <section class="panel">
+      <label class="label" for="pattern">Construction</label>
+      <select id="pattern">
+        <option value="seed">Seed of Life</option>
+        <option value="flower">Flower of Life</option>
+        <option value="metatron">Metatron’s Cube</option>
+        <option value="metatron3d">Metatron’s Cube · 3D</option>
+        <option value="tetrahedron">Platonic · Tetrahedron</option>
+        <option value="cube">Platonic · Cube</option>
+        <option value="octahedron">Platonic · Octahedron</option>
+        <option value="dodecahedron">Platonic · Dodecahedron</option>
+        <option value="icosahedron">Platonic · Icosahedron</option>
+        <option value="vesica">Vesica Piscis</option>
+        <option value="yantra">Nine-fold Yantra</option>
+      </select>
+      <p class="pattern-note" id="patternNote">Seven equal circles unfold from a single radius.</p>
+    </section>
+    <section class="panel">
+      <span class="label">View</span>
+      <div class="segmented" id="viewMode" role="group" aria-label="Projection mode">
+        <button data-mode="plan">Plan</button><button data-mode="axon">Axon</button><button class="active" data-mode="perspective">Perspective</button>
+      </div>
+      <div class="control"><div class="control-head"><label for="rotation">Rotation</label><span class="value" id="rotationValue">0°</span></div><input id="rotation" type="range" min="-180" max="180" value="0"></div>
+      <div class="control"><div class="control-head"><label for="tilt">Tilt</label><span class="value" id="tiltValue">34°</span></div><input id="tilt" type="range" min="0" max="72" value="34"></div>
+      <div class="control"><div class="control-head"><label for="depth">Z depth</label><span class="value" id="depthValue">45</span></div><input id="depth" type="range" min="0" max="100" value="45"></div>
+      <div class="perspective-controls" id="perspectiveControls">
+        <span class="label">Perspective system</span>
+        <div class="segmented" id="perspectiveMode" role="group" aria-label="Perspective point count">
+          <button class="active" data-points="1">1 point</button><button data-points="2">2 point</button><button data-points="3">3 point</button>
+        </div>
+        <div class="control"><div class="control-head"><label for="horizon">Horizon</label><span class="value" id="horizonValue">50%</span></div><input id="horizon" type="range" min="70" max="630" value="350"></div>
+        <div class="toggle-row">
+          <button class="chip active" id="perspectiveLinesBtn" type="button">Perspective lines</button>
+          <button class="chip active" id="autoRotateBtn" type="button">Auto rotate</button>
+        </div>
+        <p class="picker-note">Drag the horizon or numbered points directly on the drawing. Dragging the form pauses auto-rotation.</p>
+      </div>
+    </section>
+    <section class="panel">
+      <span class="label">Primitive set</span>
+      <div class="segmented two" id="primitiveMode" role="group" aria-label="Primitive set">
+        <button class="active" data-primitive="flat">Circles + squares</button><button data-primitive="solid">Spheres + cubes</button>
+      </div>
+      <p class="picker-note" id="primitiveNote">Planar circles with square center marks.</p>
+      <span class="label" style="margin-top:16px">Drawing</span>
+      <div class="toggle-row">
+        <button class="chip active" data-toggle="guides">Guides</button>
+        <button class="chip active" data-toggle="points">Centers</button>
+        <button class="chip" data-toggle="mirror">Mirror</button>
+        <button class="chip" data-toggle="darkline">Ink accent</button>
+        <button class="chip" data-toggle="fruit" id="fruitChip" hidden>Fruit circles · r/2</button>
+      </div>
+      <div class="control"><div class="control-head"><label for="weight">Line weight</label><span class="value" id="weightValue">1.4</span></div><input id="weight" type="range" min="6" max="34" value="14"></div>
+      <span class="label" style="margin-top:16px">Drafting overlays</span>
+      <div class="toggle-row">
+        <button class="chip" data-toggle="phi" id="phiChip">Golden ratio</button>
+        <button class="chip" data-toggle="dimensions">Dimensions</button>
+        <button class="chip" data-toggle="multiView">Plan study</button>
+      </div>
+      <p class="picker-note" id="overlayNote">Layer whirling φ squares (pentagonal figures only), symbolic measurements, and an orthographic plan beneath the active view.</p>
+    </section>
+    <p class="tip">Drag the drawing to rotate it. Use <kbd>←</kbd> <kbd>→</kbd> to move through the construction.</p>
+  </aside>
+
+  <section class="workspace">
+    <header class="workspace-head">
+      <div><div class="construction-label" id="phaseLabel">Foundation · Circle 1</div><h1 id="patternTitle">Seed of Life</h1></div>
+      <div class="head-actions">
+        <div class="history-actions" aria-label="Edit history">
+          <button class="action" id="undoBtn" title="Undo" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a6 6 0 0 1 6 6"/></svg></button>
+          <button class="action" id="redoBtn" title="Redo" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 7 5 5-5 5"/><path d="M19 12h-8a6 6 0 0 0-6 6"/></svg></button>
+        </div>
+        <button class="action" id="copyBtn" title="Copy SVG markup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copy SVG</button>
+        <button class="action primary" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>Export</button>
+      </div>
+    </header>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <svg id="geometry" viewBox="0 0 900 700" role="img" aria-labelledby="svgTitle svgDesc">
+        <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
+        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g>
+      </svg>
+      <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
+      <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
+      <div class="status-line" id="statusLine" aria-live="polite"></div>
+    </div>
+
+    <div class="steps">
+      <button class="step-button" id="prevBtn" aria-label="Previous step">←</button>
+      <div class="timeline">
+        <div class="timeline-meta"><span class="step-caption" id="stepCaption">Origin</span><span class="step-readout" id="stepReadout">01 / 07</span></div>
+        <label class="sr-only" for="step">Construction step</label><input id="step" type="range" min="1" max="7" value="1">
+        <div class="step-breakpoints" id="stepBreakpoints" aria-hidden="true"></div>
+      </div>
+      <button class="step-button" id="nextBtn" aria-label="Next step">→</button>
+      <button class="step-button play" id="playBtn" aria-label="Play construction">▶</button>
+      <label class="sr-only" for="speed">Playback speed</label><select class="speed-select" id="speed" title="Playback speed"><option value="1100">0.5×</option><option value="650" selected>1×</option><option value="360">2×</option></select>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(() => {
+  const NS='http://www.w3.org/2000/svg';
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
+  const state={pattern:'seed',mode:'perspective',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:34,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
+  const notes={seed:'Seven equal circles unfold from a single radius.',flower:'A hexagonal lattice grows outward; every circle passes through its neighbours’ centres.',metatron:'Thirteen centers joined into a map of every direction.',metatron3d:'Thirteen spatial nodes reveal the cube as a layered three-dimensional lattice.',tetrahedron:'Four vertices and six equal edges — the simplex of three-dimensional space.',cube:'Eight vertices form six equal square faces.',octahedron:'Six vertices form eight equal triangular faces.',dodecahedron:'Twenty vertices form twelve regular pentagonal faces.',icosahedron:'Twelve vertices form twenty equal triangular faces.',vesica:'Two equal circles meet at each other’s center; the lens between them stands √3 tall for every 1 wide.',yantra:'Nine interlocking triangles, four rising and five descending, converge on a single bindu.'};
+  const titles={seed:'Seed of Life',flower:'Flower of Life',metatron:'Metatron’s Cube',metatron3d:'Metatron’s Cube · 3D',tetrahedron:'Tetrahedron',cube:'Cube',octahedron:'Octahedron',dodecahedron:'Dodecahedron',icosahedron:'Icosahedron',vesica:'Vesica Piscis',yantra:'Nine-fold Yantra'};
+  const maxSteps={seed:7,flower:20,metatron:18,metatron3d:18,tetrahedron:8,cube:8,octahedron:8,dodecahedron:8,icosahedron:8,vesica:5,yantra:10};
+  const solidPhases=['Vertices','Edges','Edges','Edges','Edges','Edges','Full frame','Circumsphere'];
+  const PENTAGONAL=['dodecahedron','icosahedron'],SPATIAL=['metatron3d','tetrahedron','cube','octahedron','dodecahedron','icosahedron'];
+  const yantraDefs=[[false,205,5],[true,202,-4],[false,168,18],[true,171,-18],[false,137,-8],[true,139,10],[false,109,17],[true,112,-17],[false,80,0]];
+  const ordinals=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
+  const phases={seed:['Origin','First orbit','Second orbit','Triad','Four directions','Sixfold field','Completion'],flower:['Origin','First orbit','Seed ring','Seed ring','Seed ring','Seed ring','Seed complete',...Array(11).fill('Second ring'),'Lattice complete','Boundary · 3d'],metatron:['Origin','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring complete','Outer ring','Outer ring','Outer ring','Outer ring','Outer ring','Thirteen centers','Radial chords','Inner web','Outer web','All 78 chords','Completion'],metatron3d:['Origin','X axis','X axis','Y axis','Y axis','Z axis','Octahedron nodes','Crown ring','Crown ring','Crown ring','Crown ring','Crown ring','Thirteen nodes','Axial chords','Octahedron web','Cube frame','Outer web','Bounding sphere'],tetrahedron:solidPhases,cube:solidPhases,octahedron:solidPhases,dodecahedron:solidPhases,icosahedron:solidPhases,vesica:['First circle','Second circle','Shared axis','Vesica lens','√3 proportion'],yantra:['Bindu',...yantraDefs.map((d,i)=>`${ordinals[i]} triangle · ${d[0]?'▲ Shiva':'▼ Shakti'}`)]};
+  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
+  const undoStack=[],redoStack=[];let pendingSnapshot=null;
+  const snapshot=()=>Object.fromEntries(historyKeys.map(k=>[k,state[k]]));
+  const sameSnapshot=(a,b)=>historyKeys.every(k=>a[k]===b[k]);
+  function updateHistoryButtons(){els.undo.disabled=!undoStack.length;els.redo.disabled=!redoStack.length}
+  function beginChange(){if(!pendingSnapshot)pendingSnapshot=snapshot()}
+  function commitChange(){if(pendingSnapshot&&!sameSnapshot(pendingSnapshot,snapshot())){undoStack.push(pendingSnapshot);if(undoStack.length>100)undoStack.shift();redoStack.length=0}pendingSnapshot=null;updateHistoryButtons()}
+  function stopPlayback(){state.playing=false;clearInterval(timer);els.play.textContent='▶';els.play.setAttribute('aria-label','Play construction')}
+  function syncAllControls(){
+    els.pattern.value=state.pattern;els.step.value=state.step;els.rotation.value=state.rotation;els.tilt.value=state.tilt;els.depth.value=state.depth;els.weight.value=Math.round(state.weight*10);els.horizon.value=state.horizon;
+    $$('#viewMode button').forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));$$('#primitiveMode button').forEach(x=>x.classList.toggle('active',x.dataset.primitive===state.primitive));$$('#perspectiveMode button').forEach(x=>x.classList.toggle('active',+x.dataset.points===state.perspectivePoints));
+    $$('.chip[data-toggle]').forEach(x=>x.classList.toggle('active',state[x.dataset.toggle]));$('#perspectiveLinesBtn').classList.toggle('active',state.perspectiveLines);els.autoRotate.classList.toggle('active',state.autoRotate);
+    $('#fruitChip').hidden=state.pattern!=='metatron';const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=notes[state.pattern];$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube center marks.':'Planar circles with square center marks.';syncValues();
+  }
+  function syncPressed(){$$('.chip,.segmented button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')))}
+  function restoreSnapshot(s){stopPlayback();inertia=0;Object.assign(state,s);syncAllControls();render();updateHistoryButtons()}
+  function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restoreSnapshot(undoStack.pop())}
+  function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restoreSnapshot(redoStack.pop())}
+  const svgEl=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e};
+  const clear=e=>{while(e.firstChild)e.removeChild(e.firstChild)};
+  const axial=(q,r,s=90)=>({x:s*Math.sqrt(3)*(q+r/2),y:s*1.5*r,z:0});
+  function project(p){
+    let {x,y,z=0}=p; const rz=state.rotation*Math.PI/180, tx=(state.mode==='plan'?0:state.tilt)*Math.PI/180;
+    let x1=x*Math.cos(rz)-y*Math.sin(rz), y1=x*Math.sin(rz)+y*Math.cos(rz);
+    if(state.mirror)x1=-x1;
+    if(state.mode==='perspective'){
+      if(state.perspectivePoints===1){
+        const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx),f=690,d=f+z2+state.depth*1.7,sc=f/Math.max(220,d);
+        return {x:state.vp1X+x1*sc,y:state.horizon+y2*sc,z:z2,sc};
+      }
+      const cx=(state.vpLeft+state.vpRight)/2,f=Math.max(190,(state.vpRight-state.vpLeft)/2),yaw=Math.PI/4;
+      const yt=y1*Math.cos(tx)-z*Math.sin(tx),zt=y1*Math.sin(tx)+z*Math.cos(tx);
+      let xr=x1*Math.cos(yaw)-zt*Math.sin(yaw),zr=x1*Math.sin(yaw)+zt*Math.cos(yaw),yr=yt;
+      if(state.perspectivePoints===3){
+        const direction=state.vp3Y>=state.horizon?1:-1,span=Math.max(80,Math.abs(state.vp3Y-state.horizon)),pitch=direction*Math.min(.58,Math.max(.15,f/span*.34));
+        const y3=yr*Math.cos(pitch)-zr*Math.sin(pitch);zr=yr*Math.sin(pitch)+zr*Math.cos(pitch);yr=y3;
+      }
+      const d=f+zr+state.depth*1.45,sc=f/Math.max(145,d),skew=state.perspectivePoints===3?(state.vp3X-cx)/Math.max(140,Math.abs(state.vp3Y-state.horizon))*.22:0;
+      return {x:cx+xr*sc+yr*sc*skew,y:state.horizon+yr*sc,z:zr,sc};
+    }
+    const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx);
+    return {x:450+x1,y:350+y2,z:z2,sc:1};
+  }
+  function pathFrom(points,close=false){return points.map((p,i)=>{const v=project(p);return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');}
+  function circlePoints(c,r,segments=96,plane='xy'){return Array.from({length:segments},(_,i)=>{const a=i/segments*Math.PI*2,co=Math.cos(a)*r,si=Math.sin(a)*r,x=c.x,y=c.y,z=c.z||0;if(plane==='xz')return{x:x+co,y,z:z+si};if(plane==='yz')return{x,y:y+co,z:z+si};return{x:x+co,y:y+si,z}})}
+  function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p.dataset.kind=cls;layer.appendChild(p);return p}
+  function addLine(a,b,cls='main',extra={}){return addPath(els.shapes,[a,b],cls,false,extra)}
+  function addCircle(c,r,layer=els.shapes,cls='main',extra={}){
+    const outline=addPath(layer,circlePoints(c,r),cls,true,extra);
+    if(state.primitive==='solid'&&cls!=='boundary'){
+      addPath(layer,circlePoints(c,r,72,'xz'),'sphere-ring',true,extra);
+      addPath(layer,circlePoints(c,r,72,'yz'),'sphere-ring',true,extra);
+    }
+    return outline;
+  }
+  function addCube(c,size=10){
+    const h=size/2,z=c.z||0,vertices=[[-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],[-h,-h,h],[h,-h,h],[h,h,h],[-h,h,h]].map(([x,y,d])=>({x:c.x+x,y:c.y+y,z:z+d}));
+    [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(([a,b])=>addPath(els.points,[vertices[a],vertices[b]],'cube'));
+  }
+  function point(c,i){
+    if(state.primitive==='solid'){addCube(c,13);return}
+    const s=5,z=c.z||0;addPath(els.points,[{x:c.x-s,y:c.y-s,z},{x:c.x+s,y:c.y-s,z},{x:c.x+s,y:c.y+s,z},{x:c.x-s,y:c.y+s,z}],'node',true);
+    const p=project(c),dot=svgEl('circle',{cx:p.x,cy:p.y,r:1.35,fill:'var(--accent)'});dot.dataset.index=i;els.points.appendChild(dot);
+  }
+  function drawGrid(){clear(els.grid);if(!state.guides)return;for(let x=-360;x<=360;x+=45)addPath(els.grid,[{x,y:-300,z:-25},{x,y:300,z:-25}],'grid');for(let y=-270;y<=270;y+=45)addPath(els.grid,[{x:-405,y,z:-25},{x:405,y,z:-25}],'grid');addPath(els.grid,[{x:-400,y:0},{x:400,y:0}],'axis-x');addPath(els.grid,[{x:0,y:-310},{x:0,y:310}],'axis-y');if(state.mode!=='plan')addPath(els.grid,[{x:0,y:0,z:-255},{x:0,y:0,z:255}],'axis-z')}
+  function activeVanishingPoints(){if(state.perspectivePoints===1)return [{x:state.vp1X,y:state.horizon}];const points=[{x:state.vpLeft,y:state.horizon},{x:state.vpRight,y:state.horizon}];if(state.perspectivePoints===3)points.push({x:state.vp3X,y:state.vp3Y});return points}
+  function screenLine(x1,y1,x2,y2,kind='perspective-line',extra={}){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke',...extra});line.dataset.kind=kind;els.perspective.appendChild(line);return line}
+  function drawPerspective(){clear(els.perspective);if(state.mode!=='perspective')return;const vps=activeVanishingPoints();
+    screenLine(0,state.horizon,900,state.horizon,'horizon');
+    const hg=svgEl('g',{'data-picker':'horizon','aria-label':'Horizon picker','role':'button'});hg.appendChild(svgEl('circle',{cx:24,cy:state.horizon,r:9,class:'horizon-handle'}));const ht=svgEl('text',{x:39,y:state.horizon+4,class:'vp-label'});ht.textContent='HORIZON';hg.appendChild(ht);els.perspective.appendChild(hg);
+    if(state.perspectiveLines){const anchors=state.perspectivePoints===1?[[250,165],[650,165],[250,535],[650,535]]:[[315,200],[585,200],[315,500],[585,500]];vps.forEach((vp,i)=>anchors.filter((_,n)=>state.perspectivePoints===1||n%2===i%2||i===2).forEach(a=>screenLine(vp.x,vp.y,a[0],a[1])))}
+    vps.forEach((vp,i)=>{const g=svgEl('g',{'data-picker':`vp-${i}`,'aria-label':`Vanishing point ${i+1}`,'role':'button'});g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:10,class:'vp-handle'}));g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:2.6,class:'vp-dot'}));const t=svgEl('text',{x:vp.x+14,y:vp.y-12,class:'vp-label'});t.textContent=`VP ${i+1}`;g.appendChild(t);els.perspective.appendChild(g)})
+  }
+  function drawSeed(flower=false){
+    if(flower){
+      // Flower of Life: radius = lattice spacing d, so each circle passes through its six neighbours' centres.
+      // Order: centre, ring 1 (the Seed of Life), ring 2, each ring walked by angle. Boundary at 3d.
+      const d=100,centers=[];
+      for(let q=-2;q<=2;q++)for(let rr=-2;rr<=2;rr++){if(Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))<=2){const p=axial(q,rr,d/Math.sqrt(3));centers.push({...p,z:state.depth*((q-rr)%3)*.13,ring:Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))})}}
+      const ang=c=>((Math.atan2(c.y,c.x)%(2*Math.PI))+2*Math.PI+1e-9)%(2*Math.PI);
+      centers.sort((a,b)=>a.ring-b.ring||ang(a)-ang(b));
+      centers.slice(0,Math.min(state.step,19)).forEach((c,i)=>{addCircle(c,d,els.shapes);if(state.points)point(c,i)});
+      if(state.step>=20)addCircle({x:0,y:0,z:0},3*d,els.guides,'boundary');
+      return;
+    }
+    const r=112,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*(i%2?-.22:.22)}))];
+    centers.slice(0,state.step).forEach((c,i)=>{addCircle(c,r,els.shapes);if(state.points)point(c,i)});
+  }
+  function drawMetatron(){const r=92,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*.12})),...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*2,y:Math.sin(i*Math.PI/3)*r*2,z:-state.depth*.18}))];
+    const circleCount=Math.min(state.step,13),cr=state.fruit?r/2:r; centers.slice(0,circleCount).forEach((c,i)=>{addCircle(c,cr,els.guides,'construction');if(state.points)point(c,i)});
+    const drawn=new Set(),chord=(i,j,k)=>{const key=i<j?i*13+j:j*13+i;if(drawn.has(key))return;drawn.add(key);addLine(centers[i],centers[j],k)};
+    if(state.step>=14)for(let i=1;i<7;i++)chord(0,i);
+    if(state.step>=15)for(let i=1;i<7;i++)chord(i,1+(i%6));
+    if(state.step>=16)for(let i=1;i<7;i++){chord(i,i+6);chord(i,7+(i%6))}
+    // every pair of the 13 centres: 78 chords, including the six √3·r chords of the inner hexagram
+    if(state.step>=17)for(let i=0;i<13;i++)for(let j=i+1;j<13;j++)chord(i,j,'web');
+    if(state.step>=18)addCircle({x:0,y:0,z:0},2*r+cr,els.guides,'boundary');
+  }
+  function polyData(type){
+    const phi=(1+Math.sqrt(5))/2,inv=1/phi;let vertices=[];
+    if(type==='tetrahedron')vertices=[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]];
+    if(type==='cube')for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
+    if(type==='octahedron')vertices=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    if(type==='icosahedron')vertices=[[0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],[1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],[phi,0,1],[phi,0,-1],[-phi,0,1],[-phi,0,-1]];
+    if(type==='dodecahedron'){
+      for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
+      for(const a of[-1,1])for(const b of[-1,1])vertices.push([0,a*inv,b*phi],[a*inv,b*phi,0],[a*phi,0,b*inv]);
+    }
+    let min=Infinity;for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(d>.001&&d<min)min=d}
+    const edges=[];for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(Math.abs(d-min)<.015)edges.push([i,j])}
+    return{vertices,edges};
+  }
+  function scaledPoly(type,size=170){const data=polyData(type),radius=Math.max(...data.vertices.map(v=>Math.hypot(...v))),scale=size/radius;return{vertices:data.vertices.map(([x,y,z])=>({x:x*scale,y:y*scale,z:z*scale})),edges:data.edges}}
+  function drawPolyhedron(type){
+    const R=type==='dodecahedron'?178:170,data=scaledPoly(type,R),max=maxSteps[type],edgeCount=Math.ceil(data.edges.length*Math.min(1,Math.max(0,state.step-1)/(max-2))),visible=new Set();
+    data.edges.slice(0,edgeCount).forEach(([a,b])=>{addLine(data.vertices[a],data.vertices[b]);visible.add(a);visible.add(b)});
+    if(state.step===1)data.vertices.forEach((_,i)=>visible.add(i));
+    if(state.points)visible.forEach(i=>point(data.vertices[i],i));
+    if(state.guides&&state.step>=max){['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},R,84,plane),'boundary',true))}
+  }
+  function drawMetatron3D(){
+    const r=88,centers=[{x:0,y:0,z:0},{x:r,y:0,z:0},{x:-r,y:0,z:0},{x:0,y:r,z:0},{x:0,y:-r,z:0},{x:0,y:0,z:r},{x:0,y:0,z:-r},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*1.72,y:Math.sin(i*Math.PI/3)*r*1.72,z:(i%2?1:-1)*r*.72}))];
+    centers.slice(0,Math.min(state.step,13)).forEach((c,i)=>{addCircle(c,38,els.guides,'construction');if(state.points)point(c,i)});
+    if(state.step>=14)for(let i=1;i<centers.length;i++)addLine(centers[0],centers[i]);
+    if(state.step>=15)for(let i=1;i<=6;i++)for(let j=i+1;j<=6;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d<r*1.5)addLine(centers[i],centers[j],'web')}
+    if(state.step>=16){const cube=scaledPoly('cube',145);cube.edges.forEach(([a,b])=>addLine(cube.vertices[a],cube.vertices[b],'main'))}
+    if(state.step>=17)for(let i=1;i<centers.length;i++)for(let j=i+1;j<centers.length;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d>r*1.45&&d<r*2.7)addLine(centers[i],centers[j],'web')}
+    if(state.step>=18)['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},218,96,plane),'boundary',true));
+  }
+  function drawVesica(){const r=165,cs=[{x:-r/2,y:0,z:state.depth*.12},{x:r/2,y:0,z:-state.depth*.12}],h=r*Math.sqrt(3)/2;addCircle(cs[0],r);if(state.step>=2)addCircle(cs[1],r);if(state.step>=3)addLine({x:-r*1.6,y:0},{x:r*1.6,y:0},'axis-x');
+    // the lens is two arcs: each circle's arc between the shared points (0,±h), lying on its own circle
+    const arc=(c,a0,a1)=>Array.from({length:49},(_,i)=>{const a=(a0+(a1-a0)*i/48)*Math.PI/180;return{x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r,z:c.z}});
+    if(state.step>=4){addPath(els.shapes,arc(cs[0],-60,60),'lens');addPath(els.shapes,arc(cs[1],120,240),'lens')}
+    if(state.step>=5){addLine({x:0,y:-h},{x:0,y:h},'axis-y');const top=project({x:0,y:-h}),mid=project({x:r/2,y:0});addScreenText(els.guides,top.x,top.y-26,'h ÷ w = √3 ≈ 1.732');addScreenText(els.guides,mid.x+10,mid.y-8,'w = r','start')}
+    if(state.points){point(cs[0],0);if(state.step>=2)point(cs[1],1)}}
+  function tri(up,scale,offset=0,z=0){const h=scale*.9;return up?[{x:0,y:-h+offset,z},{x:scale,y:h*.62+offset,z},{x:-scale,y:h*.62+offset,z}]:[{x:0,y:h+offset,z},{x:scale,y:-h*.62+offset,z},{x:-scale,y:-h*.62+offset,z}]}
+  function drawYantra(){if(state.points)point({x:0,y:0},0);yantraDefs.slice(0,Math.max(0,state.step-1)).forEach((d,i)=>addPath(els.shapes,tri(d[0],d[1],d[2],state.depth*((i%3)-1)*.15),'main',true));if(state.guides){addCircle({x:0,y:0},238,els.guides,'boundary');addCircle({x:0,y:0},250,els.guides,'boundary')}const p=project({x:0,y:0});els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:3.4,fill:'var(--accent)'}))}
+  function drawActivePattern(){
+    if(state.pattern==='seed')drawSeed(false);if(state.pattern==='flower')drawSeed(true);if(state.pattern==='metatron')drawMetatron();if(state.pattern==='metatron3d')drawMetatron3D();if(['tetrahedron','cube','octahedron','dodecahedron','icosahedron'].includes(state.pattern))drawPolyhedron(state.pattern);if(state.pattern==='vesica')drawVesica();if(state.pattern==='yantra')drawYantra();
+  }
+  function addScreenLine(layer,x1,y1,x2,y2,kind){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke'});line.dataset.kind=kind;layer.appendChild(line);return line}
+  function addScreenText(layer,x,y,text,anchor='middle',cls='draft-label'){const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;layer.appendChild(t);return t}
+  function drawPhiOverlay(){
+    if(!state.phi||!PENTAGONAL.includes(state.pattern))return;const phi=(1+Math.sqrt(5))/2,w=360,h=w/phi,x=-w/2,y=-h/2;
+    addPath(els.guides,[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],'phi',true);
+    // whirling squares: cut left, top, right, bottom, repeat. Each square carries a quarter arc; the arcs join into one spiral.
+    let b={x,y,w,h};const spiral=[],arc=(cx,cy,s,a0)=>{for(let i=spiral.length?1:0;i<=24;i++){const a=(a0+90*i/24)*Math.PI/180;spiral.push({x:cx+Math.cos(a)*s,y:cy+Math.sin(a)*s,z:0})}};
+    for(let i=0;i<10;i++){const side=i%4;
+      if(side===0){const s=b.h;addPath(els.guides,[{x:b.x+s,y:b.y},{x:b.x+s,y:b.y+b.h}],'phi');arc(b.x+s,b.y+s,s,180);b={x:b.x+s,y:b.y,w:b.w-s,h:b.h}}
+      if(side===1){const s=b.w;addPath(els.guides,[{x:b.x,y:b.y+s},{x:b.x+b.w,y:b.y+s}],'phi');arc(b.x,b.y+s,s,270);b={x:b.x,y:b.y+s,w:b.w,h:b.h-s}}
+      if(side===2){const s=b.h;addPath(els.guides,[{x:b.x+b.w-s,y:b.y},{x:b.x+b.w-s,y:b.y+b.h}],'phi');arc(b.x+b.w-s,b.y,s,0);b={x:b.x,y:b.y,w:b.w-s,h:b.h}}
+      if(side===3){const s=b.w;addPath(els.guides,[{x:b.x,y:b.y+b.h-s},{x:b.x+b.w,y:b.y+b.h-s}],'phi');arc(b.x+b.w,b.y+b.h-s,s,90);b={x:b.x,y:b.y,w:b.w,h:b.h-s}}
+    }
+    addPath(els.guides,spiral,'phi-spiral');
+    const tag=project({x:x+w,y:y+h,z:0});addScreenText(els.guides,tag.x-8,tag.y-10,'φ · 1.618','end');
+  }
+  function drawDimensions(){
+    if(!state.dimensions)return;let span=220;if(state.pattern==='vesica')span=275;if(state.pattern==='flower')span=235;if(state.pattern==='yantra')span=270;
+    const dimension=(a,b,label,ox,oy)=>{const p=project(a),q=project(b),x1=p.x+ox,y1=p.y+oy,x2=q.x+ox,y2=q.y+oy;addScreenLine(els.guides,p.x,p.y,x1,y1,'extension');addScreenLine(els.guides,q.x,q.y,x2,y2,'extension');addScreenLine(els.guides,x1,y1,x2,y2,'dimension');const ang=Math.atan2(y2-y1,x2-x1),tick=5;[ [x1,y1],[x2,y2] ].forEach(([x,y])=>addScreenLine(els.guides,x-Math.sin(ang)*tick,y+Math.cos(ang)*tick,x+Math.sin(ang)*tick,y-Math.cos(ang)*tick,'dimension'));addScreenText(els.guides,(x1+x2)/2,(y1+y2)/2-7,label)};
+    dimension({x:-span,y:span*.78,z:0},{x:span,y:span*.78,z:0},'2R',0,24);dimension({x:span,y:-span*.78,z:0},{x:span,y:span*.78,z:0},state.mode==='plan'?'φR':'Z / φR',24,0);
+  }
+  function makePlanStudy(){
+    const holder=svgEl('g');holder.appendChild(svgEl('rect',{x:16,y:405,width:274,height:250,rx:5,class:'study-frame'}));
+    const inner=svgEl('g',{transform:'translate(18 420) scale(.3)'}),parts={grid:svgEl('g'),perspective:svgEl('g'),guides:svgEl('g'),shapes:svgEl('g'),points:svgEl('g')};Object.values(parts).forEach(g=>inner.appendChild(g));holder.appendChild(inner);
+    const savedRefs={grid:els.grid,perspective:els.perspective,guides:els.guides,shapes:els.shapes,points:els.points},saved={mode:state.mode,rotation:state.rotation,tilt:state.tilt,depth:state.depth,dimensions:state.dimensions,multiView:state.multiView};Object.assign(els,parts);state.mode='plan';state.rotation=0;state.tilt=0;state.depth=0;state.dimensions=false;state.multiView=false;drawActivePattern();if(state.phi)drawPhiOverlay();styleLayers(inner);Object.assign(els,savedRefs);Object.assign(state,saved);
+    addScreenText(holder,31,428,'PLAN · ORTHOGRAPHIC','start','study-label');addScreenLine(holder,153,405,153,350,'study-rule');addScreenText(holder,153,647,titles[state.pattern].toUpperCase(),'middle','study-label');return holder;
+  }
+  function drawDraftingOverlays(){clear(els.overlay);if(state.multiView&&state.mode!=='plan')els.overlay.appendChild(makePlanStudy())}
+  function drawStepBreakpoints(){
+    clear(els.breakpoints);const list=phases[state.pattern],max=list.length;let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
+  }
+  function styleLayers(scope=document){
+    const root=getComputedStyle(document.documentElement);const geom=state.darkline?root.getPropertyValue('--accent').trim():root.getPropertyValue('--geometry').trim();
+    [...scope.querySelectorAll('[data-kind]')].forEach(p=>{const k=p.dataset.kind;let stroke=geom,opacity=1,w=state.weight; if(k==='grid'){stroke='var(--grid)';opacity=.65;w=.6}if(k==='axis-x'){stroke='var(--accent)';opacity=.45;w=.8}if(k==='axis-y'){stroke='var(--focus)';opacity=.45;w=.8}if(k==='axis-z'){stroke='var(--z-axis)';opacity=.78;w=1.15}if(k==='horizon'){stroke='var(--perspective)';opacity=.72;w=1}if(k==='perspective-line'){stroke='var(--perspective)';opacity=.3;w=.8;p.setAttribute('stroke-dasharray','5 6')}if(k==='construction'){stroke='var(--ghost)';opacity=.72;w=Math.max(.7,state.weight*.75)}if(k==='boundary'){stroke='var(--accent)';opacity=.55;w=.9}if(k==='web'){opacity=.62;w=Math.max(.65,state.weight*.72)}if(k==='lens'){stroke='var(--accent)';w=state.weight*1.35}if(k==='sphere-ring'){stroke=geom;opacity=.34;w=Math.max(.65,state.weight*.72)}if(k==='node'){stroke='var(--accent)';opacity=.9;w=.9}if(k==='cube'){stroke='var(--accent)';opacity=.88;w=.85}if(k==='phi'){stroke='var(--z-axis)';opacity=.34;w=.8;p.setAttribute('stroke-dasharray','3 5')}if(k==='phi-spiral'){stroke='var(--z-axis)';opacity=.78;w=1.2}if(k==='dimension'){stroke='var(--accent)';opacity=.8;w=.8}if(k==='extension'){stroke='var(--accent)';opacity=.35;w=.65;p.setAttribute('stroke-dasharray','3 4')}p.setAttribute('fill','none');p.setAttribute('stroke',stroke);p.setAttribute('stroke-width',w);p.setAttribute('opacity',opacity);p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round')});
+  }
+  let lastStatus='';
+  function render(){clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();styleLayers();drawDraftingOverlays();
+    const max=maxSteps[state.pattern],phase=phases[state.pattern][state.step-1]||'Completion';els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
+    const projection=state.mode==='perspective'?`${state.perspectivePoints}-pt`:state.mode;const status=`<span>${titles[state.pattern]}</span><span>${projection}</span><span>${state.primitive==='solid'?'wireframe solids':'planar forms'}</span><span>${state.weight.toFixed(1)} pt</span><span>${state.darkline?'accent ink':'neutral ink'}</span>`;if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}
+  }
+  function setPattern(v){state.pattern=v;state.step=1;state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
+  els.pattern.addEventListener('change',e=>{beginChange();setPattern(e.target.value);commitChange()});
+  $$('#viewMode button').forEach(b=>b.addEventListener('click',()=>{if(state.mode===b.dataset.mode)return;beginChange();state.mode=b.dataset.mode;syncAllControls();render();commitChange()}));
+  $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
+  $$('#perspectiveMode button').forEach(b=>b.addEventListener('click',()=>{const value=+b.dataset.points;if(state.perspectivePoints===value)return;beginChange();state.perspectivePoints=value;syncAllControls();render();commitChange()}));
+  function rangeHistory(el){el.addEventListener('pointerdown',beginChange);el.addEventListener('keydown',beginChange);el.addEventListener('change',commitChange);el.addEventListener('blur',commitChange)}
+  rangeHistory(els.horizon);els.horizon.addEventListener('input',e=>{state.horizon=+e.target.value;syncValues();render()});
+  $('#perspectiveLinesBtn').addEventListener('click',e=>{beginChange();state.perspectiveLines=!state.perspectiveLines;e.currentTarget.classList.toggle('active',state.perspectiveLines);syncPressed();render();commitChange()});
+  els.autoRotate.addEventListener('click',()=>{beginChange();state.autoRotate=!state.autoRotate;els.autoRotate.classList.toggle('active',state.autoRotate);syncPressed();render();commitChange()});
+  function syncValues(){$('#rotationValue').textContent=`${Math.round(state.rotation)}°`;$('#tiltValue').textContent=`${Math.round(state.tilt)}°`;$('#depthValue').textContent=Math.round(state.depth);$('#weightValue').textContent=state.weight.toFixed(1);$('#horizonValue').textContent=`${Math.round((1-state.horizon/700)*100)}%`}
+  [['rotation',1],['tilt',1],['depth',1],['weight',.1]].forEach(([id,scale])=>{rangeHistory(els[id]);els[id].addEventListener('input',e=>{state[id]=+e.target.value*scale;if(id==='weight')state.weight=+e.target.value/10;syncValues();render()})});
+  $$('.chip[data-toggle]').forEach(b=>b.addEventListener('click',()=>{beginChange();const k=b.dataset.toggle;state[k]=!state[k];b.classList.toggle('active',state[k]);syncPressed();render();commitChange()}));
+  rangeHistory(els.step);els.step.addEventListener('input',e=>{stopPlayback();state.step=+e.target.value;render()});
+  $('#prevBtn').addEventListener('click',()=>{if(state.step<=1)return;beginChange();stopPlayback();state.step--;render();commitChange()});
+  $('#nextBtn').addEventListener('click',()=>{if(state.step>=maxSteps[state.pattern])return;beginChange();stopPlayback();state.step++;render();commitChange()});
+  function next(){state.step=state.step>=maxSteps[state.pattern]?1:state.step+1;render()}
+  let timer;function startPlayback(){clearInterval(timer);timer=setInterval(next,+els.speed.value)}
+  els.play.addEventListener('click',()=>{state.playing=!state.playing;els.play.textContent=state.playing?'Ⅱ':'▶';els.play.setAttribute('aria-label',state.playing?'Pause construction':'Play construction');clearInterval(timer);if(state.playing)startPlayback()});
+  els.speed.addEventListener('change',()=>{if(state.playing)startPlayback()});
+  els.undo.addEventListener('click',undo);els.redo.addEventListener('click',redo);
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key==='ArrowRight'&&state.step<maxSteps[state.pattern]){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
+  function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
+  let drag=null,inertia=0,lastFrame=performance.now();
+  els.wrap.addEventListener('pointerdown',e=>{beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
+  els.wrap.addEventListener('pointermove',e=>{if(!drag)return;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
+  const endDrag=()=>{if(drag&&!drag.picker)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange()};els.wrap.addEventListener('pointerup',endDrag);els.wrap.addEventListener('pointercancel',endDrag);
+  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const isSpatial=SPATIAL.includes(state.pattern);if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
+  function downloadableSvg(){
+    // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
+    // and inline the class rules the live page gets from CSS.
+    const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
+    const clone=els.svg.cloneNode(true);clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
+    clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
+    const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
+    const style=svgEl('style');style.textContent=[
+      'path{fill:none}',`text{font-family:${mono}}`,
+      `.horizon-handle,.vp-handle{fill:${T('canvas')};stroke:${T('perspective')};stroke-width:1.4}`,
+      `.vp-dot{fill:${T('perspective')}}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
+      `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
+      `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
+      `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`].join('\n');
+    const bg=svgEl('rect',{width:'900',height:'700',fill:T('canvas')});clone.insertBefore(bg,clone.firstChild);clone.insertBefore(style,clone.firstChild);
+    return new XMLSerializer().serializeToString(clone)}
+  const saver=window.claude?.use?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);
+  async function download(name,blob){const dl=await saver;if(dl){try{await dl.save({filename:name,data:blob});showToast(`Saved ${name}`)}catch(e){if(e?.code!=='declined')showToast('Save unavailable here — use Copy SVG')}return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+  $('#exportBtn').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
+  $('#copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(downloadableSvg());showToast('SVG copied to clipboard')}catch{showToast('Copy unavailable — use Export')}});
+  function showToast(msg){els.toast.textContent=msg;els.toast.classList.add('show');setTimeout(()=>els.toast.classList.remove('show'),1800)}
+  syncAllControls();updateHistoryButtons();render();
+})();
+</script>
+</body>
+</html>
