@@ -82,7 +82,12 @@
     #perspectiveLayer .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
     #perspectiveLayer .vp-dot{fill:var(--perspective);pointer-events:none}
     #perspectiveLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);pointer-events:none}
-    #overlayLayer{pointer-events:none}
+    #overlayLayer,#lineageLayer{pointer-events:none}
+    #geometry{--ink-line:var(--geometry)}#geometry.darkline{--ink-line:var(--accent)}
+    #geometry.tracing :is(#gridLayer,#guideLayer,#shapeLayer,#pointLayer){opacity:.3;transition:opacity .15s}
+    #lineageLayer .lit-dot{fill:var(--accent)}#lineageLayer .lit-given{fill:var(--focus)}#lineageLayer .lit-self{fill:none;stroke:var(--accent);stroke-width:2}
+    .lineage-tip{position:absolute;transform:translate(-50%,calc(-100% - 16px));width:max-content;max-width:min(380px,84%);background:color-mix(in srgb,var(--canvas) 94%,transparent);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font:500 11px/1.45 "IBM Plex Mono",monospace;color:var(--ink);pointer-events:none;box-shadow:var(--shadow);z-index:3}
+    .lineage-tip.below{transform:translate(-50%,18px)}.lineage-tip span{display:block;color:var(--muted);font-weight:400;margin-top:3px}
     #overlayLayer .study-frame{fill:color-mix(in srgb,var(--canvas) 92%,transparent);stroke:var(--strong);stroke-width:1;stroke-dasharray:5 6}
     #overlayLayer .study-label,#overlayLayer .draft-label,#guideLayer .draft-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--muted);letter-spacing:.08em;paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round}
     #overlayLayer .study-rule{stroke:var(--strong);stroke-width:.8;stroke-dasharray:3 5}
@@ -136,19 +141,7 @@
   <aside class="sidebar" aria-label="Drawing controls">
     <section class="panel">
       <label class="label" for="pattern">Construction</label>
-      <select id="pattern">
-        <option value="seed">Seed of Life</option>
-        <option value="flower">Flower of Life</option>
-        <option value="metatron">Metatron’s Cube</option>
-        <option value="metatron3d">Metatron’s Cube · 3D</option>
-        <option value="tetrahedron">Platonic · Tetrahedron</option>
-        <option value="cube">Platonic · Cube</option>
-        <option value="octahedron">Platonic · Octahedron</option>
-        <option value="dodecahedron">Platonic · Dodecahedron</option>
-        <option value="icosahedron">Platonic · Icosahedron</option>
-        <option value="vesica">Vesica Piscis</option>
-        <option value="yantra">Nine-fold Yantra</option>
-      </select>
+      <select id="pattern"></select><!-- options come from REGISTRY -->
       <p class="pattern-note" id="patternNote">Seven equal circles unfold from a single radius.</p>
     </section>
     <section class="panel">
@@ -185,6 +178,7 @@
         <button class="chip" data-toggle="mirror">Mirror</button>
         <button class="chip" data-toggle="darkline">Ink accent</button>
         <button class="chip" data-toggle="fruit" id="fruitChip" hidden>Fruit circles · r/2</button>
+        <button class="chip" data-toggle="workings" title="Show the hidden construction lines: midpoints, rays and helper circles">Workings</button>
       </div>
       <div class="control"><div class="control-head"><label for="weight">Line weight</label><span class="value" id="weightValue">1.4</span></div><input id="weight" type="range" min="6" max="34" value="14"></div>
       <span class="label" style="margin-top:16px">Drafting overlays</span>
@@ -215,11 +209,12 @@
     <div class="canvas-wrap" id="canvasWrap">
       <svg id="geometry" viewBox="0 0 900 700" role="img" aria-labelledby="svgTitle svgDesc">
         <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
-        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g>
+        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
       </svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
       <div class="status-line" id="statusLine" aria-live="polite"></div>
+      <div class="lineage-tip" id="lineageTip" role="status" hidden></div>
     </div>
 
     <div class="steps">
@@ -270,17 +265,9 @@
 (() => {
   const NS='http://www.w3.org/2000/svg';
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
-  const state={pattern:'seed',mode:'perspective',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:34,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
-  const notes={seed:'Seven equal circles unfold from a single radius.',flower:'A hexagonal lattice grows outward; every circle passes through its neighbours’ centres.',metatron:'Thirteen centers joined into a map of every direction.',metatron3d:'Thirteen spatial nodes reveal the cube as a layered three-dimensional lattice.',tetrahedron:'Four vertices and six equal edges — the simplex of three-dimensional space.',cube:'Eight vertices form six equal square faces.',octahedron:'Six vertices form eight equal triangular faces.',dodecahedron:'Twenty vertices form twelve regular pentagonal faces.',icosahedron:'Twelve vertices form twenty equal triangular faces.',vesica:'Two equal circles meet at each other’s center; the lens between them stands √3 tall for every 1 wide.',yantra:'Nine interlocking triangles, four rising and five descending, converge on a single bindu.'};
-  const titles={seed:'Seed of Life',flower:'Flower of Life',metatron:'Metatron’s Cube',metatron3d:'Metatron’s Cube · 3D',tetrahedron:'Tetrahedron',cube:'Cube',octahedron:'Octahedron',dodecahedron:'Dodecahedron',icosahedron:'Icosahedron',vesica:'Vesica Piscis',yantra:'Nine-fold Yantra'};
-  const maxSteps={seed:7,flower:20,metatron:18,metatron3d:18,tetrahedron:8,cube:8,octahedron:8,dodecahedron:8,icosahedron:8,vesica:5,yantra:10};
-  const solidPhases=['Vertices','Edges','Edges','Edges','Edges','Edges','Full frame','Circumsphere'];
-  const PENTAGONAL=['dodecahedron','icosahedron'],SPATIAL=['metatron3d','tetrahedron','cube','octahedron','dodecahedron','icosahedron'];
-  const yantraDefs=[[false,205,5],[true,202,-4],[false,168,18],[true,171,-18],[false,137,-8],[true,139,10],[false,109,17],[true,112,-17],[false,80,0]];
-  const ordinals=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
-  const phases={seed:['Origin','First orbit','Second orbit','Triad','Four directions','Sixfold field','Completion'],flower:['Origin','First orbit','Seed ring','Seed ring','Seed ring','Seed ring','Seed complete',...Array(11).fill('Second ring'),'Lattice complete','Boundary · 3d'],metatron:['Origin','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring complete','Outer ring','Outer ring','Outer ring','Outer ring','Outer ring','Thirteen centers','Radial chords','Inner web','Outer web','All 78 chords','Completion'],metatron3d:['Origin','X axis','X axis','Y axis','Y axis','Z axis','Octahedron nodes','Crown ring','Crown ring','Crown ring','Crown ring','Crown ring','Thirteen nodes','Axial chords','Octahedron web','Cube frame','Outer web','Bounding sphere'],tetrahedron:solidPhases,cube:solidPhases,octahedron:solidPhases,dodecahedron:solidPhases,icosahedron:solidPhases,vesica:['First circle','Second circle','Shared axis','Vesica lens','√3 proportion'],yantra:['Bindu',...yantraDefs.map((d,i)=>`${ordinals[i]} triangle · ${d[0]?'▲ Shiva':'▼ Shakti'}`)]};
-  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
+  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),lineage:$('#lineageLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
+  const state={pattern:'seed',mode:'perspective',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:34,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,workings:false,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
+  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','workings','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
   const undoStack=[],redoStack=[];let pendingSnapshot=null;
   const snapshot=()=>Object.fromEntries(historyKeys.map(k=>[k,state[k]]));
   const sameSnapshot=(a,b)=>historyKeys.every(k=>a[k]===b[k]);
@@ -292,7 +279,7 @@
     els.pattern.value=state.pattern;els.step.value=state.step;els.rotation.value=state.rotation;els.tilt.value=state.tilt;els.depth.value=state.depth;els.weight.value=Math.round(state.weight*10);els.horizon.value=state.horizon;
     $$('#viewMode button').forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));$$('#primitiveMode button').forEach(x=>x.classList.toggle('active',x.dataset.primitive===state.primitive));$$('#perspectiveMode button').forEach(x=>x.classList.toggle('active',+x.dataset.points===state.perspectivePoints));
     $$('.chip[data-toggle]').forEach(x=>x.classList.toggle('active',state[x.dataset.toggle]));$('#perspectiveLinesBtn').classList.toggle('active',state.perspectiveLines);els.autoRotate.classList.toggle('active',state.autoRotate);
-    $('#fruitChip').hidden=state.pattern!=='metatron';const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=notes[state.pattern];$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube center marks.':'Planar circles with square center marks.';syncValues();
+    $('#fruitChip').hidden=!FIG[state.pattern].fruit;const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=FIG[state.pattern].note;$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube center marks.':'Planar circles with square center marks.';syncValues();
   }
   function syncPressed(){$$('.chip,.segmented button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')))}
   function restoreSnapshot(s){stopPlayback();inertia=0;Object.assign(state,s);syncAllControls();render();updateHistoryButtons()}
@@ -300,7 +287,6 @@
   function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restoreSnapshot(redoStack.pop())}
   const svgEl=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e};
   const clear=e=>{while(e.firstChild)e.removeChild(e.firstChild)};
-  const axial=(q,r,s=90)=>({x:s*Math.sqrt(3)*(q+r/2),y:s*1.5*r,z:0});
   function project(p){
     let {x,y,z=0}=p; const rz=state.rotation*Math.PI/180, tx=(state.mode==='plan'?0:state.tilt)*Math.PI/180;
     let x1=x*Math.cos(rz)-y*Math.sin(rz), y1=x*Math.sin(rz)+y*Math.cos(rz);
@@ -328,9 +314,9 @@
   function circlePoints(c,r,segments=96,plane='xy'){segments=Math.max(8,Math.round(segments*RES));return Array.from({length:segments},(_,i)=>{const a=i/segments*Math.PI*2,co=Math.cos(a)*r,si=Math.sin(a)*r,x=c.x,y=c.y,z=c.z||0;if(plane==='xz')return{x:x+co,y,z:z+si};if(plane==='yz')return{x,y:y+co,z:z+si};return{x:x+co,y:y+si,z}})}
   function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p.dataset.kind=cls;layer.appendChild(p);return p}
   function addLine(a,b,cls='main',extra={}){return addPath(els.shapes,[a,b],cls,false,extra)}
-  function addCircle(c,r,layer=els.shapes,cls='main',extra={}){
+  function addCircle(c,r,layer=els.shapes,cls='main',extra={},spheres=true){
     const outline=addPath(layer,circlePoints(c,r),cls,true,extra);
-    if(state.primitive==='solid'&&cls!=='boundary'){
+    if(state.primitive==='solid'&&spheres&&cls!=='boundary'){
       addPath(layer,circlePoints(c,r,72,'xz'),'sphere-ring',true,extra);
       addPath(layer,circlePoints(c,r,72,'yz'),'sphere-ring',true,extra);
     }
@@ -354,73 +340,172 @@
     if(state.perspectiveLines){const anchors=state.perspectivePoints===1?[[250,165],[650,165],[250,535],[650,535]]:[[315,200],[585,200],[315,500],[585,500]];vps.forEach((vp,i)=>anchors.filter((_,n)=>state.perspectivePoints===1||n%2===i%2||i===2).forEach(a=>screenLine(vp.x,vp.y,a[0],a[1])))}
     vps.forEach((vp,i)=>{const g=svgEl('g',{'data-picker':`vp-${i}`,'aria-label':`Vanishing point ${i+1}`,'role':'button'});g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:10,class:'vp-handle'}));g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:2.6,class:'vp-dot'}));const t=svgEl('text',{x:vp.x+14,y:vp.y-12,class:'vp-label'});t.textContent=`VP ${i+1}`;g.appendChild(t);els.perspective.appendChild(g)})
   }
-  function drawSeed(flower=false){
-    if(flower){
-      // Flower of Life: radius = lattice spacing d, so each circle passes through its six neighbours' centres.
-      // Order: centre, ring 1 (the Seed of Life), ring 2, each ring walked by angle. Boundary at 3d.
-      const d=100,centers=[];
-      for(let q=-2;q<=2;q++)for(let rr=-2;rr<=2;rr++){if(Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))<=2){const p=axial(q,rr,d/Math.sqrt(3));centers.push({...p,z:state.depth*((q-rr)%3)*.13,ring:Math.max(Math.abs(q),Math.abs(rr),Math.abs(-q-rr))})}}
-      const ang=c=>((Math.atan2(c.y,c.x)%(2*Math.PI))+2*Math.PI+1e-9)%(2*Math.PI);
-      centers.sort((a,b)=>a.ring-b.ring||ang(a)-ang(b));
-      centers.slice(0,Math.min(state.step,19)).forEach((c,i)=>{addCircle(c,d,els.shapes);if(state.points)point(c,i)});
-      if(state.step>=20)addCircle({x:0,y:0,z:0},3*d,els.guides,'boundary');
-      return;
-    }
-    const r=112,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*(i%2?-.22:.22)}))];
-    centers.slice(0,state.step).forEach((c,i)=>{addCircle(c,r,els.shapes);if(state.points)point(c,i)});
-  }
-  function drawMetatron(){const r=92,centers=[{x:0,y:0,z:0},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r,y:Math.sin(i*Math.PI/3)*r,z:state.depth*.12})),...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*2,y:Math.sin(i*Math.PI/3)*r*2,z:-state.depth*.18}))];
-    const circleCount=Math.min(state.step,13),cr=state.fruit?r/2:r; centers.slice(0,circleCount).forEach((c,i)=>{addCircle(c,cr,els.guides,'construction');if(state.points)point(c,i)});
-    const drawn=new Set(),chord=(i,j,k)=>{const key=i<j?i*13+j:j*13+i;if(drawn.has(key))return;drawn.add(key);addLine(centers[i],centers[j],k)};
-    if(state.step>=14)for(let i=1;i<7;i++)chord(0,i);
-    if(state.step>=15)for(let i=1;i<7;i++)chord(i,1+(i%6));
-    if(state.step>=16)for(let i=1;i<7;i++){chord(i,i+6);chord(i,7+(i%6))}
-    // every pair of the 13 centres: 78 chords, including the six √3·r chords of the inner hexagram
-    if(state.step>=17)for(let i=0;i<13;i++)for(let j=i+1;j<13;j++)chord(i,j,'web');
-    if(state.step>=18)addCircle({x:0,y:0,z:0},2*r+cr,els.guides,'boundary');
-  }
-  function polyData(type){
-    const phi=(1+Math.sqrt(5))/2,inv=1/phi;let vertices=[];
-    if(type==='tetrahedron')vertices=[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]];
-    if(type==='cube')for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
-    if(type==='octahedron')vertices=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
-    if(type==='icosahedron')vertices=[[0,1,phi],[0,-1,phi],[0,1,-phi],[0,-1,-phi],[1,phi,0],[-1,phi,0],[1,-phi,0],[-1,-phi,0],[phi,0,1],[phi,0,-1],[-phi,0,1],[-phi,0,-1]];
-    if(type==='dodecahedron'){
-      for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])vertices.push([x,y,z]);
-      for(const a of[-1,1])for(const b of[-1,1])vertices.push([0,a*inv,b*phi],[a*inv,b*phi,0],[a*phi,0,b*inv]);
-    }
-    let min=Infinity;for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(d>.001&&d<min)min=d}
-    const edges=[];for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++){const d=Math.hypot(vertices[i][0]-vertices[j][0],vertices[i][1]-vertices[j][1],vertices[i][2]-vertices[j][2]);if(Math.abs(d-min)<.015)edges.push([i,j])}
-    return{vertices,edges};
-  }
-  function scaledPoly(type,size=170){const data=polyData(type),radius=Math.max(...data.vertices.map(v=>Math.hypot(...v))),scale=size/radius;return{vertices:data.vertices.map(([x,y,z])=>({x:x*scale,y:y*scale,z:z*scale})),edges:data.edges}}
-  function drawPolyhedron(type){
-    const R=type==='dodecahedron'?178:170,data=scaledPoly(type,R),max=maxSteps[type],edgeCount=Math.ceil(data.edges.length*Math.min(1,Math.max(0,state.step-1)/(max-2))),visible=new Set();
-    data.edges.slice(0,edgeCount).forEach(([a,b])=>{addLine(data.vertices[a],data.vertices[b]);visible.add(a);visible.add(b)});
-    if(state.step===1)data.vertices.forEach((_,i)=>visible.add(i));
-    if(state.points)visible.forEach(i=>point(data.vertices[i],i));
-    if(state.guides&&state.step>=max){['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},R,84,plane),'boundary',true))}
-  }
-  function drawMetatron3D(){
-    const r=88,centers=[{x:0,y:0,z:0},{x:r,y:0,z:0},{x:-r,y:0,z:0},{x:0,y:r,z:0},{x:0,y:-r,z:0},{x:0,y:0,z:r},{x:0,y:0,z:-r},...Array.from({length:6},(_,i)=>({x:Math.cos(i*Math.PI/3)*r*1.72,y:Math.sin(i*Math.PI/3)*r*1.72,z:(i%2?1:-1)*r*.72}))];
-    centers.slice(0,Math.min(state.step,13)).forEach((c,i)=>{addCircle(c,38,els.guides,'construction');if(state.points)point(c,i)});
-    if(state.step>=14)for(let i=1;i<centers.length;i++)addLine(centers[0],centers[i]);
-    if(state.step>=15)for(let i=1;i<=6;i++)for(let j=i+1;j<=6;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d<r*1.5)addLine(centers[i],centers[j],'web')}
-    if(state.step>=16){const cube=scaledPoly('cube',145);cube.edges.forEach(([a,b])=>addLine(cube.vertices[a],cube.vertices[b],'main'))}
-    if(state.step>=17)for(let i=1;i<centers.length;i++)for(let j=i+1;j<centers.length;j++){const d=Math.hypot(centers[i].x-centers[j].x,centers[i].y-centers[j].y,centers[i].z-centers[j].z);if(d>r*1.45&&d<r*2.7)addLine(centers[i],centers[j],'web')}
-    if(state.step>=18)['xy','xz','yz'].forEach(plane=>addPath(els.guides,circlePoints({x:0,y:0,z:0},218,96,plane),'boundary',true));
-  }
-  function drawVesica(){const r=165,cs=[{x:-r/2,y:0,z:state.depth*.12},{x:r/2,y:0,z:-state.depth*.12}],h=r*Math.sqrt(3)/2;addCircle(cs[0],r);if(state.step>=2)addCircle(cs[1],r);if(state.step>=3)addLine({x:-r*1.6,y:0},{x:r*1.6,y:0},'axis-x');
-    // the lens is two arcs: each circle's arc between the shared points (0,±h), lying on its own circle
-    const arcN=Math.round(48*RES),arc=(c,a0,a1)=>Array.from({length:arcN+1},(_,i)=>{const a=(a0+(a1-a0)*i/arcN)*Math.PI/180;return{x:c.x+Math.cos(a)*r,y:c.y+Math.sin(a)*r,z:c.z}});
-    if(state.step>=4){addPath(els.shapes,arc(cs[0],-60,60),'lens');addPath(els.shapes,arc(cs[1],120,240),'lens')}
-    if(state.step>=5){addLine({x:0,y:-h},{x:0,y:h},'axis-y');const top=project({x:0,y:-h}),mid=project({x:r/2,y:0});addScreenText(els.guides,top.x,top.y-26,'h ÷ w = √3 ≈ 1.732');addScreenText(els.guides,mid.x+10,mid.y-8,'w = r','start')}
-    if(state.points){point(cs[0],0);if(state.step>=2)point(cs[1],1)}}
-  function tri(up,scale,offset=0,z=0){const h=scale*.9;return up?[{x:0,y:-h+offset,z},{x:scale,y:h*.62+offset,z},{x:-scale,y:h*.62+offset,z}]:[{x:0,y:h+offset,z},{x:scale,y:-h*.62+offset,z},{x:-scale,y:-h*.62+offset,z}]}
-  function drawYantra(){if(state.points)point({x:0,y:0},0);yantraDefs.slice(0,Math.max(0,state.step-1)).forEach((d,i)=>addPath(els.shapes,tri(d[0],d[1],d[2],state.depth*((i%3)-1)*.15),'main',true));if(state.guides){addCircle({x:0,y:0},238,els.guides,'boundary');addCircle({x:0,y:0},250,els.guides,'boundary')}const p=project({x:0,y:0});els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:3.4,fill:'var(--accent)'}))}
-  function drawActivePattern(){
-    if(state.pattern==='seed')drawSeed(false);if(state.pattern==='flower')drawSeed(true);if(state.pattern==='metatron')drawMetatron();if(state.pattern==='metatron3d')drawMetatron3D();if(['tetrahedron','cube','octahedron','dodecahedron','icosahedron'].includes(state.pattern))drawPolyhedron(state.pattern);if(state.pattern==='vesica')drawVesica();if(state.pattern==='yantra')drawYantra();
-  }
+  /* ================= Kernel: compass, straightedge, and a record of how every point was made =================
+     A figure is a script, not a coordinate list. Its only moves are circle(centre, through), line(a, b) and
+     meet(x, y); after the two givens, every point is the meeting of two curves. A figure written this way
+     cannot come out at the wrong ratio, and every point can say where it came from. */
+  const SQ3=Math.sqrt(3),PHI=(1+Math.sqrt(5))/2;
+  const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),d3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,(a.z||0)-(b.z||0));
+  function intersect(A,B){
+    if(A.type!=='circle')[A,B]=[B,A];
+    const lineOf=L=>{const dx=L.b.x-L.a.x,dy=L.b.y-L.a.y,l=Math.hypot(dx,dy);return{a:L.a,ux:dx/l,uy:dy/l}};
+    if(A.type==='circle'&&B.type==='circle'){const c1=A.c,c2=B.c,d=d2(c1,c2);if(d<1e-9||d>A.r+B.r+1e-9||d<Math.abs(A.r-B.r)-1e-9)return[];
+      const a=(A.r*A.r-B.r*B.r+d*d)/(2*d),h=Math.sqrt(Math.max(0,A.r*A.r-a*a)),ex=(c2.x-c1.x)/d,ey=(c2.y-c1.y)/d,bx=c1.x+a*ex,by=c1.y+a*ey;
+      return h<1e-9?[{x:bx,y:by}]:[{x:bx-h*ey,y:by+h*ex},{x:bx+h*ey,y:by-h*ex}]}
+    if(A.type==='circle'){const L=lineOf(B),t=(A.c.x-L.a.x)*L.ux+(A.c.y-L.a.y)*L.uy,fx=L.a.x+t*L.ux,fy=L.a.y+t*L.uy,h2=A.r*A.r-((A.c.x-fx)**2+(A.c.y-fy)**2);
+      if(h2<-1e-9)return[];const h=Math.sqrt(Math.max(0,h2));return h<1e-9?[{x:fx,y:fy}]:[{x:fx-h*L.ux,y:fy-h*L.uy},{x:fx+h*L.ux,y:fy+h*L.uy}]}
+    const P=lineOf(A),Q=lineOf(B),den=P.ux*Q.uy-P.uy*Q.ux;if(Math.abs(den)<1e-12)return[];
+    const t=((Q.a.x-P.a.x)*Q.uy-(Q.a.y-P.a.y)*Q.ux)/den;return[{x:P.a.x+t*P.ux,y:P.a.y+t*P.uy}]}
+  function Construction(unit,unitName){
+    const K={pts:[],curves:[],marks:[],dots:[],labels:[],steps:[],unit,unitName};let si=-1;
+    const P=o=>{o.id='p'+K.pts.length;o.step=si;o.zf=o.zf||0;o.parents=o.parents||[];o.name=o.name||'p'+K.pts.length;K.pts.push(o);return o};
+    const C=o=>{o.id='c'+K.curves.length;o.step=si;K.curves.push(o);return o};
+    K.step=label=>{K.steps.push({label});si=K.steps.length-1;return K};
+    K.given=(x,y,name,note='given',zf=0)=>P({x,y,op:'given',note,name,zf});
+    K.given3=(x,y,z,name,note='given')=>P({x,y,z,abs:true,op:'given',note,name});
+    K.derive3=(x,y,z,parents,note,name)=>P({x,y,z,abs:true,op:'derived',note,parents,name});
+    K.circle=(c,t,kind='main')=>C({type:'circle',op:'circle',c,t,r:c.abs?d3(c,t):d2(c,t),kind,parents:[c,t]});
+    K.transfer=(c,a,b,kind='main')=>C({type:'circle',op:'transfer',c,a,b,r:d2(a,b),kind,parents:[c,a,b]});
+    K.ring=(c,t,plane,kind='boundary')=>C({type:'circle',op:'circle',c,t,r:d3(c,t),plane,kind,parents:[c,t]});
+    K.line=(a,b,kind='aux')=>C({type:'line',op:'line',a,b,kind,parents:[a,b]});
+    K.seg=(a,b,kind='main',note)=>C({type:'seg',op:note?'derived':'seg',note,a,b,kind,parents:[a,b]});
+    K.arc=(circle,from,to,via,kind='lens')=>C({type:'arc',op:'arc',circle,from,to,via,kind,parents:[circle,from,to]});
+    K.node=p=>(K.marks.push({p,step:si}),p);
+    K.dot=(p,r)=>K.dots.push({p,r,step:si});
+    K.label=(p,text,dx=0,dy=0,anchor='middle')=>K.labels.push({p,text,dx,dy,anchor,step:si});
+    K.meet=(A,B,o={})=>{let xs=intersect(A,B);if(!xs.length)throw new Error(`${A.id} and ${B.id} do not meet`);
+      if(o.not)xs=xs.filter(q=>d2(q,o.not)>1e-6);if(o.near)xs.sort((p,q)=>d2(p,o.near)-d2(q,o.near));const q=xs[0];if(!q)throw new Error('no new meeting point');
+      const ex=K.pts.find(p=>!p.abs&&d2(p,q)<1e-6);if(ex)return ex;return P({x:q.x,y:q.y,op:'meet',parents:[A,B],name:o.name,zf:o.zf})};
+    // Euclid I.10: the midpoint is where the vesica's axis crosses the segment
+    K.mid=(a,b,name)=>{const c1=K.circle(a,b,'aux'),c2=K.circle(b,a,'aux'),n={x:-(b.y-a.y),y:b.x-a.x};
+      const T=K.meet(c1,c2,{near:{x:(a.x+b.x)/2+n.x,y:(a.y+b.y)/2+n.y}}),B=K.meet(c1,c2,{not:T});return K.meet(K.line(T,B),K.line(a,b),{name})};
+    return K}
+
+  /* ---------- the figures ---------- */
+  // Seed: one circle, then six, each centred where the newest circle crosses the first.
+  function seed(K,d,labels,kind,extra=()=>{}){
+    K.step(labels[0]);const O=K.node(K.given(0,0,'O','the centre')),A=K.given(d,0,'P1','one radius from O',.22);
+    const c0=K.circle(O,A,kind);extra(O);const P=[A],rings=[];
+    for(let k=0;k<6;k++){K.step(labels[k+1]);rings.push(K.circle(P[k],O,kind));K.node(P[k]);extra(P[k]);
+      if(k<5)P.push(K.meet(c0,rings[k],k?{not:P[k-1],name:'P'+(k+2),zf:k%2?.22:-.22}:{near:{x:d/2,y:d*SQ3/2},name:'P2',zf:-.22}))}
+    return{O,P,c0,rings}}
+  // the six points 2d out: each ring circle meets the ray from O through its centre a second time
+  const outer=(K,O,P,rings)=>P.map((p,k)=>K.meet(rings[k],K.line(O,p),{not:O,name:'D'+(k+1),zf:-.18}));
+  const solidPoints={
+    tetrahedron:['(±1, ±1, ±1) with an even number of minus signs',()=>[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]]],
+    cube:['(±1, ±1, ±1)',()=>{const v=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])v.push([x,y,z]);return v}],
+    octahedron:['(±1, 0, 0) and its permutations',()=>[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]],
+    dodecahedron:['(±1, ±1, ±1) and cyclic permutations of (0, ±1/φ, ±φ)',()=>{const v=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])v.push([x,y,z]);for(const a of[-1,1])for(const b of[-1,1])v.push([0,a/PHI,b*PHI],[a/PHI,b*PHI,0],[a*PHI,0,b/PHI]);return v}],
+    icosahedron:['cyclic permutations of (0, ±1, ±φ)',()=>{const v=[];for(const a of[-1,1])for(const b of[-1,1])v.push([0,a,b*PHI],[a,b*PHI,0],[a*PHI,0,b]);return v}]};
+  const nearestEdges=pts=>{let m=Infinity;const E=[];pts.forEach((a,i)=>pts.forEach((b,j)=>{if(j>i)m=Math.min(m,d3(a,b))}));pts.forEach((a,i)=>pts.forEach((b,j)=>{if(j>i&&Math.abs(d3(a,b)-m)<m*1e-6)E.push([a,b])}));return{E,m}};
+  function solid(type,R){return K=>{const [note,gen]=solidPoints[type],raw=gen(),s=R/Math.hypot(...raw[0]);
+    K.step('Vertices');const O=K.given3(0,0,0,'O','the centre');const V=raw.map(([x,y,z],i)=>K.node(K.given3(x*s,y*s,z*s,'V'+(i+1),note)));
+    const {E,m}=nearestEdges(V);K.unit=m;
+    // grow the frame outward from one vertex: shell n holds the edges whose nearer end is n steps from V1
+    const hop=new Map([[V[0],0]]),q=[V[0]];while(q.length){const a=q.shift();E.forEach(([x,y])=>{const b=x===a?y:y===a?x:null;if(b&&!hop.has(b)){hop.set(b,hop.get(a)+1);q.push(b)}})}
+    const shells=[];E.forEach(([a,b])=>{const n=Math.min(hop.get(a),hop.get(b));(shells[n]=shells[n]||[]).push([a,b])});
+    shells.forEach((list,n)=>{K.step(n===shells.length-1?'Full frame':n===0?'Edges at V1':`Edges · shell ${n+1}`);list.forEach(([a,b])=>K.seg(a,b,'main','nearest-neighbour edge'))});
+    K.step('Circumsphere');const top=V.reduce((p,v)=>v.z>p.z?v:p);['xy','xz','yz'].forEach(pl=>K.ring(O,top,pl))}}
+
+  const REGISTRY=[
+    {id:'seed',title:'Seed of Life',family:'hex',note:'Seven equal circles, each centred where the last one crosses the first.',
+      build(){const K=Construction(112,'d');seed(K,112,['Origin','First orbit','Second orbit','Third orbit','Fourth orbit','Fifth orbit','Seed complete'],'main');return K}},
+    {id:'flower',title:'Flower of Life',family:'hex',note:'Nineteen circles on one radius. Every circle passes through its neighbours’ centres.',
+      build(){const d=100,K=Construction(d,'d'),{O,P,rings}=seed(K,d,['Origin','First orbit','Seed ring','Seed ring','Seed ring','Seed ring','Seed complete'],'main');
+        let cD1;const D=outer(K,O,P,rings),Q=P.map((p,k)=>K.meet(rings[k],rings[(k+1)%6],{not:O,name:'Q'+(k+1),zf:.13}));
+        for(let k=0;k<6;k++){K.step('Second ring');const c=K.circle(D[k],P[k]);K.node(D[k]);if(k===0)cD1=c;K.step(k===5?'Lattice complete':'Second ring');K.circle(Q[k],P[k]);K.node(Q[k])}
+        K.step('Boundary · 3d');const X=K.meet(cD1,K.line(O,P[0]),{not:P[0],name:'X'});K.circle(O,X,'boundary');return K}},
+    {id:'metatron',title:'Metatron’s Cube',family:'hex',fruit:true,note:'Thirteen centres from the Fruit of Life, every pair joined: 78 chords.',
+      build(o={}){const r=92,K=Construction(r,'r');let M;const fruit=[];
+        const extra=c=>{if(!o.fruit)return;if(!M)M=K.mid(K.pts[0],K.pts[1],'M');fruit.push(K.transfer(c,K.pts[0],M,'construction'))};
+        const {O,P,rings}=seed(K,r,['Origin','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring','Inner ring complete'],o.fruit?'aux':'construction',extra);
+        const D=outer(K,O,P,rings),outerC=[];
+        D.forEach((p,k)=>{K.step(k===5?'Thirteen centres':'Outer ring');outerC.push(K.circle(p,P[k],o.fruit?'aux':'construction'));K.node(p);extra(p)});
+        const N=[O,...P,...D],done=new Set(),chord=(a,b,kind='main')=>{const key=[a.id,b.id].sort().join();if(!done.has(key)){done.add(key);K.seg(a,b,kind)}};
+        K.step('Radial chords');P.forEach(p=>chord(O,p));K.step('Inner hexagon');P.forEach((p,k)=>chord(p,P[(k+1)%6]));
+        K.step('Inner to outer');P.forEach((p,k)=>{chord(p,D[k]);chord(p,D[(k+1)%6])});
+        K.step('All 78 chords');N.forEach((a,i)=>N.forEach((b,j)=>{if(j>i)chord(a,b,'web')}));
+        K.step('Completion');const edge=o.fruit?fruit[7]:outerC[0],X=K.meet(edge,K.line(O,P[0]),{near:{x:10*r,y:0},name:'X'});K.circle(O,X,'boundary');return K}},
+    {id:'metatron3d',title:'Metatron’s Cube · 3D',family:'hex',spatial:true,note:'Two cubes stood on a corner. Seen straight down that corner, their 13 positions are Metatron’s Cube.',
+      build(){const R=180,ri=R/2,K=Construction(0,'edge');
+        // a cube with its body diagonal vertical: (±1,±1,±1) turned so (1,1,1) points up, one corner at 0°
+        const turn=([x,y,z])=>{const u=[1/Math.sqrt(6),1/Math.sqrt(6),-2/Math.sqrt(6)],v=[-1/Math.SQRT2,1/Math.SQRT2,0],w=[1/SQ3,1/SQ3,1/SQ3],X=x*u[0]+y*u[1]+z*u[2],Y=x*v[0]+y*v[1]+z*v[2],Z=x*w[0]+y*w[1]+z*w[2];return{X,Y,Z}};
+        const corners=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])corners.push(turn([x,y,z]));const s=ri/SQ3;
+        K.step('Origin');const O=K.node(K.given3(0,0,0,'O','the centre'));
+        const axis=corners.filter(c=>Math.abs(Math.abs(c.Z)-SQ3)<1e-9),crown=corners.filter(c=>Math.abs(Math.abs(c.Z)-SQ3)>=1e-9);
+        const rot=Math.atan2(crown[0].Y,crown[0].X),sp=c=>({x:(c.X*Math.cos(-rot)-c.Y*Math.sin(-rot))*s,y:(c.X*Math.sin(-rot)+c.Y*Math.cos(-rot))*s,z:c.Z*s});
+        K.step('Axis');const inner=axis.map((c,i)=>{const p=sp(c);return K.node(K.given3(p.x,p.y,p.z,i?'B':'T','a cube corner on the vertical axis'))});
+        K.step('Inner crown');crown.forEach((c,i)=>{const p=sp(c);inner.push(K.node(K.given3(p.x,p.y,p.z,'C'+(i+1),'cube corner (±1,±1,±1), turned so (1,1,1) is vertical')))});
+        K.step('Inner cube');const ie=nearestEdges(inner);K.unit=ie.m;ie.E.forEach(([a,b])=>K.seg(a,b,'main','nearest-neighbour edge'));
+        K.step('Outer cube · doubled from O');const outerV=inner.map((p,i)=>K.node(K.derive3(2*p.x,2*p.y,2*p.z,[O,p],'doubled from O',p.name+'′')));
+        K.step('Outer cube');nearestEdges(outerV).E.forEach(([a,b])=>K.seg(a,b,'main','nearest-neighbour edge'));
+        K.step('Star tetrahedron');const dg=[];outerV.forEach((a,i)=>outerV.forEach((b,j)=>{if(j>i&&Math.abs(d3(a,b)-2*ie.m*Math.SQRT2)<1e-6){dg.push([a,b]);K.seg(a,b,'lens','face diagonal')}}));
+        K.step('Octahedron nodes');const oct=[];dg.forEach(([a,b])=>{const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};if(!oct.some(q=>d3(q,m)<1e-6))oct.push(K.node(K.derive3(m.x,m.y,m.z,[a,b],'midpoint of a face diagonal (a face centre)','F'+(oct.length+1))))});
+        K.step('Octahedron');nearestEdges(oct).E.forEach(([a,b])=>K.seg(a,b,'web','nearest-neighbour edge'));
+        K.step('Shadow · Metatron’s Cube');const floor=-R*1.15,sh=[];[O,...inner,...outerV].forEach(p=>{if(!sh.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<1e-6))sh.push(K.derive3(p.x,p.y,floor,[p],'dropped straight down the axis',p.name+'↓'))});
+        const hex=Math.hypot(sh[1].x,sh[1].y);sh.forEach(p=>{const t=K.derive3(p.x+hex/2,p.y,floor,[p],'half a ring step out');K.ring(p,t,'xy','shadow')});
+        sh.forEach((a,i)=>sh.forEach((b,j)=>{if(j>i)K.seg(a,b,'shadow')}));const low=sh.reduce((a,p)=>p.y>a.y?p:a);K.label(low,`${sh.length} shadows · ${sh.length*(sh.length-1)/2} chords: Metatron’s Cube`,0,hex/2+22);
+        K.step('Bounding sphere');['xy','xz','yz'].forEach(pl=>K.ring(O,outerV[0],pl));return K}},
+    {id:'tetrahedron',title:'Tetrahedron',family:'tet',spatial:true,note:'Four vertices and six equal edges: the simplest solid.',build(){const K=Construction(0,'edge');solid('tetrahedron',170)(K);return K}},
+    {id:'cube',title:'Cube',family:'cube',spatial:true,note:'Eight vertices, six square faces.',build(){const K=Construction(0,'edge');solid('cube',170)(K);return K}},
+    {id:'octahedron',title:'Octahedron',family:'cube',spatial:true,note:'Six vertices, eight triangular faces. The cube’s dual.',build(){const K=Construction(0,'edge');solid('octahedron',170)(K);return K}},
+    {id:'dodecahedron',title:'Dodecahedron',family:'penta',spatial:true,note:'Twenty vertices, twelve regular pentagons. φ is in its coordinates.',build(){const K=Construction(0,'edge');solid('dodecahedron',178)(K);return K}},
+    {id:'icosahedron',title:'Icosahedron',family:'penta',spatial:true,note:'Twelve vertices, twenty triangles. φ is in its coordinates.',build(){const K=Construction(0,'edge');solid('icosahedron',170)(K);return K}},
+    {id:'vesica',title:'Vesica Piscis',family:'hex',note:'Two equal circles, each through the other’s centre. The lens between them is √3 tall for every 1 wide.',
+      build(){const r=165,K=Construction(r,'r');K.step('First circle');const O=K.node(K.given(-r/2,0,'O','a centre',.12)),A=K.given(r/2,0,'A','one radius from O',-.12),c1=K.circle(O,A);
+        K.step('Second circle');const c2=K.circle(A,O);K.node(A);K.step('Shared axis');K.line(O,A,'axis-x');
+        K.step('Vesica lens');const T=K.meet(c1,c2,{near:{x:0,y:-r},name:'T'}),B=K.meet(c1,c2,{not:T,name:'B'});K.arc(c1,B,T,A);K.arc(c2,T,B,O);
+        K.step('√3 proportion');K.seg(T,B,'axis-y');const ratio=d2(T,B)/d2(O,A);K.label(T,`h ÷ w = ${ratio.toFixed(3)} (√3 = ${SQ3.toFixed(3)})`,0,-26);K.label(A,'w = r',10,-8,'start');return K}},
+    {id:'yantra',title:'Nine-fold Yantra',family:'tri',placed:true,note:'Four triangles up, five down, around a bindu. Placed by hand, not yet constructed: a solved Sri Yantra is still open.',
+      build(){const K=Construction(80,'r');K.step('Bindu');const O=K.given(0,0,'Bindu','the centre'),g1=K.given(238,0,'r238','placed'),g2=K.given(250,0,'r250','placed');K.dot(O,3.4);K.node(O);
+        const defs=[[false,205,5],[true,202,-4],[false,168,18],[true,171,-18],[false,137,-8],[true,139,10],[false,109,17],[true,112,-17],[false,80,0]],ord=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
+        defs.forEach(([up,s,off],i)=>{K.step(`${ord[i]} triangle · ${up?'▲ Shiva':'▼ Shakti'}`);if(i===0){K.circle(O,g1,'boundary');K.circle(O,g2,'boundary')}
+          const h=s*.9,zf=((i%3)-1)*.15,v=up?[[0,-h+off],[s,h*.62+off],[-s,h*.62+off]]:[[0,h+off],[s,-h*.62+off],[-s,-h*.62+off]],T=v.map(([x,y],k)=>K.given(x,y,`${i+1}${'abc'[k]}`,'placed by hand, not constructed',zf));
+          T.forEach((p,k)=>K.seg(p,T[(k+1)%3]))});return K}}];
+  const FIG=Object.fromEntries(REGISTRY.map(f=>[f.id,f])),titles=Object.fromEntries(REGISTRY.map(f=>[f.id,f.title]));
+  const SPATIAL=REGISTRY.filter(f=>f.spatial).map(f=>f.id),PENTAGONAL=REGISTRY.filter(f=>f.family==='penta').map(f=>f.id);
+  const builds=new Map();
+  function figure(id=state.pattern){const key=id+(FIG[id].fruit&&state.fruit?'|fruit':'');if(!builds.has(key))builds.set(key,FIG[id].build({fruit:state.fruit}));return builds.get(key)}
+  const stepCount=()=>figure().steps.length;
+
+  /* ---------- drawing a construction ---------- */
+  const LAYER_OF={construction:'guides',boundary:'guides',aux:'guides',shadow:'guides'};
+  const zOf=p=>p.abs?p.z:state.depth*p.zf,V=p=>({x:p.x,y:p.y,z:zOf(p)});
+  function curvePoints(cv){
+    if(cv.type==='circle'){const c=V(cv.c);return{pts:circlePoints(c,cv.r,cv.plane?84:96,cv.plane||'xy'),closed:true}}
+    if(cv.type==='seg')return{pts:[V(cv.a),V(cv.b)]};
+    if(cv.type==='line'){const a=V(cv.a),b=V(cv.b),at=t=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});return{pts:[at(-1.1),at(2.1)]}}
+    if(cv.type==='arc'){const c=cv.circle.c,z=zOf(c),ang=p=>Math.atan2(p.y-c.y,p.x-c.x);const norm=x=>((x%(2*Math.PI))+2*Math.PI)%(2*Math.PI),a0=ang(cv.from),sweep=norm(ang(cv.to)-a0),a1=norm(ang(cv.via)-a0)<sweep?a0+sweep:a0+sweep-2*Math.PI;const n=Math.max(8,Math.round(48*RES));
+      return{pts:Array.from({length:n+1},(_,i)=>{const a=a0+(a1-a0)*i/n;return{x:c.x+Math.cos(a)*cv.circle.r,y:c.y+Math.sin(a)*cv.circle.r,z}})}}}
+  function drawCurve(cv,layer,kind=cv.kind){const {pts,closed}=curvePoints(cv);let el;
+    if(cv.type==='circle'&&!cv.plane)el=addCircle(V(cv.c),cv.r,layer,kind,{'data-ref':cv.id},(kind==='main'||kind==='construction'));
+    else el=addPath(layer,pts,kind,!!closed,{'data-ref':cv.id});return el}
+  let pickable=[];
+  function drawConstruction(){const K=figure(),n=state.step-1,seen=new Set();
+    K.curves.forEach(cv=>{if(cv.step>n||(cv.kind==='aux'&&!state.workings))return;drawCurve(cv,els[LAYER_OF[cv.kind]||'shapes']);if(cv.kind!=='aux')cv.parents.forEach(p=>{if(p.id&&p.id[0]==='p')seen.add(p)})});
+    K.marks.forEach(m=>{if(m.step<=n){seen.add(m.p);if(state.points)point(V(m.p))}});
+    K.dots.forEach(d=>{if(d.step<=n){const p=project(V(d.p));els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:d.r,fill:'var(--accent)'}))}});
+    K.labels.forEach(l=>{if(l.step<=n){const p=project(V(l.p));addScreenText(els.guides,p.x+l.dx,p.y+l.dy,l.text,l.anchor)}});
+    return seen}
+
+  /* ---------- lineage: every point can show where it came from ---------- */
+  function ancestry(p){const pts=new Set(),cvs=new Set();(function walk(o){const set=o.id[0]==='p'?pts:cvs;if(set.has(o))return;set.add(o);o.parents.forEach(walk)})(p);return{pts,cvs}}
+  const genMemo=new WeakMap();
+  function generation(o){if(genMemo.has(o))return genMemo.get(o);const g=o.parents.length?Math.max(...o.parents.map(generation))+(o.id[0]==='p'?1:0):0;genMemo.set(o,g);return g}
+  function curveName(c){if(c.type==='circle')return c.op==='transfer'?`circle at ${c.c.name}, radius ${c.a.name}${c.b.name}`:`circle at ${c.c.name} through ${c.t.name}`;
+    if(c.type==='arc')return`arc of ${curveName(c.circle)}`;return`${c.type==='line'?'line':'segment'} ${c.a.name}${c.b.name}`}
+  function describe(p){if(p.op==='given')return`${p.name} · ${p.note}`;if(p.op==='meet')return`${p.name} = ${curveName(p.parents[0])} ∩ ${curveName(p.parents[1])}`;return`${p.name} · ${p.note} (${p.parents.map(q=>q.name).join(', ')})`}
+  let tracing=null;
+  function drawLineage(){const g=els.lineage,tip=$('#lineageTip');clear(g);els.svg.classList.toggle('tracing',!!tracing);if(!tracing){tip.hidden=true;return}
+    const {pts,cvs}=ancestry(tracing);cvs.forEach(cv=>drawCurve(cv,g,'lit'));
+    pts.forEach(p=>{const q=project(V(p));g.appendChild(svgEl('circle',{cx:q.x,cy:q.y,r:p===tracing?6:3.2,class:p===tracing?'lit-self':p.op==='given'?'lit-given':'lit-dot'}))});
+    const q=project(V(tracing)),givens=[...pts].filter(p=>p.op==='given').length;
+    tip.innerHTML=`<b>${describe(tracing)}</b><span>${generation(tracing)} generation${generation(tracing)===1?'':'s'} from the givens · ${pts.size-1} ancestor point${pts.size===2?'':'s'} · ${cvs.size} curve${cvs.size===1?'':'s'} · ${givens} given${givens===1?'':'s'}</span>`;
+    tip.hidden=false;const r=els.svg.getBoundingClientRect(),w=els.wrap.getBoundingClientRect(),sx=r.left-w.left+q.x*r.width/900,sy=r.top-w.top+q.y*r.height/700;
+    const half=tip.offsetWidth/2+8;tip.style.left=`${Math.min(w.width-half,Math.max(half,sx))}px`;tip.style.top=`${sy}px`;tip.classList.toggle('below',sy<120)}
+  function pickAt(x,y){let best=null,bd=14;pickable.forEach(p=>{const q=project(V(p)),d=Math.hypot(q.x-x,q.y-y);if(d<bd){bd=d;best=p}});return best}
+  function drawActivePattern(){pickable=[...drawConstruction()]}
+  els.pattern.innerHTML=REGISTRY.map(f=>`<option value="${f.id}">${f.spatial&&f.family!=='hex'?'Platonic · ':''}${f.title}</option>`).join('');
   function addScreenLine(layer,x1,y1,x2,y2,kind){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke'});line.dataset.kind=kind;layer.appendChild(line);return line}
   function addScreenText(layer,x,y,text,anchor='middle',cls='draft-label'){const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;layer.appendChild(t);return t}
   function drawPhiOverlay(){
@@ -438,31 +523,38 @@
     const tag=project({x:x+w,y:y+h,z:0});addScreenText(els.guides,tag.x-8,tag.y-10,'φ · 1.618','end');
   }
   function drawDimensions(){
-    if(!state.dimensions)return;let span=220;if(state.pattern==='vesica')span=275;if(state.pattern==='flower')span=235;if(state.pattern==='yantra')span=270;
+    if(!state.dimensions)return;const K=figure(),n=state.step-1;let b=[1e9,1e9,-1e9,-1e9];
+    K.curves.forEach(cv=>{if(cv.step>n||cv.kind==='aux'||cv.kind==='shadow')return;curvePoints(cv).pts.forEach(p=>{b=[Math.min(b[0],p.x),Math.min(b[1],p.y),Math.max(b[2],p.x),Math.max(b[3],p.y)]})});
+    if(b[0]>b[2])return;const u=K.unit||1,f=v=>`${(v/u).toFixed(2)} ${K.unitName}`;
     const dimension=(a,b,label,ox,oy)=>{const p=project(a),q=project(b),x1=p.x+ox,y1=p.y+oy,x2=q.x+ox,y2=q.y+oy;addScreenLine(els.guides,p.x,p.y,x1,y1,'extension');addScreenLine(els.guides,q.x,q.y,x2,y2,'extension');addScreenLine(els.guides,x1,y1,x2,y2,'dimension');const ang=Math.atan2(y2-y1,x2-x1),tick=5;[ [x1,y1],[x2,y2] ].forEach(([x,y])=>addScreenLine(els.guides,x-Math.sin(ang)*tick,y+Math.cos(ang)*tick,x+Math.sin(ang)*tick,y-Math.cos(ang)*tick,'dimension'));addScreenText(els.guides,(x1+x2)/2,(y1+y2)/2-7,label)};
-    dimension({x:-span,y:span*.78,z:0},{x:span,y:span*.78,z:0},'2R',0,24);dimension({x:span,y:-span*.78,z:0},{x:span,y:span*.78,z:0},state.mode==='plan'?'φR':'Z / φR',24,0);
+    dimension({x:b[0],y:b[3],z:0},{x:b[2],y:b[3],z:0},f(b[2]-b[0]),0,24);dimension({x:b[2],y:b[1],z:0},{x:b[2],y:b[3],z:0},f(b[3]-b[1]),24,0);
   }
   function makePlanStudy(){
     const holder=svgEl('g');holder.appendChild(svgEl('rect',{x:16,y:405,width:274,height:250,rx:5,class:'study-frame'}));
     const inner=svgEl('g',{transform:'translate(18 420) scale(.3)'}),parts={grid:svgEl('g'),perspective:svgEl('g'),guides:svgEl('g'),shapes:svgEl('g'),points:svgEl('g')};Object.values(parts).forEach(g=>inner.appendChild(g));holder.appendChild(inner);
-    const savedRefs={grid:els.grid,perspective:els.perspective,guides:els.guides,shapes:els.shapes,points:els.points},saved={mode:state.mode,rotation:state.rotation,tilt:state.tilt,depth:state.depth,dimensions:state.dimensions,multiView:state.multiView};Object.assign(els,parts);state.mode='plan';state.rotation=0;state.tilt=0;state.depth=0;state.dimensions=false;state.multiView=false;drawActivePattern();if(state.phi)drawPhiOverlay();styleLayers(inner);Object.assign(els,savedRefs);Object.assign(state,saved);
+    const savedRefs={grid:els.grid,perspective:els.perspective,guides:els.guides,shapes:els.shapes,points:els.points},saved={mode:state.mode,rotation:state.rotation,tilt:state.tilt,depth:state.depth,dimensions:state.dimensions,multiView:state.multiView};Object.assign(els,parts);state.mode='plan';state.rotation=0;state.tilt=0;state.depth=0;state.dimensions=false;state.multiView=false;drawActivePattern();if(state.phi)drawPhiOverlay();Object.assign(els,savedRefs);Object.assign(state,saved);
     addScreenText(holder,31,428,'PLAN · ORTHOGRAPHIC','start','study-label');addScreenLine(holder,153,405,153,350,'study-rule');addScreenText(holder,153,647,titles[state.pattern].toUpperCase(),'middle','study-label');return holder;
   }
   function drawDraftingOverlays(){clear(els.overlay);if(state.multiView&&state.mode!=='plan')els.overlay.appendChild(makePlanStudy())}
   function drawStepBreakpoints(){
-    clear(els.breakpoints);const list=phases[state.pattern],max=list.length;let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
+    clear(els.breakpoints);const list=figure().steps.map(s=>s.label),max=list.length;let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
   }
-  function styleLayers(scope=document){
-    const root=getComputedStyle(document.documentElement);const geom=state.darkline?root.getPropertyValue('--accent').trim():root.getPropertyValue('--geometry').trim();
-    [...scope.querySelectorAll('[data-kind]')].forEach(p=>{const k=p.dataset.kind;let stroke=geom,opacity=1,w=state.weight; if(k==='grid'){stroke='var(--grid)';opacity=.65;w=.6}if(k==='axis-x'){stroke='var(--accent)';opacity=.45;w=.8}if(k==='axis-y'){stroke='var(--focus)';opacity=.45;w=.8}if(k==='axis-z'){stroke='var(--z-axis)';opacity=.78;w=1.15}if(k==='horizon'){stroke='var(--perspective)';opacity=.72;w=1}if(k==='perspective-line'){stroke='var(--perspective)';opacity=.3;w=.8;p.setAttribute('stroke-dasharray','5 6')}if(k==='construction'){stroke='var(--ghost)';opacity=.72;w=Math.max(.7,state.weight*.75)}if(k==='boundary'){stroke='var(--accent)';opacity=.55;w=.9}if(k==='web'){opacity=.62;w=Math.max(.65,state.weight*.72)}if(k==='lens'){stroke='var(--accent)';w=state.weight*1.35}if(k==='sphere-ring'){stroke=geom;opacity=.34;w=Math.max(.65,state.weight*.72)}if(k==='node'){stroke='var(--accent)';opacity=.9;w=.9}if(k==='cube'){stroke='var(--accent)';opacity=.88;w=.85}if(k==='phi'){stroke='var(--z-axis)';opacity=.34;w=.8;p.setAttribute('stroke-dasharray','3 5')}if(k==='phi-spiral'){stroke='var(--z-axis)';opacity=.78;w=1.2}if(k==='dimension'){stroke='var(--accent)';opacity=.8;w=.8}if(k==='extension'){stroke='var(--accent)';opacity=.35;w=.65;p.setAttribute('stroke-dasharray','3 4')}p.setAttribute('fill','none');p.setAttribute('stroke',stroke);p.setAttribute('stroke-width',w);p.setAttribute('opacity',opacity);p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round')});
-  }
+  // one table drives the page stylesheet and the exported file: colour token, opacity, width (fixed, or [× line weight, minimum]), dash
+  const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],
+    construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
+    node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
+    aux:['perspective',.6,.75,'2 4'],shadow:['focus',.45,[.5,.5]],lit:['accent',1,[1.15,1.6]]};
+  function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):`${w}px`;
+    return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
+  document.head.appendChild(Object.assign(document.createElement('style'),{textContent:kindCss('#geometry ',c=>c==='ink'?'var(--ink-line)':`var(--${c})`)}));
   let lastStatus='',onRendered=null;
-  function render(){clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();styleLayers();drawDraftingOverlays();
-    const max=maxSteps[state.pattern],phase=phases[state.pattern][state.step-1]||'Completion';els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
+  function render(){clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();drawDraftingOverlays();els.svg.style.setProperty('--w',state.weight);els.svg.classList.toggle('darkline',state.darkline);
+    if(tracing&&(!figure().pts.includes(tracing)||tracing.step>state.step-1))tracing=null;drawLineage();
+    const K=figure(),max=K.steps.length;if(state.step>max)state.step=max;const phase=K.steps[state.step-1].label;els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
     const projection=state.mode==='perspective'?`${state.perspectivePoints}-pt`:state.mode;const status=`<span>${titles[state.pattern]}</span><span>${projection}</span><span>${state.primitive==='solid'?'wireframe solids':'planar forms'}</span><span>${state.weight.toFixed(1)} pt</span><span>${state.darkline?'accent ink':'neutral ink'}</span>`;if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}
     if(onRendered)onRendered();
   }
-  function setPattern(v){state.pattern=v;state.step=1;state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
+  function setPattern(v){state.pattern=v;state.step=1;tracing=null;state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
   els.pattern.addEventListener('change',e=>{beginChange();setPattern(e.target.value);commitChange()});
   $$('#viewMode button').forEach(b=>b.addEventListener('click',()=>{if(state.mode===b.dataset.mode)return;beginChange();state.mode=b.dataset.mode;syncAllControls();render();commitChange()}));
   $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
@@ -476,24 +568,25 @@
   $$('.chip[data-toggle]').forEach(b=>b.addEventListener('click',()=>{beginChange();const k=b.dataset.toggle;state[k]=!state[k];b.classList.toggle('active',state[k]);syncPressed();render();commitChange()}));
   rangeHistory(els.step);els.step.addEventListener('input',e=>{stopPlayback();state.step=+e.target.value;render()});
   $('#prevBtn').addEventListener('click',()=>{if(state.step<=1)return;beginChange();stopPlayback();state.step--;render();commitChange()});
-  $('#nextBtn').addEventListener('click',()=>{if(state.step>=maxSteps[state.pattern])return;beginChange();stopPlayback();state.step++;render();commitChange()});
-  function next(){state.step=state.step>=maxSteps[state.pattern]?1:state.step+1;render()}
+  $('#nextBtn').addEventListener('click',()=>{if(state.step>=stepCount())return;beginChange();stopPlayback();state.step++;render();commitChange()});
+  function next(){state.step=state.step>=stepCount()?1:state.step+1;render()}
   let timer;function startPlayback(){clearInterval(timer);timer=setInterval(next,+els.speed.value)}
   els.play.addEventListener('click',()=>{state.playing=!state.playing;els.play.textContent=state.playing?'Ⅱ':'▶';els.play.setAttribute('aria-label',state.playing?'Pause construction':'Play construction');clearInterval(timer);if(state.playing)startPlayback()});
   els.speed.addEventListener('change',()=>{if(state.playing)startPlayback()});
   els.undo.addEventListener('click',undo);els.redo.addEventListener('click',redo);
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key==='ArrowRight'&&state.step<maxSteps[state.pattern]){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key==='ArrowRight'&&state.step<stepCount()){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
   function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
   let drag=null,inertia=0,lastFrame=performance.now();
   els.wrap.addEventListener('pointerdown',e=>{beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
-  els.wrap.addEventListener('pointermove',e=>{if(!drag)return;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
-  const endDrag=()=>{if(drag&&!drag.picker)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange()};els.wrap.addEventListener('pointerup',endDrag);els.wrap.addEventListener('pointercancel',endDrag);
+  els.wrap.addEventListener('pointermove',e=>{if(!drag){if(e.pointerType==='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);if(hit!==tracing){tracing=hit;drawLineage()}}return}if(!drag.picker&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
+  const endDrag=()=>{if(drag&&!drag.picker)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange()};els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
+  els.wrap.addEventListener('pointerup',e=>{if(drag&&!drag.picker&&!drag.moved&&e.pointerType!=='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);tracing=hit===tracing?null:hit;drawLineage()}endDrag()});els.wrap.addEventListener('pointercancel',endDrag);
   function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const isSpatial=SPATIAL.includes(state.pattern);if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
   function downloadableSvg(){
     // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
     // and inline the class rules the live page gets from CSS.
     const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
-    const clone=els.svg.cloneNode(true);clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
+    const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
     clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
     const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
     const style=svgEl('style');style.textContent=[
@@ -502,7 +595,7 @@
       `.vp-dot{fill:${T('perspective')}}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
       `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
       `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
-      `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`].join('\n');
+      `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`,kindCss('',c=>T(c==='ink'?(state.darkline?'accent':'geometry'):c),state.weight)].join('\n');
     const bg=svgEl('rect',{width:'900',height:'700',fill:T('canvas')});clone.insertBefore(bg,clone.firstChild);clone.insertBefore(style,clone.firstChild);
     return new XMLSerializer().serializeToString(clone)}
   const saver=window.claude?.use?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);
@@ -746,6 +839,7 @@
     const svg=svgOpen(W,H,esc(fileTitle())).replace(/width="[^"]+mm" height="[^"]+mm"/,`width="${w}" height="${h}"`)+printInner(g)+'</svg>';
     try{download(`${baseName()}@${Math.round(dpi)}dpi.png`,await rasterize(svg,w,h,'#ffffff'));if(dpi<+ST.dpi-1)showToast(`Capped at ${Math.round(dpi)} dpi (${w}×${h} px, the browser's limit). Use the SVG for full resolution.`)}catch{showToast('PNG too large for this browser — use the SVG')}});
   sEl('stScreenSvg').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}-screen.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
+  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__proj=q=>project(V(q));
   window.__studio={geometry,plotterPlan,stencilSheets,pageSize,ST,tilePlan,tiles,zip,printInner,crossings,updatePreview};
 
   syncAllControls();updateHistoryButtons();render();
