@@ -29,9 +29,9 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   const prov = await page.evaluate(() => [...document.querySelectorAll('#pattern option')].map(o => {
     const sel = document.querySelector('#pattern'); sel.value = o.value; sel.dispatchEvent(new Event('change'));
     const K = window.__k(), f = window.__fig(o.value);
-    return { id: o.value, spatial: !!f.spatial, placed: !!f.placed, givens: K.pts.filter(p => p.op === 'given').length, other: K.pts.filter(p => !['given', 'meet'].includes(p.op)).length, orphans: K.pts.filter(p => p.op !== 'given' && !p.parents.length).length };
+    return { id: o.value, spatial: !!f.spatial, placed: !!f.placed, givens: K.pts.filter(p => p.op === 'given').length, other: K.pts.filter(p => !p.abs && !['given', 'meet'].includes(p.op)).length, orphans: K.pts.filter(p => p.op !== 'given' && !p.parents.length).length };
   }));
-  prov.filter(f => !f.spatial && !f.placed).forEach(f => check(`${f.id}: two givens, every other point is a meet`, f.givens === 2 && f.other === 0, f));
+  prov.filter(f => !f.spatial && !f.placed).forEach(f => check(`${f.id}: two givens, every other flat point is a meet`, f.givens === 2 && f.other === 0, f));
   prov.forEach(f => check(`${f.id}: no derived point without parents`, f.orphans === 0, f));
 
   // Flower of Life
@@ -74,6 +74,50 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
     check(`${s}: circumsphere radius equals every vertex radius`, Math.abs(c.ring - c.min) < 1e-6 && Math.abs(c.ring - c.max) < 1e-6 && c.full === 'Full frame', c);
   }
 
+  // Pass II · Continuum: one chain from a point to the solids
+  const cont = await page.evaluate(() => { const sel = document.querySelector('#pattern'); sel.value = 'continuum'; sel.dispatchEvent(new Event('change')); const K = window.__k();
+    const flat = K.pts.filter(p => !p.abs), lifted = K.pts.filter(p => p.from);
+    const crown = lifted.filter(p => p.from.name !== 'O' && Math.hypot(p.x, p.y) < 81);
+    const { E, m } = (() => { const S = K.sym; let mm = Infinity; S.forEach((a, i) => S.forEach((b, j) => { if (j > i) mm = Math.min(mm, Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)) })); return { E: 0, m: mm } })();
+    return { chapters: [...new Set(K.steps.map(s => s.chapter))], givens: flat.filter(p => p.op === 'given').length, nonMeet: flat.filter(p => !['given', 'meet'].includes(p.op)).length,
+      liftedOk: lifted.every(p => p.parents[0] === p.from && Math.abs(p.x - p.from.x) < 1e-9 && Math.abs(p.y - p.from.y) < 1e-9), lifted: lifted.length,
+      cubeEdge: m / 80, crownR: crown.map(p => +Math.hypot(p.x, p.y).toFixed(6)) } });
+  check('Continuum: chapters run Point → Vesica → Seed → Flower → Fruit → Metatron → Lift → Solids', cont.chapters.join() === 'Point,Vesica,Seed,Flower,Fruit,Metatron,Lift,Solids', cont.chapters);
+  check('Continuum: the flat part is two givens and meets only', cont.givens === 2 && cont.nonMeet === 0, cont);
+  check('Continuum: every cube corner is lifted straight up from a node of Metatron’s Cube', cont.liftedOk && cont.lifted === 16, cont);
+  check('Continuum: the lifted outer cube is a true cube on Metatron’s rings', Math.abs(cont.cubeEdge - 2 * Math.sqrt(1.5)) < 1e-9 && cont.crownR.every(r => Math.abs(r - 80) < 1e-6), cont);
+  const chap = await page.$$eval('#chapters button', b => b.map(x => x.textContent));
+  await page.click('#chapters button[data-chapter="Fruit"]');
+  check('Chapter marks jump to their chapter', chap.length === 8 && (await page.textContent('#phaseLabel')).startsWith('Half a radius'), chap);
+  // the lift plays: midway, a corner is between its shadow and its height
+  await page.evaluate(() => { const K = window.__k(), st = document.querySelector('#step'); st.value = K.steps.findIndex(s => s.lift); st.dispatchEvent(new Event('input', { bubbles: true })) });
+  await page.click('#nextBtn'); await page.waitForTimeout(650);
+  const mid = await page.evaluate(() => { const q = window.__k().pts.find(p => p.name === 'T↑'), a = window.__proj(q), b = window.__proj(q.from); return Math.hypot(a.x - b.x, a.y - b.y) });
+  await page.waitForTimeout(1500);
+  const end = await page.evaluate(() => { const q = window.__k().pts.find(p => p.name === 'T↑'), a = window.__proj(q), b = window.__proj(q.from); return Math.hypot(a.x - b.x, a.y - b.y) });
+  check('Continuum: the lift animates corners up out of their shadows', mid > 2 && end > mid + 2, { mid, end });
+
+  // symmetry axes come out of the geometry, and match each solid's rotation group
+  const groups = { tetrahedron: '2:3,3:4', cube: '2:6,3:4,4:3', octahedron: '2:6,3:4,4:3', dodecahedron: '2:15,3:10,5:6', icosahedron: '2:15,3:10,5:6', metatron3d: '2:6,3:4,4:3' };
+  for (const [id, want] of Object.entries(groups)) {
+    const got = await page.evaluate(id => { const sel = document.querySelector('#pattern'); sel.value = id; sel.dispatchEvent(new Event('change')); const c = {}; window.__axes().forEach(a => c[a.k] = (c[a.k] || 0) + 1); return Object.keys(c).sort().map(k => `${k}:${c[k]}`).join() }, id);
+    check(`${id}: symmetry axes ${want}`, got === want, got);
+  }
+  await go('cube', 'axon'); await setStep('max');
+  if (await page.$eval('#autoRotateBtn', b => b.classList.contains('active'))) await page.click('#autoRotateBtn');
+  const t3 = await page.evaluate(() => window.__axes().find(a => a.k === 3));
+  await page.evaluate(a => { const r = document.querySelector('#rotation'), t = document.querySelector('#tilt'); r.value = a.rot + 4; r.dispatchEvent(new Event('input', { bubbles: true })); t.value = a.tilt - 3; t.dispatchEvent(new Event('input', { bubbles: true })) }, t3);
+  const ghostNear = await page.$$eval('#ghostLayer [data-kind="ghost"]', g => g.length);
+  await page.click('#snapBtn'); await page.waitForTimeout(700);
+  const snapped = await page.evaluate(() => window.__nearest());
+  check('Snap lands exactly on the 3-fold axis', snapped && snapped.k === 3 && snapped.deg < 1e-6, snapped);
+  check('Near a 3-fold axis the flat Metatron’s Cube shows behind the cube (13 circles, 78 chords)', ghostNear === 91 && (await page.textContent('#axisText')).includes('Metatron'), ghostNear);
+  // depth ink: nearer edges heavier
+  await page.evaluate(() => { const r = document.querySelector('#rotation'), t = document.querySelector('#tilt'); r.value = 20; r.dispatchEvent(new Event('input', { bubbles: true })); t.value = 30; t.dispatchEvent(new Event('input', { bubbles: true })) });
+  const ink = await page.$$eval('#shapeLayer path', ps => ps.map(p => +p.style.getPropertyValue('--dzw')));
+  check('Depth ink varies weight with depth', Math.max(...ink) - Math.min(...ink) > 0.3, { min: Math.min(...ink), max: Math.max(...ink) });
+  check('Auto rotate can be switched in every view', await page.isVisible('#autoRotateBtn'));
+
   // controls
   await go('flower'); check('φ overlay unavailable on hexagonal figures', await page.$eval('#phiChip', b => b.disabled));
   await go('dodecahedron'); check('φ overlay available on pentagonal figures', !(await page.$eval('#phiChip', b => b.disabled)));
@@ -112,7 +156,7 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   await go('dodecahedron', 'perspective'); for (const k of ['phi', 'dimensions', 'multiView']) await page.click(`.chip[data-toggle="${k}"]`);
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#exportBtn')]);
   const svg = require('fs').readFileSync(await dl.path(), 'utf8');
-  check('Export: no unresolved tokens, kind rules inlined, no lineage overlay', !svg.includes('var(--') && svg.includes('[data-kind="main"]') && !svg.includes('lineageLayer'), { tokens: (svg.match(/var\(--/g) || []).length });
+  check('Export: no unresolved tokens, kind rules inlined, depth resolved, no lineage overlay', !svg.includes('var(--') && !svg.includes('--dz') && svg.includes('[data-kind="main"]') && !svg.includes('lineageLayer'), { tokens: (svg.match(/var\(--/g) || []).length });
 
   check('No script errors', errors.length === 0, errors);
   await browser.close();

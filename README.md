@@ -25,13 +25,21 @@ Every point remembers its parents. **Hover any node** to light its whole ancestr
 
 The solids are 3D, so they start from canonical coordinates (noted on every vertex) and derive the rest: nearest-neighbour edges grown outward from one vertex, and a circumsphere through the vertices. **Metatron's Cube · 3D** is two cubes stood on a corner, with a star tetrahedron (the outer cube's face diagonals) and an octahedron (its face centres). Seen in plan, straight down that corner, its 13 positions are exactly Metatron's Cube. The Yantra is still placed by hand and says so.
 
+## Continuum, axes and depth
+
+**Continuum** (the opening figure) is the whole family as one construction: a point, a distance, the vesica, the Seed growing out of the vesica's own crossing, the Flower, the Fruit (a true midpoint halves the radius), and Metatron's Cube. Then each of its 13 nodes rises out of the page to the cube corner it is the shadow of, and the star tetrahedron and octahedron are drawn inside that cube. Chapter marks under the timeline jump between stages, and the lift plays as an animation when you step into it.
+
+**Symmetry axes** are not typed in. They are found from each solid's own vertices by testing which turns map it onto itself, which recovers each rotation group exactly (tetrahedron 3·2-fold + 4·3-fold, cube 6 + 4 + 3, icosahedron 15 + 10 + 6). A readout shows the nearest axis and how far off it you are. Release within 5°, press **Look down it**, or press `S` to snap. Near a 3-fold axis of a cube-family solid, Metatron's Cube fades in behind it; on the axis the solid sits exactly on top of it.
+
+**Depth ink** makes nearer lines heavier and darker and farther lines lighter, so wireframes stop flipping (the Necker-cube effect). Exports bake the depth into each stroke.
+
 ## Layout
 
 ```
 index.html              the app
 archive/v0-original.html    the file as first received (52,169 bytes)
 archive/v1-pass0.html       after the Pass 0 geometry and export fixes
-docs/evidence/          before/after renders for every Pass 0 fix; pass1/ for the kernel
+docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes
 docs/samples/           a 48×48 in Flower of Life: print SVG, plotter SVG, stencil zip
 tools/                  Playwright checks (see below)
 ```
@@ -40,7 +48,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 44 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, 4▲ 5▼, export …
+node tools/verify.js              # 62 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, 4▲ 5▼, export …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 ```
@@ -50,10 +58,10 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
+- **v4, Pass II**: Continuum with chapters and the lift animation, symmetry axes found from the geometry with snapping and the Metatron ghost, depth ink, and Auto rotate available in every view. 62 checks.
 - **v3, Pass I**: the construction kernel and figure registry, lineage on hover, the Workings view, a 3D Metatron that collapses onto the 2D figure in plan, styling moved to CSS generated from one table (shared with the exported SVG), dimensions that measure the construction, and `tools/verify.js` as a 44-check pass/fail suite.
 
 ## Next
 
-- **Pass II:** one continuous timeline (point → vesica → seed → flower → fruit → Metatron → solids), symmetry-axis snaps, and depth-cued ink.
 - **Open:** a true Sri Yantra (solved numerically), and whether the kernel should generate a 13-node Metatron navigation.
 - **Known issues:** in perspective, the horizon and VP 1 act as a pan, VP 1 and the 3-point handles aren't true vanishing points, and the guide lines go to fixed screen points. Only 2-point is honest. In stencils, the slots at six-way junctions merge into thin wedges; they stay attached but are fragile.

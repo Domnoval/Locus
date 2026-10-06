@@ -87,6 +87,11 @@
     #geometry.tracing :is(#gridLayer,#guideLayer,#shapeLayer,#pointLayer){opacity:.3;transition:opacity .15s}
     #lineageLayer .lit-dot{fill:var(--accent)}#lineageLayer .lit-given{fill:var(--focus)}#lineageLayer .lit-self{fill:none;stroke:var(--accent);stroke-width:2}
     .lineage-tip{position:absolute;transform:translate(-50%,calc(-100% - 16px));width:max-content;max-width:min(380px,84%);background:color-mix(in srgb,var(--canvas) 94%,transparent);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font:500 11px/1.45 "IBM Plex Mono",monospace;color:var(--ink);pointer-events:none;box-shadow:var(--shadow);z-index:3}
+    .axis-hud{position:absolute;top:15px;left:50%;transform:translateX(-50%);width:max-content;display:flex;gap:8px;align-items:center;max-width:calc(100% - 330px);font:500 10px/1.4 "IBM Plex Mono",monospace;color:var(--muted);background:color-mix(in srgb,var(--canvas) 90%,transparent);border:1px solid var(--line);border-radius:5px;padding:4px 4px 4px 9px;z-index:2}
+    .axis-hud.on{color:var(--ink);border-color:var(--focus)}.axis-hud button{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font:inherit;color:var(--ink);cursor:pointer;white-space:nowrap}.axis-hud button:hover{border-color:var(--focus)}
+    .chapters{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:7px}.chapters button{background:none;border:0;border-bottom:1px solid transparent;padding:1px 0;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+    .chapters button:hover{color:var(--ink)}.chapters button[aria-current="step"]{color:var(--accent);border-bottom-color:var(--accent)}
+    @media(max-width:820px){.axis-hud{top:52px;max-width:calc(100% - 30px)}}
     .lineage-tip.below{transform:translate(-50%,18px)}.lineage-tip span{display:block;color:var(--muted);font-weight:400;margin-top:3px}
     #overlayLayer .study-frame{fill:color-mix(in srgb,var(--canvas) 92%,transparent);stroke:var(--strong);stroke-width:1;stroke-dasharray:5 6}
     #overlayLayer .study-label,#overlayLayer .draft-label,#guideLayer .draft-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--muted);letter-spacing:.08em;paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round}
@@ -152,6 +157,7 @@
       <div class="control"><div class="control-head"><label for="rotation">Rotation</label><span class="value" id="rotationValue">0°</span></div><input id="rotation" type="range" min="-180" max="180" value="0"></div>
       <div class="control"><div class="control-head"><label for="tilt">Tilt</label><span class="value" id="tiltValue">34°</span></div><input id="tilt" type="range" min="0" max="72" value="34"></div>
       <div class="control"><div class="control-head"><label for="depth">Z depth</label><span class="value" id="depthValue">45</span></div><input id="depth" type="range" min="0" max="100" value="45"></div>
+      <div class="toggle-row" style="margin-top:12px"><button class="chip active" id="autoRotateBtn" type="button">Auto rotate</button></div>
       <div class="perspective-controls" id="perspectiveControls">
         <span class="label">Perspective system</span>
         <div class="segmented" id="perspectiveMode" role="group" aria-label="Perspective point count">
@@ -160,7 +166,6 @@
         <div class="control"><div class="control-head"><label for="horizon">Horizon</label><span class="value" id="horizonValue">50%</span></div><input id="horizon" type="range" min="70" max="630" value="350"></div>
         <div class="toggle-row">
           <button class="chip active" id="perspectiveLinesBtn" type="button">Perspective lines</button>
-          <button class="chip active" id="autoRotateBtn" type="button">Auto rotate</button>
         </div>
         <p class="picker-note">Drag the horizon or numbered points directly on the drawing. Dragging the form pauses auto-rotation.</p>
       </div>
@@ -179,6 +184,7 @@
         <button class="chip" data-toggle="darkline">Ink accent</button>
         <button class="chip" data-toggle="fruit" id="fruitChip" hidden>Fruit circles · r/2</button>
         <button class="chip" data-toggle="workings" title="Show the hidden construction lines: midpoints, rays and helper circles">Workings</button>
+        <button class="chip active" data-toggle="depthInk" title="Nearer lines heavier, farther lines lighter, so wireframes read in depth">Depth ink</button>
       </div>
       <div class="control"><div class="control-head"><label for="weight">Line weight</label><span class="value" id="weightValue">1.4</span></div><input id="weight" type="range" min="6" max="34" value="14"></div>
       <span class="label" style="margin-top:16px">Drafting overlays</span>
@@ -209,12 +215,13 @@
     <div class="canvas-wrap" id="canvasWrap">
       <svg id="geometry" viewBox="0 0 900 700" role="img" aria-labelledby="svgTitle svgDesc">
         <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
-        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
+        <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="ghostLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
       </svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
       <div class="status-line" id="statusLine" aria-live="polite"></div>
       <div class="lineage-tip" id="lineageTip" role="status" hidden></div>
+      <div class="axis-hud" id="axisHud" hidden><span id="axisText" aria-live="polite"></span><button type="button" id="snapBtn" title="Turn to look straight down the nearest symmetry axis (S)">Look down it</button></div>
     </div>
 
     <div class="steps">
@@ -223,6 +230,7 @@
         <div class="timeline-meta"><span class="step-caption" id="stepCaption">Origin</span><span class="step-readout" id="stepReadout">01 / 07</span></div>
         <label class="sr-only" for="step">Construction step</label><input id="step" type="range" min="1" max="7" value="1">
         <div class="step-breakpoints" id="stepBreakpoints" aria-hidden="true"></div>
+        <div class="chapters" id="chapters" role="group" aria-label="Chapters" hidden></div>
       </div>
       <button class="step-button" id="nextBtn" aria-label="Next step">→</button>
       <button class="step-button play" id="playBtn" aria-label="Play construction">▶</button>
@@ -265,9 +273,9 @@
 (() => {
   const NS='http://www.w3.org/2000/svg';
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),lineage:$('#lineageLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
-  const state={pattern:'seed',mode:'perspective',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:34,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,workings:false,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
-  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','workings','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
+  const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),lineage:$('#lineageLayer'),ghost:$('#ghostLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
+  const state={pattern:'continuum',mode:'axon',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:0,depth:45,weight:1.4,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,workings:false,depthInk:true,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
+  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','workings','depthInk','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
   const undoStack=[],redoStack=[];let pendingSnapshot=null;
   const snapshot=()=>Object.fromEntries(historyKeys.map(k=>[k,state[k]]));
   const sameSnapshot=(a,b)=>historyKeys.every(k=>a[k]===b[k]);
@@ -309,10 +317,11 @@
     const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx);
     return {x:450+x1,y:350+y2,z:z2,sc:1};
   }
-  function pathFrom(points,close=false){return points.map((p,i)=>{const v=project(p);return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');}
+  let lastPathZ=0;
+  function pathFrom(points,close=false){let zs=0;const d=points.map((p,i)=>{const v=project(p);zs+=v.z;return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');lastPathZ=zs/points.length;return d}
   let RES=1; // sample-density multiplier; Studio raises it so circles stay smooth at print scale
   function circlePoints(c,r,segments=96,plane='xy'){segments=Math.max(8,Math.round(segments*RES));return Array.from({length:segments},(_,i)=>{const a=i/segments*Math.PI*2,co=Math.cos(a)*r,si=Math.sin(a)*r,x=c.x,y=c.y,z=c.z||0;if(plane==='xz')return{x:x+co,y,z:z+si};if(plane==='yz')return{x,y:y+co,z:z+si};return{x:x+co,y:y+si,z}})}
-  function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p.dataset.kind=cls;layer.appendChild(p);return p}
+  function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p._z=lastPathZ;p.dataset.kind=cls;layer.appendChild(p);return p}
   function addLine(a,b,cls='main',extra={}){return addPath(els.shapes,[a,b],cls,false,extra)}
   function addCircle(c,r,layer=els.shapes,cls='main',extra={},spheres=true){
     const outline=addPath(layer,circlePoints(c,r),cls,true,extra);
@@ -360,7 +369,10 @@
     const K={pts:[],curves:[],marks:[],dots:[],labels:[],steps:[],unit,unitName};let si=-1;
     const P=o=>{o.id='p'+K.pts.length;o.step=si;o.zf=o.zf||0;o.parents=o.parents||[];o.name=o.name||'p'+K.pts.length;K.pts.push(o);return o};
     const C=o=>{o.id='c'+K.curves.length;o.step=si;K.curves.push(o);return o};
-    K.step=label=>{K.steps.push({label});si=K.steps.length-1;return K};
+    K.step=(label,o={})=>{K.steps.push({label,chapter:K.chapterName,...o});si=K.steps.length-1;return K};
+    K.chapter=name=>{K.chapterName=name;return K};
+    // a retired object stops showing from the current step on; its descendants still remember it
+    K.retire=(...objs)=>objs.flat(Infinity).forEach(o=>{if(o.until==null)o.until=si});K.retireMarks=pred=>K.marks.forEach(m=>{if(m.until==null&&pred(m))m.until=si});
     K.given=(x,y,name,note='given',zf=0)=>P({x,y,op:'given',note,name,zf});
     K.given3=(x,y,z,name,note='given')=>P({x,y,z,abs:true,op:'given',note,name});
     K.derive3=(x,y,z,parents,note,name)=>P({x,y,z,abs:true,op:'derived',note,parents,name});
@@ -372,7 +384,7 @@
     K.arc=(circle,from,to,via,kind='lens')=>C({type:'arc',op:'arc',circle,from,to,via,kind,parents:[circle,from,to]});
     K.node=p=>(K.marks.push({p,step:si}),p);
     K.dot=(p,r)=>K.dots.push({p,r,step:si});
-    K.label=(p,text,dx=0,dy=0,anchor='middle')=>K.labels.push({p,text,dx,dy,anchor,step:si});
+    K.label=(p,text,dx=0,dy=0,anchor='middle')=>{const l={p,text,dx,dy,anchor,step:si};K.labels.push(l);return l};
     K.meet=(A,B,o={})=>{let xs=intersect(A,B);if(!xs.length)throw new Error(`${A.id} and ${B.id} do not meet`);
       if(o.not)xs=xs.filter(q=>d2(q,o.not)>1e-6);if(o.near)xs.sort((p,q)=>d2(p,o.near)-d2(q,o.near));const q=xs[0];if(!q)throw new Error('no new meeting point');
       const ex=K.pts.find(p=>!p.abs&&d2(p,q)<1e-6);if(ex)return ex;return P({x:q.x,y:q.y,op:'meet',parents:[A,B],name:o.name,zf:o.zf})};
@@ -399,7 +411,7 @@
     icosahedron:['cyclic permutations of (0, ±1, ±φ)',()=>{const v=[];for(const a of[-1,1])for(const b of[-1,1])v.push([0,a,b*PHI],[a,b*PHI,0],[a*PHI,0,b]);return v}]};
   const nearestEdges=pts=>{let m=Infinity;const E=[];pts.forEach((a,i)=>pts.forEach((b,j)=>{if(j>i)m=Math.min(m,d3(a,b))}));pts.forEach((a,i)=>pts.forEach((b,j)=>{if(j>i&&Math.abs(d3(a,b)-m)<m*1e-6)E.push([a,b])}));return{E,m}};
   function solid(type,R){return K=>{const [note,gen]=solidPoints[type],raw=gen(),s=R/Math.hypot(...raw[0]);
-    K.step('Vertices');const O=K.given3(0,0,0,'O','the centre');const V=raw.map(([x,y,z],i)=>K.node(K.given3(x*s,y*s,z*s,'V'+(i+1),note)));
+    K.step('Vertices');const O=K.given3(0,0,0,'O','the centre');const V=raw.map(([x,y,z],i)=>K.node(K.given3(x*s,y*s,z*s,'V'+(i+1),note)));K.sym=V;
     const {E,m}=nearestEdges(V);K.unit=m;
     // grow the frame outward from one vertex: shell n holds the edges whose nearer end is n steps from V1
     const hop=new Map([[V[0],0]]),q=[V[0]];while(q.length){const a=q.shift();E.forEach(([x,y])=>{const b=x===a?y:y===a?x:null;if(b&&!hop.has(b)){hop.set(b,hop.get(a)+1);q.push(b)}})}
@@ -408,6 +420,33 @@
     K.step('Circumsphere');const top=V.reduce((p,v)=>v.z>p.z?v:p);['xy','xz','yz'].forEach(pl=>K.ring(O,top,pl))}}
 
   const REGISTRY=[
+    {id:'continuum',title:'Continuum',family:'cube',ghost:true,view:{mode:'axon',tilt:0},start:'Flower of Life',note:'One figure from a single point to the solids. Every stage is built only from the one before it.',
+      build(){const r=80,ri=3*r/(2*Math.SQRT2),K=Construction(r,'r');
+        K.chapter('Point');K.step('A point');const O=K.node(K.given(0,0,'O','the first point'));
+        K.step('A distance');const A=K.node(K.given(r,0,'A','one radius from O')),OA=K.seg(O,A,'construction');
+        K.chapter('Vesica');K.step('Compass at O');K.retire(OA);const c0=K.circle(O,A);K.step('Compass at A');const c1=K.circle(A,O);
+        K.step('Vesica piscis');const T=K.meet(c0,c1,{near:{x:r/2,y:-r},name:'T'}),B=K.meet(c0,c1,{not:T,name:'B'}),lens=[K.arc(c0,B,T,A),K.arc(c1,T,B,O)],lbl=K.label(T,`height ÷ width = ${(d2(T,B)/d2(O,A)).toFixed(3)} = √3`,0,-16);
+        // the Seed grows out of the vesica: its second circle is the Seed's first orbit, its lower crossing the next centre
+        K.chapter('Seed');const P=[A,B],rings=[c1];
+        for(let k=1;k<6;k++){K.step(k===5?'Seed of Life':'Compass on the newest crossing');if(k===1)K.retire(lens,lbl);rings.push(K.circle(P[k],O));K.node(P[k]);if(k<5)P.push(K.meet(c0,rings[k],{not:P[k-1],name:'P'+(k+2)}))}
+        K.chapter('Flower');const D=outer(K,O,P,rings),Q=P.map((p,k)=>K.meet(rings[k],rings[(k+1)%6],{not:O,name:'Q'+(k+1)})),fl=[];let cD;D.forEach(p=>p.zf=0);
+        for(let k=0;k<6;k++){K.step(k===5?'Second ring complete':'Second ring');const a=K.circle(D[k],P[k]),b=K.circle(Q[k],P[k]);if(!k)cD=a;fl.push(a,b);K.node(D[k]);K.node(Q[k])}
+        K.step('Flower of Life');const X=K.meet(cD,K.line(O,A),{not:A,name:'X'}),bound=K.circle(O,X,'boundary');
+        K.chapter('Fruit');K.step('Half a radius');const M=K.node(K.mid(O,A,'M'));
+        K.step('Fruit of Life');const N=[O,...P,...D];K.retire(c0,rings,fl,bound);K.retireMarks(m=>Q.includes(m.p)||m.p===M);N.forEach(c=>K.transfer(c,O,M,'main'));
+        K.chapter('Metatron');const done=new Set(),chords=[],chord=(a,b,kind='main')=>{const key=[a.id,b.id].sort().join();if(!done.has(key)){done.add(key);chords.push(K.seg(a,b,kind))}};
+        K.step('Radial chords');P.forEach((p,k)=>{chord(O,p);chord(p,P[(k+1)%6])});K.step('Inner to outer');P.forEach((p,k)=>{chord(p,D[k]);chord(p,D[(k+1)%6])});
+        K.step('Metatron’s Cube');N.forEach((a,i)=>N.forEach((b,j)=>{if(j>i)chord(a,b,'web')}));
+        // lift: every node of Metatron's Cube is the shadow of a cube corner; raise each one to its height
+        const lift=(p,z,name,why='lifted from its shadow')=>{const q=K.derive3(p.x,p.y,z,[p],why,name);q.from=p;return K.node(q)};
+        K.chapter('Lift');K.step('Stand a cube on its corner',{lift:true});K.retire(chords);K.retireMarks(m=>N.includes(m.p));
+        const inner=[lift(O,ri,'T↑','raised from O along the axis'),lift(O,-ri,'B↑','lowered from O along the axis'),...P.map((p,k)=>lift(p,(k%2?-1:1)*ri/3,p.name+'↑'))];
+        nearestEdges(inner).E.forEach(([a,b])=>K.seg(a,b,'main','nearest-neighbour edge'));
+        K.step('A cube twice the size',{lift:true});const outerV=[lift(O,2*ri,'T′↑','raised from O along the axis'),lift(O,-2*ri,'B′↑','lowered from O along the axis'),...D.map((p,k)=>lift(p,(k%2?-1:1)*2*ri/3,p.name+'↑'))];
+        const oe=nearestEdges(outerV);oe.E.forEach(([a,b])=>K.seg(a,b,'main','nearest-neighbour edge'));
+        K.chapter('Solids');K.step('Star tetrahedron');const dg=[];outerV.forEach((a,i)=>outerV.forEach((b,j)=>{if(j>i&&Math.abs(d3(a,b)-oe.m*Math.SQRT2)<1e-6){dg.push([a,b]);K.seg(a,b,'lens','face diagonal')}}));
+        K.step('Octahedron');const oct=[];dg.forEach(([a,b])=>{const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};if(!oct.some(q=>d3(q,m)<1e-6))oct.push(K.node(K.derive3(m.x,m.y,m.z,[a,b],'midpoint of a face diagonal (a face centre)','F'+(oct.length+1))))});
+        nearestEdges(oct).E.forEach(([a,b])=>K.seg(a,b,'web','nearest-neighbour edge'));K.sym=outerV;return K}},
     {id:'seed',title:'Seed of Life',family:'hex',note:'Seven equal circles, each centred where the last one crosses the first.',
       build(){const K=Construction(112,'d');seed(K,112,['Origin','First orbit','Second orbit','Third orbit','Fourth orbit','Fifth orbit','Seed complete'],'main');return K}},
     {id:'flower',title:'Flower of Life',family:'hex',note:'Nineteen circles on one radius. Every circle passes through its neighbours’ centres.',
@@ -426,7 +465,7 @@
         K.step('Inner to outer');P.forEach((p,k)=>{chord(p,D[k]);chord(p,D[(k+1)%6])});
         K.step('All 78 chords');N.forEach((a,i)=>N.forEach((b,j)=>{if(j>i)chord(a,b,'web')}));
         K.step('Completion');const edge=o.fruit?fruit[7]:outerC[0],X=K.meet(edge,K.line(O,P[0]),{near:{x:10*r,y:0},name:'X'});K.circle(O,X,'boundary');return K}},
-    {id:'metatron3d',title:'Metatron’s Cube · 3D',family:'hex',spatial:true,note:'Two cubes stood on a corner. Seen straight down that corner, their 13 positions are Metatron’s Cube.',
+    {ghost:true,id:'metatron3d',title:'Metatron’s Cube · 3D',family:'hex',spatial:true,note:'Two cubes stood on a corner. Seen straight down that corner, their 13 positions are Metatron’s Cube.',
       build(){const R=180,ri=R/2,K=Construction(0,'edge');
         // a cube with its body diagonal vertical: (±1,±1,±1) turned so (1,1,1) points up, one corner at 0°
         const turn=([x,y,z])=>{const u=[1/Math.sqrt(6),1/Math.sqrt(6),-2/Math.sqrt(6)],v=[-1/Math.SQRT2,1/Math.SQRT2,0],w=[1/SQ3,1/SQ3,1/SQ3],X=x*u[0]+y*u[1]+z*u[2],Y=x*v[0]+y*v[1]+z*v[2],Z=x*w[0]+y*w[1]+z*w[2];return{X,Y,Z}};
@@ -445,10 +484,10 @@
         K.step('Shadow · Metatron’s Cube');const floor=-R*1.15,sh=[];[O,...inner,...outerV].forEach(p=>{if(!sh.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<1e-6))sh.push(K.derive3(p.x,p.y,floor,[p],'dropped straight down the axis',p.name+'↓'))});
         const hex=Math.hypot(sh[1].x,sh[1].y);sh.forEach(p=>{const t=K.derive3(p.x+hex/2,p.y,floor,[p],'half a ring step out');K.ring(p,t,'xy','shadow')});
         sh.forEach((a,i)=>sh.forEach((b,j)=>{if(j>i)K.seg(a,b,'shadow')}));const low=sh.reduce((a,p)=>p.y>a.y?p:a);K.label(low,`${sh.length} shadows · ${sh.length*(sh.length-1)/2} chords: Metatron’s Cube`,0,hex/2+22);
-        K.step('Bounding sphere');['xy','xz','yz'].forEach(pl=>K.ring(O,outerV[0],pl));return K}},
-    {id:'tetrahedron',title:'Tetrahedron',family:'tet',spatial:true,note:'Four vertices and six equal edges: the simplest solid.',build(){const K=Construction(0,'edge');solid('tetrahedron',170)(K);return K}},
-    {id:'cube',title:'Cube',family:'cube',spatial:true,note:'Eight vertices, six square faces.',build(){const K=Construction(0,'edge');solid('cube',170)(K);return K}},
-    {id:'octahedron',title:'Octahedron',family:'cube',spatial:true,note:'Six vertices, eight triangular faces. The cube’s dual.',build(){const K=Construction(0,'edge');solid('octahedron',170)(K);return K}},
+        K.step('Bounding sphere');['xy','xz','yz'].forEach(pl=>K.ring(O,outerV[0],pl));K.sym=outerV;return K}},
+    {ghost:true,id:'tetrahedron',title:'Tetrahedron',family:'tet',spatial:true,note:'Four vertices and six equal edges: the simplest solid.',build(){const K=Construction(0,'edge');solid('tetrahedron',170)(K);return K}},
+    {ghost:true,id:'cube',title:'Cube',family:'cube',spatial:true,note:'Eight vertices, six square faces.',build(){const K=Construction(0,'edge');solid('cube',170)(K);return K}},
+    {ghost:true,id:'octahedron',title:'Octahedron',family:'cube',spatial:true,note:'Six vertices, eight triangular faces. The cube’s dual.',build(){const K=Construction(0,'edge');solid('octahedron',170)(K);return K}},
     {id:'dodecahedron',title:'Dodecahedron',family:'penta',spatial:true,note:'Twenty vertices, twelve regular pentagons. φ is in its coordinates.',build(){const K=Construction(0,'edge');solid('dodecahedron',178)(K);return K}},
     {id:'icosahedron',title:'Icosahedron',family:'penta',spatial:true,note:'Twelve vertices, twenty triangles. φ is in its coordinates.',build(){const K=Construction(0,'edge');solid('icosahedron',170)(K);return K}},
     {id:'vesica',title:'Vesica Piscis',family:'hex',note:'Two equal circles, each through the other’s centre. The lens between them is √3 tall for every 1 wide.',
@@ -470,7 +509,9 @@
 
   /* ---------- drawing a construction ---------- */
   const LAYER_OF={construction:'guides',boundary:'guides',aux:'guides',shadow:'guides'};
-  const zOf=p=>p.abs?p.z:state.depth*p.zf,V=p=>({x:p.x,y:p.y,z:zOf(p)});
+  const zOf=p=>p.abs?p.z:state.depth*p.zf,vis=(o,n)=>o.step<=n&&(o.until==null||n<o.until);
+  let tween=null; // a lifted point rises out of its shadow while its step plays in
+  function V(p){if(tween&&p.from&&p.step===tween.step){const a=V(p.from),e=tween.e;return{x:a.x+(p.x-a.x)*e,y:a.y+(p.y-a.y)*e,z:a.z+(zOf(p)-a.z)*e}}return{x:p.x,y:p.y,z:zOf(p)}}
   function curvePoints(cv){
     if(cv.type==='circle'){const c=V(cv.c);return{pts:circlePoints(c,cv.r,cv.plane?84:96,cv.plane||'xy'),closed:true}}
     if(cv.type==='seg')return{pts:[V(cv.a),V(cv.b)]};
@@ -479,13 +520,16 @@
       return{pts:Array.from({length:n+1},(_,i)=>{const a=a0+(a1-a0)*i/n;return{x:c.x+Math.cos(a)*cv.circle.r,y:c.y+Math.sin(a)*cv.circle.r,z}})}}}
   function drawCurve(cv,layer,kind=cv.kind){const {pts,closed}=curvePoints(cv);let el;
     if(cv.type==='circle'&&!cv.plane)el=addCircle(V(cv.c),cv.r,layer,kind,{'data-ref':cv.id},(kind==='main'||kind==='construction'));
-    else el=addPath(layer,pts,kind,!!closed,{'data-ref':cv.id});return el}
+    else el=addPath(layer,pts,kind,!!closed,{'data-ref':cv.id});
+    if(ink.on){const t=Math.min(1,Math.max(0,.5+el._z/(2*ink.R)));el.style.setProperty('--dzw',(1.35-.8*t).toFixed(3));el.style.setProperty('--dzo',(1-.62*t).toFixed(3))}return el}
+  const ink={on:false,R:250};
+  const radiusOf=K=>K.radius??(K.radius=Math.max(1,...K.pts.map(p=>Math.hypot(p.x,p.y,p.abs?p.z:0))));
   let pickable=[];
   function drawConstruction(){const K=figure(),n=state.step-1,seen=new Set();
-    K.curves.forEach(cv=>{if(cv.step>n||(cv.kind==='aux'&&!state.workings))return;drawCurve(cv,els[LAYER_OF[cv.kind]||'shapes']);if(cv.kind!=='aux')cv.parents.forEach(p=>{if(p.id&&p.id[0]==='p')seen.add(p)})});
-    K.marks.forEach(m=>{if(m.step<=n){seen.add(m.p);if(state.points)point(V(m.p))}});
-    K.dots.forEach(d=>{if(d.step<=n){const p=project(V(d.p));els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:d.r,fill:'var(--accent)'}))}});
-    K.labels.forEach(l=>{if(l.step<=n){const p=project(V(l.p));addScreenText(els.guides,p.x+l.dx,p.y+l.dy,l.text,l.anchor)}});
+    K.curves.forEach(cv=>{if(!vis(cv,n)||(cv.kind==='aux'&&!state.workings))return;drawCurve(cv,els[LAYER_OF[cv.kind]||'shapes']);if(cv.kind!=='aux')cv.parents.forEach(p=>{if(p.id&&p.id[0]==='p')seen.add(p)})});
+    K.marks.forEach(m=>{if(vis(m,n)){seen.add(m.p);if(state.points)point(V(m.p))}});
+    K.dots.forEach(d=>{if(vis(d,n)){const p=project(V(d.p));els.points.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:d.r,fill:'var(--accent)'}))}});
+    K.labels.forEach(l=>{if(vis(l,n)){const p=project(V(l.p));addScreenText(els.guides,p.x+l.dx,p.y+l.dy,l.text,l.anchor)}});
     return seen}
 
   /* ---------- lineage: every point can show where it came from ---------- */
@@ -524,7 +568,7 @@
   }
   function drawDimensions(){
     if(!state.dimensions)return;const K=figure(),n=state.step-1;let b=[1e9,1e9,-1e9,-1e9];
-    K.curves.forEach(cv=>{if(cv.step>n||cv.kind==='aux'||cv.kind==='shadow')return;curvePoints(cv).pts.forEach(p=>{b=[Math.min(b[0],p.x),Math.min(b[1],p.y),Math.max(b[2],p.x),Math.max(b[3],p.y)]})});
+    K.curves.forEach(cv=>{if(!vis(cv,n)||cv.kind==='aux'||cv.kind==='shadow')return;curvePoints(cv).pts.forEach(p=>{b=[Math.min(b[0],p.x),Math.min(b[1],p.y),Math.max(b[2],p.x),Math.max(b[3],p.y)]})});
     if(b[0]>b[2])return;const u=K.unit||1,f=v=>`${(v/u).toFixed(2)} ${K.unitName}`;
     const dimension=(a,b,label,ox,oy)=>{const p=project(a),q=project(b),x1=p.x+ox,y1=p.y+oy,x2=q.x+ox,y2=q.y+oy;addScreenLine(els.guides,p.x,p.y,x1,y1,'extension');addScreenLine(els.guides,q.x,q.y,x2,y2,'extension');addScreenLine(els.guides,x1,y1,x2,y2,'dimension');const ang=Math.atan2(y2-y1,x2-x1),tick=5;[ [x1,y1],[x2,y2] ].forEach(([x,y])=>addScreenLine(els.guides,x-Math.sin(ang)*tick,y+Math.cos(ang)*tick,x+Math.sin(ang)*tick,y-Math.cos(ang)*tick,'dimension'));addScreenText(els.guides,(x1+x2)/2,(y1+y2)/2-7,label)};
     dimension({x:b[0],y:b[3],z:0},{x:b[2],y:b[3],z:0},f(b[2]-b[0]),0,24);dimension({x:b[2],y:b[1],z:0},{x:b[2],y:b[3],z:0},f(b[3]-b[1]),24,0);
@@ -537,24 +581,58 @@
   }
   function drawDraftingOverlays(){clear(els.overlay);if(state.multiView&&state.mode!=='plan')els.overlay.appendChild(makePlanStudy())}
   function drawStepBreakpoints(){
-    clear(els.breakpoints);const list=figure().steps.map(s=>s.label),max=list.length;let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
+    const K=figure(),chap=K.steps.some(s=>s.chapter),list=K.steps.map(s=>chap?s.chapter:s.label),max=list.length;clear(els.breakpoints);let previous='';list.forEach((label,i)=>{if(i===0||label!==previous){const tick=document.createElement('i');tick.style.left=`${max===1?0:(i/(max-1))*100}%`;els.breakpoints.appendChild(tick)}previous=label});
+    const box=$('#chapters');box.hidden=!chap;if(!chap)return;const names=[...new Set(list)];
+    if(box.dataset.fig!==state.pattern){box.dataset.fig=state.pattern;box.innerHTML=names.map(n=>`<button type="button" data-chapter="${n}">${n}</button>`).join('');
+      box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{beginChange();stopPlayback();state.step=list.indexOf(b.dataset.chapter)+1;render();commitChange()}))}
+    box.querySelectorAll('button').forEach(b=>{if(b.dataset.chapter===list[state.step-1])b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
   }
   // one table drives the page stylesheet and the exported file: colour token, opacity, width (fixed, or [× line weight, minimum]), dash
   const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
     node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
-    aux:['perspective',.6,.75,'2 4'],shadow:['focus',.45,[.5,.5]],lit:['accent',1,[1.15,1.6]]};
-  function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):`${w}px`;
-    return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
+    aux:['perspective',.6,.75,'2 4'],shadow:['focus',.45,[.5,.5]],lit:['accent',1,[1.15,1.6]],ghost:['focus',.75,.8]};
+  function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px * var(--dzw,1)))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):weight==null?`calc(${w}px * var(--dzw,1))`:`${w}px`;
+    return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${weight==null?`calc(${o} * var(--dzo,1))`:o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
   document.head.appendChild(Object.assign(document.createElement('style'),{textContent:kindCss('#geometry ',c=>c==='ink'?'var(--ink-line)':`var(--${c})`)}));
   let lastStatus='',onRendered=null;
-  function render(){clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();drawDraftingOverlays();els.svg.style.setProperty('--w',state.weight);els.svg.classList.toggle('darkline',state.darkline);
+  /* ---------- symmetry axes: found from the solid itself, by testing which turns map it onto itself ---------- */
+  const v3=p=>[p.x,p.y,p.z],sub3=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  function axesOf(K){if(K.axes)return K.axes;const S=K.sym||[];if(!S.length)return K.axes=[];const R=Math.max(...S.map(p=>Math.hypot(...v3(p))));
+    const {E}=nearestEdges(S),nb=new Map(S.map(p=>[p,[]]));E.forEach(([a,b])=>{nb.get(a).push(b);nb.get(b).push(a)});
+    // candidates: through vertices, edge midpoints and face normals; that is every axis a Platonic solid has
+    const cand=[...S.map(v3),...E.map(([a,b])=>[a.x+b.x,a.y+b.y,a.z+b.z])];S.forEach(a=>{const n=nb.get(a);n.forEach((b,i)=>n.forEach((c,j)=>{if(j>i)cand.push(cross3(sub3(v3(b),v3(a)),sub3(v3(c),v3(a))))}))});
+    const turn=(p,a,t)=>{const c=Math.cos(t),s=Math.sin(t),d=dot3(p,a),x=cross3(a,p);return[0,1,2].map(i=>p[i]*c+x[i]*s+a[i]*d*(1-c))};
+    const order=a=>{for(const k of[5,4,3,2])if(S.every(p=>{const q=turn(v3(p),a,2*Math.PI/k);return S.some(s=>Math.hypot(s.x-q[0],s.y-q[1],s.z-q[2])<R*1e-6)}))return k;return 0};
+    const out=[];cand.forEach(c=>{const l=Math.hypot(...c);if(l<1e-9)return;let a=c.map(x=>x/l);if(a[2]<-1e-12||(Math.abs(a[2])<=1e-12&&(a[1]<0||(Math.abs(a[1])<1e-12&&a[0]<0))))a=a.map(x=>-x);
+      if(out.some(o=>Math.abs(dot3(o.a,a))>1-1e-9))return;const k=order(a);if(k>=2)out.push({a,k,rot:Math.atan2(a[0],a[1])*180/Math.PI,tilt:Math.atan2(Math.hypot(a[0],a[1]),a[2])*180/Math.PI})});
+    return K.axes=out}
+  function nearestAxis(){const K=figure(),n=state.step-1;if(!K.sym||!vis(K.sym[0],n)||state.mode==='plan'||(state.mode==='perspective'&&state.perspectivePoints!==1)||tween)return null;
+    const t=state.tilt*Math.PI/180,r=state.rotation*Math.PI/180,view=[Math.sin(t)*Math.sin(r),Math.sin(t)*Math.cos(r),Math.cos(t)];let best=null;
+    axesOf(K).forEach(ax=>{if(ax.tilt>72.0001)return;const deg=Math.acos(Math.min(1,Math.abs(dot3(view,ax.a))))*180/Math.PI;if(!best||deg<best.deg)best={...ax,deg}});return best}
+  function drawSymmetry(){const hud=$('#axisHud'),g=els.ghost;clear(g);const ax=nearestAxis();hud.hidden=!ax;if(!ax)return;const on=ax.deg<0.6,K=figure();
+    hud.classList.toggle('on',on);$('#snapBtn').hidden=on;
+    $('#axisText').textContent=on?(ax.k===3&&FIG[state.pattern].ghost?'Down a 3-fold axis: the cube is a hexagon, and Metatron’s Cube lies under it':`Down a ${ax.k}-fold axis: the outline repeats ${ax.k===2?'twice':ax.k+' times'} per turn`):`Nearest ${ax.k}-fold axis · ${ax.deg.toFixed(1)}°`;
+    if(!(ax.k===3&&FIG[state.pattern].ghost&&ax.deg<10))return;
+    // the flat figure behind the solid: 13 centres scaled to the solid's silhouette, fading in as the view lines up
+    const c=project({x:0,y:0,z:0});let far=null,fd=0;K.sym.forEach(p=>{const q=project(V(p)),d=Math.hypot(q.x-c.x,q.y-c.y);if(d>fd){fd=d;far=q}});
+    const th=Math.atan2(far.y-c.y,far.x-c.x),N=[{x:c.x,y:c.y}];[fd/2,fd].forEach(rr=>{for(let k=0;k<6;k++)N.push({x:c.x+rr*Math.cos(th+k*Math.PI/3),y:c.y+rr*Math.sin(th+k*Math.PI/3)})});
+    g.style.opacity=(1-ax.deg/10).toFixed(3);N.forEach((a,i)=>{const ci=svgEl('circle',{cx:a.x,cy:a.y,r:fd/4,'vector-effect':'non-scaling-stroke'});ci.dataset.kind='ghost';g.appendChild(ci);N.forEach((b,j)=>{if(j>i)addScreenLine(g,a.x,a.y,b.x,b.y,'ghost')})})}
+  let snapAnim=null;
+  function snapToAxis(ax=nearestAxis()){if(!ax)return;inertia=0;if(state.autoRotate){state.autoRotate=false;syncAllControls()}beginChange();
+    const r0=state.rotation,t0=state.tilt,dr=((ax.rot-r0+540)%360)-180,start=performance.now(),dur=matchMedia('(prefers-reduced-motion: reduce)').matches?0:450;
+    cancelAnimationFrame(snapAnim);const step=now=>{const e=dur?Math.min(1,(now-start)/dur):1,k=e<.5?2*e*e:1-Math.pow(-2*e+2,2)/2;state.rotation=((r0+dr*k+540)%360)-180;state.tilt=t0+(ax.tilt-t0)*k;els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render();if(e<1)snapAnim=requestAnimationFrame(step);else commitChange()};snapAnim=requestAnimationFrame(step)}
+  let lastSeen={pattern:null,step:0};
+  function startTween(si){const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;if(reduce)return;const tilt0=state.tilt,tilt1=state.mode!=='plan'&&state.tilt<14?36:null,t0=performance.now();tween={step:si,e:0};
+    const tick=now=>{if(!tween)return;const x=Math.min(1,(now-t0)/1600);tween.e=x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;if(tilt1!=null){state.tilt=tilt0+(tilt1-tilt0)*tween.e;els.tilt.value=state.tilt;syncValues()}if(x>=1)tween=null;render();if(tween)requestAnimationFrame(tick)};requestAnimationFrame(tick)}
+  function render(){{const K=figure();if(!tween&&lastSeen.pattern===state.pattern&&state.step===lastSeen.step+1&&K.steps[state.step-1]?.lift)startTween(state.step-1);lastSeen={pattern:state.pattern,step:state.step}}
+    ink.on=state.depthInk&&state.mode!=='plan'&&!harvesting;ink.R=radiusOf(figure());clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();drawDraftingOverlays();drawSymmetry();els.svg.style.setProperty('--w',state.weight);els.svg.classList.toggle('darkline',state.darkline);
     if(tracing&&(!figure().pts.includes(tracing)||tracing.step>state.step-1))tracing=null;drawLineage();
     const K=figure(),max=K.steps.length;if(state.step>max)state.step=max;const phase=K.steps[state.step-1].label;els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
     const projection=state.mode==='perspective'?`${state.perspectivePoints}-pt`:state.mode;const status=`<span>${titles[state.pattern]}</span><span>${projection}</span><span>${state.primitive==='solid'?'wireframe solids':'planar forms'}</span><span>${state.weight.toFixed(1)} pt</span><span>${state.darkline?'accent ink':'neutral ink'}</span>`;if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}
     if(onRendered)onRendered();
   }
-  function setPattern(v){state.pattern=v;state.step=1;tracing=null;state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
+  function setPattern(v){state.pattern=v;state.step=1;tracing=null;tween=null;const view=FIG[v].view;if(view){state.mode=view.mode;state.tilt=view.tilt;state.rotation=0}state.primitive=SPATIAL.includes(v)?'solid':'flat';syncAllControls();render()}
   els.pattern.addEventListener('change',e=>{beginChange();setPattern(e.target.value);commitChange()});
   $$('#viewMode button').forEach(b=>b.addEventListener('click',()=>{if(state.mode===b.dataset.mode)return;beginChange();state.mode=b.dataset.mode;syncAllControls();render();commitChange()}));
   $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
@@ -574,12 +652,13 @@
   els.play.addEventListener('click',()=>{state.playing=!state.playing;els.play.textContent=state.playing?'Ⅱ':'▶';els.play.setAttribute('aria-label',state.playing?'Pause construction':'Play construction');clearInterval(timer);if(state.playing)startPlayback()});
   els.speed.addEventListener('change',()=>{if(state.playing)startPlayback()});
   els.undo.addEventListener('click',undo);els.redo.addEventListener('click',redo);
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key==='ArrowRight'&&state.step<stepCount()){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){snapToAxis();return}if(e.key==='ArrowRight'&&state.step<stepCount()){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
   function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
   let drag=null,inertia=0,lastFrame=performance.now();
-  els.wrap.addEventListener('pointerdown',e=>{beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
+  els.wrap.addEventListener('pointerdown',e=>{if(e.target.closest('.axis-hud'))return;beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
   els.wrap.addEventListener('pointermove',e=>{if(!drag){if(e.pointerType==='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);if(hit!==tracing){tracing=hit;drawLineage()}}return}if(!drag.picker&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
-  const endDrag=()=>{if(drag&&!drag.picker)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange()};els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
+  const endDrag=()=>{const rotating=drag&&!drag.picker;if(rotating)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange();if(rotating&&Math.abs(inertia)<.05){const ax=nearestAxis();if(ax&&ax.deg<5&&ax.deg>=0.01)snapToAxis(ax)}};
+  $('#snapBtn').addEventListener('click',()=>snapToAxis());els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
   els.wrap.addEventListener('pointerup',e=>{if(drag&&!drag.picker&&!drag.moved&&e.pointerType!=='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);tracing=hit===tracing?null:hit;drawLineage()}endDrag()});els.wrap.addEventListener('pointercancel',endDrag);
   function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const isSpatial=SPATIAL.includes(state.pattern);if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
   function downloadableSvg(){
@@ -587,6 +666,7 @@
     // and inline the class rules the live page gets from CSS.
     const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
     const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
+    clone.querySelectorAll('[style*="--dzw"]').forEach(n=>{const k=KIND[n.dataset.kind];if(!k)return;const dw=+n.style.getPropertyValue('--dzw'),dop=+n.style.getPropertyValue('--dzo'),w=Array.isArray(k[2])?Math.max(k[2][1],state.weight*k[2][0]*dw):k[2]*dw;n.setAttribute('style',`stroke-width:${w.toFixed(3)}px;opacity:${(k[1]*dop).toFixed(3)}`)});
     clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
     const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
     const style=svgEl('style');style.textContent=[
@@ -839,9 +919,10 @@
     const svg=svgOpen(W,H,esc(fileTitle())).replace(/width="[^"]+mm" height="[^"]+mm"/,`width="${w}" height="${h}"`)+printInner(g)+'</svg>';
     try{download(`${baseName()}@${Math.round(dpi)}dpi.png`,await rasterize(svg,w,h,'#ffffff'));if(dpi<+ST.dpi-1)showToast(`Capped at ${Math.round(dpi)} dpi (${w}×${h} px, the browser's limit). Use the SVG for full resolution.`)}catch{showToast('PNG too large for this browser — use the SVG')}});
   sEl('stScreenSvg').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}-screen.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
-  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__proj=q=>project(V(q));
+  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__axes=()=>axesOf(figure());window.__nearest=()=>nearestAxis();window.__snap=()=>snapToAxis();window.__proj=q=>project(V(q));
   window.__studio={geometry,plotterPlan,stencilSheets,pageSize,ST,tilePlan,tiles,zip,printInner,crossings,updatePreview};
 
+  {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
   syncAllControls();updateHistoryButtons();render();
 })();
 </script>
