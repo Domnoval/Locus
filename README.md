@@ -33,6 +33,10 @@ The solids are 3D, so they start from canonical coordinates (noted on every vert
 
 **Depth ink** makes nearer lines heavier and darker and farther lines lighter, so wireframes stop flipping (the Necker-cube effect). Exports bake the depth into each stroke.
 
+## Look
+
+Two worlds, both designed on purpose. **Night instrument** is the default: blue-black ground, bone-white hairlines, slate construction circles, one cinnabar accent on whatever the current step just built, and gold for lineage traces. **Geometer's notebook** is the light mode: warm paper with a faint grain, graphite lines, blue-pencil construction circles and red-pencil accents. Every centre is a compass pinhole. The theme button cycles System → Night → Paper and remembers your choice. Type is Instrument Serif for the figure's name, IBM Plex Sans for the interface, and IBM Plex Mono for labels and readouts. Panels are hairline rules rather than cards.
+
 ## Layout
 
 ```
@@ -48,7 +52,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 62 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, 4▲ 5▼, export …
+node tools/verify.js              # 66 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, 4▲ 5▼, export …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 ```
@@ -58,6 +62,7 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
+- **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
 - **v4, Pass II**: Continuum with chapters and the lift animation, symmetry axes found from the geometry with snapping and the Metatron ghost, depth ink, and Auto rotate available in every view. 62 checks.
 - **v3, Pass I**: the construction kernel and figure registry, lineage on hover, the Workings view, a 3D Metatron that collapses onto the 2D figure in plan, styling moved to CSS generated from one table (shared with the exported SVG), dimensions that measure the construction, and `tools/verify.js` as a 44-check pass/fail suite.
 
