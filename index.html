@@ -660,7 +660,7 @@
   const endDrag=()=>{const rotating=drag&&!drag.picker;if(rotating)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange();if(rotating&&Math.abs(inertia)<.05){const ax=nearestAxis();if(ax&&ax.deg<5&&ax.deg>=0.01)snapToAxis(ax)}};
   $('#snapBtn').addEventListener('click',()=>snapToAxis());els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
   els.wrap.addEventListener('pointerup',e=>{if(drag&&!drag.picker&&!drag.moved&&e.pointerType!=='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);tracing=hit===tracing?null:hit;drawLineage()}endDrag()});els.wrap.addEventListener('pointercancel',endDrag);
-  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const isSpatial=SPATIAL.includes(state.pattern);if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
+  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const K=figure(),isSpatial=SPATIAL.includes(state.pattern)||!!(K.sym&&vis(K.sym[0],state.step-1));if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
   function downloadableSvg(){
     // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
     // and inline the class rules the live page gets from CSS.
@@ -733,7 +733,7 @@
       // filled dots: the Yantra's bindu belongs to the figure; the tiny centre dots are marks
       if(src==='points')g.querySelectorAll('circle').forEach(c=>{const r=+c.getAttribute('r'),cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy'),kind=r>=3?'bindu':'dot',n=Math.max(12,Math.round(24*res));
         out.push({layer:layerOf(kind,src),kind,closed:true,fill:true,pts:Array.from({length:n},(_,i)=>[cx+Math.cos(i/n*2*Math.PI)*r,cy+Math.sin(i/n*2*Math.PI)*r])})})});
-    RES=saved;render();harvesting=false;return out}
+    RES=saved;harvesting=false;render();return out}
 
   // --- fit to the page, at a resolution that keeps chords within tolerance ---
   let geoCache={key:'',geo:null};

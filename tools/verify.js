@@ -118,6 +118,17 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   check('Depth ink varies weight with depth', Math.max(...ink) - Math.min(...ink) > 0.3, { min: Math.min(...ink), max: Math.max(...ink) });
   check('Auto rotate can be switched in every view', await page.isVisible('#autoRotateBtn'));
 
+  // regressions found in review of PR #2
+  await page.selectOption('#pattern', 'continuum'); await setStep('max'); await page.click('#viewMode button[data-mode="axon"]');
+  if (!(await page.$eval('#autoRotateBtn', b => b.classList.contains('active')))) await page.click('#autoRotateBtn');
+  const ar0 = await page.$eval('#rotation', e => +e.value); await page.waitForTimeout(600); const ar1 = await page.$eval('#rotation', e => +e.value);
+  await page.click('#autoRotateBtn');
+  check('Auto rotate turns the Continuum once its solids are showing', ar0 !== ar1, { ar0, ar1 });
+  const inkA = await page.$$eval('#shapeLayer path[style*="--dzw"]', x => x.length);
+  await page.click('#studioBtn'); await page.waitForTimeout(400); await page.click('#stClose'); await page.waitForTimeout(100);
+  const inkB = await page.$$eval('#shapeLayer path[style*="--dzw"]', x => x.length);
+  check('Depth ink survives opening and closing Studio', inkA > 0 && inkA === inkB, { inkA, inkB });
+
   // controls
   await go('flower'); check('φ overlay unavailable on hexagonal figures', await page.$eval('#phiChip', b => b.disabled));
   await go('dodecahedron'); check('φ overlay available on pentagonal figures', !(await page.$eval('#phiChip', b => b.disabled)));
