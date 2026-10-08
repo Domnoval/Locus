@@ -83,6 +83,7 @@
     #perspectiveLayer [data-picker]{cursor:grab}
     #perspectiveLayer .horizon-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
     #perspectiveLayer .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4;vector-effect:non-scaling-stroke}
+    #perspectiveLayer .vp-arrow{fill:none;stroke:var(--perspective);stroke-width:1.4}
     #perspectiveLayer .vp-dot{fill:var(--perspective);pointer-events:none}
     #perspectiveLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);pointer-events:none}
     #overlayLayer,#lineageLayer{pointer-events:none}
@@ -226,7 +227,7 @@
         <div class="toggle-row">
           <button class="chip active" id="perspectiveLinesBtn" type="button">Perspective lines</button>
         </div>
-        <p class="picker-note">Drag the horizon or numbered points directly on the drawing. Dragging the form pauses auto-rotation.</p>
+        <p class="picker-note">The horizon is your eye level and the numbered points are where the box’s edges meet: drag them to move your eye, not the drawing. Dragging the form pauses auto-rotation.</p>
       </div>
     </section>
     <section class="panel">
@@ -355,30 +356,41 @@
   function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restoreSnapshot(redoStack.pop())}
   const svgEl=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e};
   const clear=e=>{while(e.firstChild)e.removeChild(e.firstChild)};
-  function project(p){
-    let {x,y,z=0}=p; const rz=state.rotation*Math.PI/180, tx=(state.mode==='plan'?0:state.tilt)*Math.PI/180;
-    let x1=x*Math.cos(rz)-y*Math.sin(rz), y1=x*Math.sin(rz)+y*Math.cos(rz);
-    if(state.mirror)x1=-x1;
-    if(state.mode==='perspective'){
-      if(state.perspectivePoints===1){
-        const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx),f=690,d=f+z2+state.depth*1.7,sc=f/Math.max(220,d);
-        return {x:state.vp1X+x1*sc,y:state.horizon+y2*sc,z:z2,sc};
-      }
-      const cx=(state.vpLeft+state.vpRight)/2,f=Math.max(190,(state.vpRight-state.vpLeft)/2),yaw=Math.PI/4;
-      const yt=y1*Math.cos(tx)-z*Math.sin(tx),zt=y1*Math.sin(tx)+z*Math.cos(tx);
-      let xr=x1*Math.cos(yaw)-zt*Math.sin(yaw),zr=x1*Math.sin(yaw)+zt*Math.cos(yaw),yr=yt;
-      if(state.perspectivePoints===3){
-        const direction=state.vp3Y>=state.horizon?1:-1,span=Math.max(80,Math.abs(state.vp3Y-state.horizon)),pitch=direction*Math.min(.58,Math.max(.15,f/span*.34));
-        const y3=yr*Math.cos(pitch)-zr*Math.sin(pitch);zr=yr*Math.sin(pitch)+zr*Math.cos(pitch);yr=y3;
-      }
-      const d=f+zr+state.depth*1.45,sc=f/Math.max(145,d),skew=state.perspectivePoints===3?(state.vp3X-cx)/Math.max(140,Math.abs(state.vp3Y-state.horizon))*.22:0;
-      return {x:cx+xr*sc+yr*sc*skew,y:state.horizon+yr*sc,z:zr,sc};
-    }
-    const y2=y1*Math.cos(tx)-z*Math.sin(tx),z2=y1*Math.sin(tx)+z*Math.cos(tx);
-    return {x:450+x1,y:350+y2,z:z2,sc:1};
-  }
+  /* ---------- the camera: one pinhole for all three perspective systems ----------
+     World axes: X right, Y down (vertical), Z into the page. The horizon is eye level, so it passes through the
+     principal point P; a direction d vanishes at P + f·(dx, dy)/dz. The object keeps its place on the page, and moving
+     the horizon or a vanishing point moves the eye instead. */
+  const VP3_SPAN=200,vp3Out=u=>u<=VP3_SPAN?u:VP3_SPAN+(u-VP3_SPAN)*(1+(u-VP3_SPAN)/40),vp3In=v=>v<=VP3_SPAN?v:VP3_SPAN+20*(Math.sqrt(1+(v-VP3_SPAN)/10)-1);
+  // a third vanishing point must make an acute triangle with the other two, or no camera can see it
+  function vp3Effective(){const h=state.horizon,L=state.vpLeft,R=state.vpRight,x=Math.min(R-20,Math.max(L+20,state.vp3X)),ab=(x-L)*(R-x),need=Math.sqrt(ab*1.08);let dv=state.vp3Y-h;if(Math.abs(dv)<need)dv=(dv<0?-1:1)*need;return{x,y:h+dv}}
+  let camMemo=null;
+  function camera(){const k=[state.perspectivePoints,state.horizon,state.vp1X,state.vpLeft,state.vpRight,state.vp3X,state.vp3Y,state.depth].join();if(camMemo&&camMemo.k===k)return camMemo;
+    const h=state.horizon,n=state.perspectivePoints;let P,f,M,vps;
+    if(n===1){P={x:state.vp1X,y:h};f=690;M=[[1,0,0],[0,1,0],[0,0,1]];vps=[{axis:2,...P}]}
+    else{const L=state.vpLeft,R=state.vpRight;
+      if(n===2){const px=Math.min(R-12,Math.max(L+12,450));P={x:px,y:h};f=Math.sqrt((px-L)*(R-px));const psi=Math.atan2(px-L,f),c=Math.cos(psi),si=Math.sin(psi);
+        // columns are where world X, Y, Z point in the camera: X vanishes at R, Z at L, verticals stay vertical
+        M=[[c,0,-si],[0,1,0],[si,0,c]];vps=[{axis:2,x:L,y:h},{axis:0,x:R,y:h}]}
+      else{const V=vp3Effective(),a=V.x-L,b=R-V.x;P={x:V.x,y:h+a*b/(V.y-h)};f=Math.sqrt(Math.max(1,a*b-(P.y-h)**2));   // P is the orthocentre of the three points
+        const dir=(q,sg=1)=>{const v=[q.x-P.x,q.y-P.y,f],l=Math.hypot(...v);return v.map(t=>sg*t/l)},dX=dir({x:R,y:h}),dZ=dir({x:L,y:h}),dY=dir(V,V.y>h?1:-1);
+        M=[[dX[0],dY[0],dZ[0]],[dX[1],dY[1],dZ[1]],[dX[2],dY[2],dZ[2]]];vps=[{axis:2,x:L,y:h},{axis:0,x:R,y:h},{axis:1,...V}]}}
+    const D=1.1*f+1.5*state.depth,T=[(450-P.x)*D/f,(350-P.y)*D/f,D];return camMemo={k,P,f,M,T,vps}}
+  function modelPoint(p){let {x,y,z=0}=p;const rz=state.rotation*Math.PI/180,tx=(state.mode==='plan'?0:state.tilt)*Math.PI/180;
+    let x1=x*Math.cos(rz)-y*Math.sin(rz),y1=x*Math.sin(rz)+y*Math.cos(rz);if(state.mirror)x1=-x1;
+    return{x:x1,y:y1*Math.cos(tx)-z*Math.sin(tx),z:y1*Math.sin(tx)+z*Math.cos(tx)}}
+  function toCamera(W){const c=camera(),M=c.M;return[M[0][0]*W.x+M[0][1]*W.y+M[0][2]*W.z+c.T[0],M[1][0]*W.x+M[1][1]*W.y+M[1][2]*W.z+c.T[1],M[2][0]*W.x+M[2][1]*W.y+M[2][2]*W.z+c.T[2]]}
+  function fromCamera(C){const c=camera(),cz=Math.max(1e-3,C[2]);return{x:c.P.x+c.f*C[0]/cz,y:c.P.y+c.f*C[1]/cz,z:cz-c.T[2],sc:c.f/cz}}
+  let nearOverride=0;const nearPlane=()=>nearOverride||camera().f*.3;   // nothing closer to the eye than this is drawn, as with any real camera
+  function viewWorld(W){return fromCamera(toCamera(W))}
+  function project(p){const W=modelPoint(p);if(state.mode==='perspective')return viewWorld(W);return{x:450+W.x,y:350+W.y,z:W.z,sc:1}}
   let lastPathZ=0;
-  function pathFrom(points,close=false){let zs=0;const d=points.map((p,i)=>{const v=project(p);zs+=v.z;return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');lastPathZ=zs/points.length;return d}
+  function clippedPath(points,close){const near=nearPlane(),C=points.map(p=>toCamera(modelPoint(p)));if(close)C.push(C[0]);let d='',pen=false,zs=0,n=0,cut=false;
+    const put=(q,move)=>{const v=fromCamera(q);zs+=v.z;n++;d+=`${move?'M':'L'}${v.x.toFixed(2)},${v.y.toFixed(2)} `};
+    for(let i=0;i<C.length;i++){const q=C[i];if(i===0){if(q[2]>=near){put(q,true);pen=true}else cut=true;continue}
+      const p=C[i-1],inP=p[2]>=near,inQ=q[2]>=near;
+      if(inP&&inQ){put(q,false)}else if(inP!==inQ){cut=true;const t=(near-p[2])/(q[2]-p[2]),m=[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,near];if(inP){put(m,false);pen=false}else{put(m,true);put(q,false);pen=true}}else cut=true}
+    lastPathZ=n?zs/n:0;return d.trim()+(close&&!cut?' Z':'')||'M0,0'}
+  function pathFrom(points,close=false){if(state.mode==='perspective')return clippedPath(points,close);let zs=0;const d=points.map((p,i)=>{const v=project(p);zs+=v.z;return `${i?'L':'M'}${v.x.toFixed(2)},${v.y.toFixed(2)}`}).join(' ')+(close?' Z':'');lastPathZ=zs/points.length;return d}
   let RES=1; // sample-density multiplier; Studio raises it so circles stay smooth at print scale
   function circlePoints(c,r,segments=96,plane='xy'){segments=Math.max(8,Math.round(segments*RES));return Array.from({length:segments},(_,i)=>{const a=i/segments*Math.PI*2,co=Math.cos(a)*r,si=Math.sin(a)*r,x=c.x,y=c.y,z=c.z||0;if(plane==='xz')return{x:x+co,y,z:z+si};if(plane==='yz')return{x,y:y+co,z:z+si};return{x:x+co,y:y+si,z}})}
   function addPath(layer,points,cls='main',close=false,extra={}){const p=svgEl('path',{d:pathFrom(points,close),'vector-effect':'non-scaling-stroke',...extra});p._z=lastPathZ;p.dataset.kind=cls;layer.appendChild(p);return p}
@@ -400,15 +412,27 @@
     const z=c.z||0;addPath(els.points,Array.from({length:14},(_,k)=>({x:c.x+Math.cos(k/14*2*Math.PI)*3.6,y:c.y+Math.sin(k/14*2*Math.PI)*3.6,z})),'node',true);
     const p=project(c),dot=svgEl('circle',{cx:p.x,cy:p.y,r:1.35,fill:'var(--accent)'});dot.dataset.index=i;els.points.appendChild(dot);
   }
-  function drawGrid(){clear(els.grid);if(!state.guides)return;for(let x=-360;x<=360;x+=45)addPath(els.grid,[{x,y:-300,z:-25},{x,y:300,z:-25}],'grid');for(let y=-270;y<=270;y+=45)addPath(els.grid,[{x:-405,y,z:-25},{x:405,y,z:-25}],'grid');addPath(els.grid,[{x:-400,y:0},{x:400,y:0}],'axis-x');addPath(els.grid,[{x:0,y:-310},{x:0,y:310}],'axis-y');if(state.mode!=='plan')addPath(els.grid,[{x:0,y:0,z:-255},{x:0,y:0,z:255}],'axis-z')}
-  function activeVanishingPoints(){if(state.perspectivePoints===1)return [{x:state.vp1X,y:state.horizon}];const points=[{x:state.vpLeft,y:state.horizon},{x:state.vpRight,y:state.horizon}];if(state.perspectivePoints===3)points.push({x:state.vp3X,y:state.vp3Y});return points}
+  function drawGrid(){clear(els.grid);if(!state.guides)return;if(state.mode==='perspective')nearOverride=camera().T[2]*.6;   // the floor grid would run past the eye; keep only the stretch well in front of it
+    try{for(let x=-360;x<=360;x+=45)addPath(els.grid,[{x,y:-300,z:-25},{x,y:300,z:-25}],'grid');for(let y=-270;y<=270;y+=45)addPath(els.grid,[{x:-405,y,z:-25},{x:405,y,z:-25}],'grid');addPath(els.grid,[{x:-400,y:0},{x:400,y:0}],'axis-x');addPath(els.grid,[{x:0,y:-310},{x:0,y:310}],'axis-y');if(state.mode!=='plan')addPath(els.grid,[{x:0,y:0,z:-255},{x:0,y:0,z:255}],'axis-z')}finally{nearOverride=0}}
+  function activeVanishingPoints(){return camera().vps.map(v=>({x:v.x,y:v.y,axis:v.axis}))}
   function screenLine(x1,y1,x2,y2,kind='perspective-line',extra={}){const line=svgEl('line',{x1,y1,x2,y2,'vector-effect':'non-scaling-stroke',...extra});line.dataset.kind=kind;els.perspective.appendChild(line);return line}
-  function drawPerspective(){clear(els.perspective);if(state.mode!=='perspective')return;const vps=activeVanishingPoints();
-    screenLine(0,state.horizon,900,state.horizon,'horizon');
-    const hg=svgEl('g',{'data-picker':'horizon','aria-label':'Horizon picker','role':'button'});hg.appendChild(svgEl('circle',{cx:24,cy:state.horizon,r:9,class:'horizon-handle'}));const ht=svgEl('text',{x:39,y:state.horizon+4,class:'vp-label'});ht.textContent='HORIZON';hg.appendChild(ht);els.perspective.appendChild(hg);
-    if(state.perspectiveLines){const anchors=state.perspectivePoints===1?[[250,165],[650,165],[250,535],[650,535]]:[[315,200],[585,200],[315,500],[585,500]];vps.forEach((vp,i)=>anchors.filter((_,n)=>state.perspectivePoints===1||n%2===i%2||i===2).forEach(a=>screenLine(vp.x,vp.y,a[0],a[1])))}
-    vps.forEach((vp,i)=>{const g=svgEl('g',{'data-picker':`vp-${i}`,'aria-label':`Vanishing point ${i+1}`,'role':'button'});g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:10,class:'vp-handle'}));g.appendChild(svgEl('circle',{cx:vp.x,cy:vp.y,r:2.6,class:'vp-dot'}));const t=svgEl('text',{x:vp.x+14,y:vp.y-12,class:'vp-label'});t.textContent=`VP ${i+1}`;g.appendChild(t);els.perspective.appendChild(g)})
+  function drawPerspective(){clear(els.perspective);if(state.mode!=='perspective')return;const cam=camera(),vps=activeVanishingPoints(),h=state.horizon;
+    screenLine(0,h,900,h,'horizon');
+    const hg=svgEl('g',{'data-picker':'horizon','aria-label':'Horizon: eye level','role':'button'});hg.appendChild(svgEl('circle',{cx:24,cy:h,r:9,class:'horizon-handle'}));const ht=svgEl('text',{x:880,y:h+18,'text-anchor':'end',class:'vp-label'});   // under the far right end, clear of the VP knobs
+    ht.textContent='HORIZON · EYE LEVEL';hg.appendChild(ht);els.perspective.appendChild(hg);
+    if(state.perspectiveLines){
+      // the box the figure sits in, aligned to the world; its edges run exactly to the vanishing points
+      const K=figure(),n=state.step-1;let b=[1e9,1e9,1e9,-1e9,-1e9,-1e9];
+      const own=K.curves.filter(cv=>vis(cv,n)&&['main','web','lens'].includes(cv.kind)),use=own.length?own:K.curves.filter(cv=>vis(cv,n)&&cv.kind!=='aux');use.forEach(cv=>{curvePoints(cv).pts.forEach(p=>{const W=modelPoint(p);b=[Math.min(b[0],W.x),Math.min(b[1],W.y),Math.min(b[2],W.z),Math.max(b[3],W.x),Math.max(b[4],W.y),Math.max(b[5],W.z)]})});
+      if(b[0]<=b[3]){const C=(i,j,k)=>viewWorld({x:i?b[3]:b[0],y:j?b[4]:b[1],z:k?b[5]:b[2]}),edges=[];
+        for(const a of[0,1])for(const c of[0,1]){edges.push([0,C(0,a,c),C(1,a,c)]);edges.push([1,C(a,0,c),C(a,1,c)]);edges.push([2,C(a,c,0),C(a,c,1)])}
+        edges.forEach(([axis,p,q])=>{screenLine(p.x,p.y,q.x,q.y,'perspective-box');const vp=vps.find(v=>v.axis===axis);if(!vp)return;const far=Math.hypot(p.x-vp.x,p.y-vp.y)>Math.hypot(q.x-vp.x,q.y-vp.y)?p:q;screenLine(far.x,far.y,vp.x,vp.y)})}}
+    vps.forEach((vp,i)=>{let kx=vp.x,ky=vp.y,off=false;if(i===2){const dv=vp.y-h,shown=vp3In(Math.abs(dv));ky=h+Math.sign(dv)*shown;off=Math.abs(dv)>VP3_SPAN+0.5}
+      const g=svgEl('g',{'data-picker':`vp-${i}`,'aria-label':`Vanishing point ${i+1}`,'role':'button'});g.appendChild(svgEl('circle',{cx:kx,cy:ky,r:10,class:'vp-handle'}));g.appendChild(svgEl('circle',{cx:kx,cy:ky,r:2.6,class:'vp-dot'}));
+      const t=svgEl('text',{x:kx+14,y:ky-12,class:'vp-label'});t.textContent=off?`VP ${i+1} · ${Math.round(Math.abs(vp.y-h))} px ${vp.y>h?'below':'above'} the horizon, off the page`:`VP ${i+1}`;g.appendChild(t);
+      if(off){const dir=Math.sign(vp.y-h);g.appendChild(svgEl('path',{d:`M${kx-5} ${ky+dir*14}L${kx} ${ky+dir*21}L${kx+5} ${ky+dir*14}`,class:'vp-arrow'}))}els.perspective.appendChild(g)})
   }
+
   /* ================= Kernel: compass, straightedge, and a record of how every point was made =================
      A figure is a script, not a coordinate list. Its only moves are circle(centre, through), line(a, b) and
      meet(x, y); after the two givens, every point is the meeting of two curves. A figure written this way
@@ -648,7 +672,7 @@
     box.querySelectorAll('button').forEach(b=>{if(b.dataset.chapter===list[state.step-1])b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
   }
   // one table drives the page stylesheet and the exported file: colour token, opacity, width (fixed, or [× line weight, minimum]), dash
-  const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],
+  const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],'perspective-box':['perspective',.4,.75],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
     node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
     aux:['perspective',.6,.75,'2 4'],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
@@ -696,7 +720,7 @@
   els.pattern.addEventListener('change',e=>{beginChange();setPattern(e.target.value);commitChange()});
   $$('#viewMode button').forEach(b=>b.addEventListener('click',()=>{if(state.mode===b.dataset.mode)return;beginChange();state.mode=b.dataset.mode;syncAllControls();render();commitChange()}));
   $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
-  $$('#perspectiveMode button').forEach(b=>b.addEventListener('click',()=>{const value=+b.dataset.points;if(state.perspectivePoints===value)return;beginChange();state.perspectivePoints=value;syncAllControls();render();commitChange()}));
+  $$('#perspectiveMode button').forEach(b=>b.addEventListener('click',()=>{const value=+b.dataset.points;if(state.perspectivePoints===value)return;beginChange();state.perspectivePoints=value;if(value===3&&camera().f<220){Object.assign(state,{horizon:150,vpLeft:90,vpRight:810,vp3X:450,vp3Y:801});els.horizon.value=150}syncAllControls();render();commitChange()}));
   function rangeHistory(el){el.addEventListener('pointerdown',beginChange);el.addEventListener('keydown',beginChange);el.addEventListener('change',commitChange);el.addEventListener('blur',commitChange)}
   rangeHistory(els.horizon);els.horizon.addEventListener('input',e=>{state.horizon=+e.target.value;syncValues();render()});
   $('#perspectiveLinesBtn').addEventListener('click',e=>{beginChange();state.perspectiveLines=!state.perspectiveLines;e.currentTarget.classList.toggle('active',state.perspectiveLines);syncPressed();render();commitChange()});
@@ -716,7 +740,7 @@
   function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
   let drag=null,inertia=0,lastFrame=performance.now();
   els.wrap.addEventListener('pointerdown',e=>{if(e.target.closest('.axis-hud'))return;beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
-  els.wrap.addEventListener('pointermove',e=>{if(!drag){if(e.pointerType==='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);if(hit!==tracing){tracing=hit;drawLineage()}}return}if(!drag.picker&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=Math.max(70,Math.min(630,p.y))}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
+  els.wrap.addEventListener('pointermove',e=>{if(!drag){if(e.pointerType==='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);if(hit!==tracing){tracing=hit;drawLineage()}}return}if(!drag.picker&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(drag.picker){const p=eventToSvg(e);if(drag.picker==='horizon'){state.horizon=Math.max(70,Math.min(630,p.y))}else{const i=+drag.picker.split('-')[1];if(state.perspectivePoints===1){state.vp1X=Math.max(35,Math.min(865,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===0){state.vpLeft=Math.max(35,Math.min(state.vpRight-80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else if(i===1){state.vpRight=Math.min(865,Math.max(state.vpLeft+80,p.x));state.horizon=Math.max(70,Math.min(630,p.y))}else{const u=Math.max(-670,Math.min(670,p.y-state.horizon));state.vp3X=Math.max(35,Math.min(865,p.x));state.vp3Y=state.horizon+Math.sign(u||1)*vp3Out(Math.abs(u));const v=vp3Effective();state.vp3X=v.x;state.vp3Y=v.y}}els.horizon.value=state.horizon;syncValues();render();return}const now=performance.now(),dt=Math.max(8,now-drag.lastTime),dx=e.clientX-drag.lastX;drag.velocity=dx/dt*.55;drag.lastX=e.clientX;drag.lastTime=now;state.rotation=((drag.r+(e.clientX-drag.x)*.55+180)%360+360)%360-180;if(state.mode!=='plan')state.tilt=Math.max(0,Math.min(72,drag.t-(e.clientY-drag.y)*.35));els.rotation.value=state.rotation;els.tilt.value=state.tilt;syncValues();render()});
   const endDrag=()=>{const rotating=drag&&!drag.picker;if(rotating)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange();if(rotating&&Math.abs(inertia)<.05){const ax=nearestAxis();if(ax&&ax.deg<5&&ax.deg>=0.01)snapToAxis(ax)}};
   $('#snapBtn').addEventListener('click',()=>snapToAxis());els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
   els.wrap.addEventListener('pointerup',e=>{if(drag&&!drag.picker&&!drag.moved&&e.pointerType!=='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);tracing=hit===tracing?null:hit;drawLineage()}endDrag()});els.wrap.addEventListener('pointercancel',endDrag);
@@ -732,7 +756,7 @@
     const style=svgEl('style');style.textContent=[
       'path{fill:none}',`text{font-family:${mono}}`,
       `.horizon-handle,.vp-handle{fill:${T('canvas')};stroke:${T('perspective')};stroke-width:1.4}`,
-      `.vp-dot{fill:${T('perspective')}}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
+      `.vp-dot{fill:${T('perspective')}}`,`.vp-arrow{fill:none;stroke:${T('perspective')};stroke-width:1.4}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
       `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
       `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
       `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`,kindCss('',c=>T(c==='ink'?(state.darkline?'accent':'geometry'):c),state.weight)].join('\n');
@@ -979,7 +1003,7 @@
     const svg=svgOpen(W,H,esc(fileTitle())).replace(/width="[^"]+mm" height="[^"]+mm"/,`width="${w}" height="${h}"`)+printInner(g)+'</svg>';
     try{download(`${baseName()}@${Math.round(dpi)}dpi.png`,await rasterize(svg,w,h,'#ffffff'));if(dpi<+ST.dpi-1)showToast(`Capped at ${Math.round(dpi)} dpi (${w}×${h} px, the browser's limit). Use the SVG for full resolution.`)}catch{showToast('PNG too large for this browser — use the SVG')}});
   sEl('stScreenSvg').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}-screen.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
-  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__axes=()=>axesOf(figure());window.__nearest=()=>nearestAxis();window.__snap=()=>snapToAxis();window.__proj=q=>project(V(q));
+  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__cam=()=>camera();window.__model=p=>modelPoint(p);window.__view=W=>viewWorld(W);window.__axes=()=>axesOf(figure());window.__nearest=()=>nearestAxis();window.__snap=()=>snapToAxis();window.__proj=q=>project(V(q));
   window.__studio={geometry,plotterPlan,stencilSheets,pageSize,ST,tilePlan,tiles,zip,printInner,crossings,updatePreview};
 
   // theme: System follows the OS (or the host page), Night and Paper pin a world
