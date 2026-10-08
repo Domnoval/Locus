@@ -118,6 +118,25 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   check('Depth ink varies weight with depth', Math.max(...ink) - Math.min(...ink) > 0.3, { min: Math.min(...ink), max: Math.max(...ink) });
   check('Auto rotate can be switched in every view', await page.isVisible('#autoRotateBtn'));
 
+  // regressions found in review of PR #2
+  await page.selectOption('#pattern', 'continuum'); await setStep('max'); await page.click('#viewMode button[data-mode="axon"]');
+  if (!(await page.$eval('#autoRotateBtn', b => b.classList.contains('active')))) await page.click('#autoRotateBtn');
+  const ar0 = await page.$eval('#rotation', e => +e.value); await page.waitForTimeout(600); const ar1 = await page.$eval('#rotation', e => +e.value);
+  await page.click('#autoRotateBtn');
+  check('Auto rotate turns the Continuum once its solids are showing', ar0 !== ar1, { ar0, ar1 });
+  const inkA = await page.$$eval('#shapeLayer path[style*="--dzw"]', x => x.length);
+  await page.click('#studioBtn'); await page.waitForTimeout(400); await page.click('#stClose'); await page.waitForTimeout(100);
+  const inkB = await page.$$eval('#shapeLayer path[style*="--dzw"]', x => x.length);
+  check('Depth ink survives opening and closing Studio', inkA > 0 && inkA === inkB, { inkA, inkB });
+
+  // look: theme toggle and the accent on the newest construction
+  const themes = [];
+  for (let i = 0; i < 3; i++) { await page.click('#themeBtn'); themes.push([await page.textContent('#themeBtn span'), await page.evaluate(() => document.documentElement.getAttribute('data-theme')), await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--paper').trim())]); }
+  check('Theme toggle cycles Night → Paper → System and repaints', themes[0][0] === 'Night' && themes[0][1] === 'dark' && themes[1][0] === 'Paper' && themes[1][1] === 'light' && themes[0][2] !== themes[1][2] && themes[2][0] === 'System', themes);
+  await page.selectOption('#pattern', 'flower'); await setStep(10);
+  const fresh = await page.$$eval('[data-fresh]', x => x.length); await setStep('max'); const freshEnd = await page.$$eval('[data-fresh]', x => x.length);
+  check('The newest step is marked in the accent, and the finished figure is not', fresh > 0 && freshEnd === 0, { fresh, freshEnd });
+
   // controls
   await go('flower'); check('φ overlay unavailable on hexagonal figures', await page.$eval('#phiChip', b => b.disabled));
   await go('dodecahedron'); check('φ overlay available on pentagonal figures', !(await page.$eval('#phiChip', b => b.disabled)));
