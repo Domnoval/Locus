@@ -153,6 +153,24 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   check('VP centre dots render', (await page.$$eval('#perspectiveLayer .vp-dot', x => x.length)) === 3);
   check('isSpatial is not a global', !(await page.evaluate(() => 'isSpatial' in window)));
 
+  // true perspective: parallel edges meet exactly at their handle, the horizon is eye level, nothing runs past the eye
+  const setR = (id, v) => page.$eval(id, (e, v) => { e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); }, v);
+  await setR('#rotation', 0); await setR('#tilt', 0);
+  const meets = () => page.evaluate(() => {
+    const V = window.__k().pts.filter(q => q.name[0] === 'V'), fam = { 0: [], 1: [], 2: [] };
+    V.forEach((a, i) => V.forEach((c, j) => { if (j > i && Math.abs(Math.hypot(a.x - c.x, a.y - c.y, a.z - c.z) - 196.3) < 1) { const d = [c.x - a.x, c.y - a.y, c.z - a.z].map(Math.abs); fam[d.indexOf(Math.max(...d))].push([window.__proj(a), window.__proj(c)]); } }));
+    const meet = ([a, b], [c, d]) => { const den = (a.x - b.x) * (c.y - d.y) - (a.y - b.y) * (c.x - d.x); if (Math.abs(den) < 1e-6) return null; const t = ((a.x - c.x) * (c.y - d.y) - (a.y - c.y) * (c.x - d.x)) / den; return { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) }; };
+    return window.__cam().vps.map(v => { const L = fam[v.axis], ms = L.slice(1).map(l => meet(L[0], l)).filter(Boolean); return ms.length ? Math.max(...ms.map(m => Math.hypot(m.x - v.x, m.y - v.y))) : Infinity; });
+  });
+  for (const pts of [1, 2, 3]) { await page.click(`#perspectiveMode button[data-points="${pts}"]`); const m = await meets(); check(`${pts}-point: every family of parallel edges meets at its vanishing point`, m.length === pts && m.every(d => d < 0.5), m); }
+  const gb = await page.evaluate(() => { const b = document.querySelector('#gridLayer').getBBox(); return Math.max(b.width, b.height); });
+  check('Perspective grid stays in front of the eye (no runaway coordinates)', gb < 1400, gb);
+  await page.click('#perspectiveMode button[data-points="1"]');
+  const atH = async h => { await setR('#horizon', h); return page.evaluate(() => { const ys = window.__k().pts.filter(q => q.name[0] === 'V').map(q => window.__proj(q).y), o = window.__view(window.__model({ x: 0, y: 0, z: 0 })); return { c: [o.x, o.y].map(Math.round), h: Math.round(Math.max(...ys) - Math.min(...ys)) }; }); };
+  const hs = [await atH(150), await atH(350), await atH(550)];
+  check('Horizon moves the eye, not the drawing', hs.every(r => r.c[0] === 450 && r.c[1] === 350) && hs[0].h !== hs[1].h, hs);
+  await setR('#horizon', 350);
+
   await page.click('#perspectiveMode button[data-points="1"]'); await page.click('#autoRotateBtn');
   const live = await page.evaluate(() => new Promise(res => { let n = 0; const mo = new MutationObserver(m => n += m.length); mo.observe(document.getElementById('statusLine'), { childList: true, subtree: true, characterData: true }); const r0 = document.getElementById('rotation').value; setTimeout(() => { mo.disconnect(); res({ n, rotated: r0 !== document.getElementById('rotation').value }); }, 1000); }));
   check('Status line stays quiet while auto-rotating', live.rotated && live.n === 0, live);

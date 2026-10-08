@@ -37,6 +37,17 @@ The solids are 3D, so they start from canonical coordinates (noted on every vert
 
 Two worlds, both designed on purpose. **Night instrument** is the default: blue-black ground, bone-white hairlines, slate construction circles, one cinnabar accent on whatever the current step just built, and gold for lineage traces. **Geometer's notebook** is the light mode: warm paper with a faint grain, graphite lines, blue-pencil construction circles and red-pencil accents. Every centre is a compass pinhole. The theme button cycles System → Night → Paper and remembers your choice. Type is Instrument Serif for the figure's name, IBM Plex Sans for the interface, and IBM Plex Mono for labels and readouts. Panels are hairline rules rather than cards.
 
+## Perspective
+
+Perspective is a real camera now: a pinhole with a focal length, an eye height and a direction it's looking. The handles are the camera's controls. Wherever you put them, every family of parallel edges converges exactly on its handle (the checks measure this to within half a pixel).
+
+- **Horizon** is your eye level. Moving it raises or lowers the eye, and the figure stays where it is: you see more of its top or its underside.
+- **1-point**: you look straight down one axis, so VP 1 is the centre of vision.
+- **2-point**: the two handles set the focal length (the distance between them) and which way you're turned (where the centre sits between them).
+- **3-point**: the three handles form a triangle whose orthocentre is where you're looking. VP 3 is usually far off the page, so its knob stays at the edge with an arrow and a readout of the real distance. Dragging it further out uses an accelerating scale. Handles can't be put anywhere that no real camera could produce.
+- A perspective box drawn around the figure shows the convergence, and the guide rays run from its edges to the handles.
+- Lines that come too close to the eye are clipped, as on any real camera, and the floor grid keeps only the stretch well in front of you.
+
 ## Layout
 
 ```
@@ -62,6 +73,7 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
+- **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
 - **v4, Pass II**: Continuum with chapters and the lift animation, symmetry axes found from the geometry with snapping and the Metatron ghost, depth ink, and Auto rotate available in every view. 62 checks.
 - **v3, Pass I**: the construction kernel and figure registry, lineage on hover, the Workings view, a 3D Metatron that collapses onto the 2D figure in plan, styling moved to CSS generated from one table (shared with the exported SVG), dimensions that measure the construction, and `tools/verify.js` as a 44-check pass/fail suite.
@@ -69,4 +81,4 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 ## Next
 
 - **Open:** a true Sri Yantra (solved numerically), and whether the kernel should generate a 13-node Metatron navigation.
-- **Known issues:** in perspective, the horizon and VP 1 act as a pan, VP 1 and the 3-point handles aren't true vanishing points, and the guide lines go to fixed screen points. Only 2-point is honest. In stencils, the slots at six-way junctions merge into thin wedges; they stay attached but are fragile.
+- **Known issues:** in stencils, the slots at six-way junctions merge into thin wedges; they stay attached but are fragile.
