@@ -8,7 +8,7 @@ Started September 2026. One HTML file, no dependencies, no build step.
 
 ## What's in it
 
-- **11 figures:** Seed, Flower, Metatron's Cube (2D and 3D), the five Platonic solids, Vesica, and a nine-triangle Yantra. Each one is a timeline you can scrub step by step.
+- **11 figures:** Seed, Flower, Metatron's Cube (2D and 3D), the five Platonic solids, Vesica, and the Sri Yantra. Each one is a timeline you can scrub step by step.
 - **Views:** plan, axonometric, and 1/2/3-point perspective. Undo and redo cover everything.
 - **Studio outputs**, built from whatever figure, step and view is on screen:
   - *Print SVG*: true millimetres, one layer per group, real pen widths.
@@ -48,6 +48,12 @@ Perspective is a real camera now: a pinhole with a focal length, an eye height a
 - A perspective box drawn around the figure shows the convergence, and the guide rays run from its edges to the handles.
 - Lines that come too close to the eye are clipped, as on any real camera, and the floor grid keeps only the stretch well in front of you.
 
+## Sri Yantra
+
+The one figure a compass can't build. Its nine triangles (four up, five down) only lock together if 24 points, 12 a side, each have three lines passing exactly through them. Nine base levels and seven half-widths make 16 unknowns; 12 conditions leaves the 4 free choices Huet identified. Locus starts from the proportions of the classic drawing and takes the nearest exact solution (a min-norm Gauss–Newton solve, a few milliseconds when the page loads). Each triple point is pinned where two of its lines cross, and the check confirms that the third line passes within 1e-9 and that the point lies on the segments themselves, not on their extensions. After the bindu come the enclosures: eight and sixteen petals drawn as compass arcs, three girdles, and the bhupura with its four gates.
+
+Incidence structure (which three lines meet at each point) follows the open-source construction in [alchemy-run/alchemy](https://github.com/alchemy-run/alchemy/pull/2006). For background, see Huet, *Theoretical Computer Science* 281 (2002), and Chiodo, *Comptes Rendus Mathématique* (2021).
+
 ## Layout
 
 ```
@@ -73,6 +79,7 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
+- **v7, Sri Yantra**: the solved nine triangles with 24 exact triple points, the bindu, the lotus rings, girdles and bhupura, and four checks for it in place of the old placement check. 74 checks.
 - **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
 - **v4, Pass II**: Continuum with chapters and the lift animation, symmetry axes found from the geometry with snapping and the Metatron ghost, depth ink, and Auto rotate available in every view. 62 checks.
@@ -80,5 +87,5 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 
 ## Next
 
-- **Open:** a true Sri Yantra (solved numerically), and whether the kernel should generate a 13-node Metatron navigation.
+- **Parked:** generating a 13-node Metatron navigation from the kernel.
 - **Known issues:** in stencils, the slots at six-way junctions merge into thin wedges; they stay attached but are fragile.
