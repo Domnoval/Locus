@@ -477,6 +477,67 @@
       const T=K.meet(c1,c2,{near:{x:(a.x+b.x)/2+n.x,y:(a.y+b.y)/2+n.y}}),B=K.meet(c1,c2,{not:T});return K.meet(K.line(T,B),K.line(a,b),{name})};
     return K}
 
+  /* ---------- Sri Yantra: nine triangles held together by concurrency, so it is solved rather than constructed ----------
+     Unit circle, y up. Nine horizontal levels L1 > … > L9 are the triangles' bases; every apex sits on the axis, on the
+     circle (U1, D1) or on another triangle's base level. The seven half-widths that the circle doesn't fix are unknowns too.
+     Twelve triple points per half must hold exactly; 16 unknowns − 12 conditions leaves the 4 free choices Huet found.
+     Start from the proportions of the classic drawing and take the nearest exact solution (min-norm Gauss–Newton). */
+  const SRI=(()=>{
+    const start=[.773,.536,.343,.215,.099,-.077,-.202,-.464,-.661, .72,.322,.459,.509,.633,.322,.227];
+    const tris=p=>{const L=i=>p[i-1],w=i=>p[9+i],ins=y=>Math.sqrt(1-y*y);return[
+      {n:'U1',up:1,apex:1,base:L(7),half:ins(L(7))},{n:'D1',up:0,apex:-1,base:L(3),half:ins(L(3))},
+      {n:'D2',up:0,apex:L(6),base:L(1),half:w(3)},{n:'U2',up:1,apex:L(1),base:L(8),half:w(0)},
+      {n:'D3',up:0,apex:L(9),base:L(2),half:w(4)},{n:'U3',up:1,apex:L(2),base:L(6),half:w(1)},
+      {n:'D4',up:0,apex:L(8),base:L(4),half:w(5)},{n:'U4',up:1,apex:L(3),base:L(9),half:w(2)},
+      {n:'D5',up:0,apex:L(7),base:L(5),half:w(6)}]};
+    // left-half lines through two points; s = side (apex to left corner), b = base
+    const lineOf=(t,k)=>k==='s'?[[0,t.apex],[-t.half,t.base]]:[[-t.half,t.base],[0,t.base]];
+    const TRIPLE=[['U1s','D2s','D3b'],['U1s','D3s','D1b'],['U2s','D2s','D1b'],['U2s','D4s','D4b'],['U3s','D2s','D4b'],['U3s','D5s','D5b'],
+      ['U4s','D2s','D5b'],['U3s','U3b','D3s'],['U4s','D4s','U3b'],['U2s','D1s','U1b'],['U4s','D3s','U1b'],['U4s','D1s','U2b']];
+    const cross=([a,b],[c,d])=>{const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[1]-c[1]],u=((c[0]-a[0])*s[1]-(c[1]-a[1])*s[0])/(r[0]*s[1]-r[1]*s[0]);return[a[0]+u*r[0],a[1]+u*r[1]]};
+    const off=([a,b],q)=>{const dx=b[0]-a[0],dy=b[1]-a[1];return((q[0]-a[0])*dy-(q[1]-a[1])*dx)/Math.hypot(dx,dy)};
+    const res=p=>{const T=Object.fromEntries(tris(p).map(t=>[t.n,t])),Ln=k=>lineOf(T[k.slice(0,2)],k[2]);return TRIPLE.map(([a,b,c])=>off(Ln(c),cross(Ln(a),Ln(b))))};
+    const gauss=(A,b)=>{const n=b.length,M=A.map((r,i)=>[...r,b[i]]);for(let c=0;c<n;c++){let pv=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[pv][c]))pv=r;[M[c],M[pv]]=[M[pv],M[c]];
+      for(let r=0;r<n;r++)if(r!==c){const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k]}}return M.map((r,i)=>r[n]/r[i])};
+    let p=[...start];
+    for(let it=0;it<60;it++){const r=res(p);if(Math.max(...r.map(Math.abs))<1e-15)break;
+      const J=r.map(()=>[]);p.forEach((_,c)=>{const q=[...p];q[c]+=1e-7;const rq=res(q);r.forEach((v,i)=>J[i][c]=(rq[i]-v)/1e-7)});
+      const y=gauss(J.map(a=>J.map(b=>a.reduce((s,v,k)=>s+v*b[k],0))),r);p=p.map((v,c)=>v-J.reduce((s,row,i)=>s+row[c]*y[i],0))}
+    const miss=Math.max(...res(p).map(Math.abs));if(!(miss<1e-9))console.warn('Sri Yantra did not close',miss);
+    return{tris:tris(p),TRIPLE,miss}})();
+  function sriYantra(K){
+    const R=145,S=(x,y)=>({x:x*R,y:-y*R}),ord=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
+    K.chapter('Triangles');K.step('Circle and axis');
+    const O=K.node(K.given(0,0,'O','the centre')),top=K.given(0,-R,'A','the top of the circle, one radius above O'),circ=K.circle(O,top,'boundary');
+    const bottom=K.meet(circ,K.line(O,top,'aux'),{not:top,name:'Z'});K.seg(top,bottom,'construction');
+    const seg={},drawn=new Set(),marked=new Set(),apexes={1:top,'-1':bottom};
+    SRI.tris.forEach((t,i)=>{K.step(`${ord[i]} triangle · ${t.up?'▲ Shiva':'▼ Shakti'} ${t.n}`);
+      const a=apexes[t.apex]||K.given(...Object.values(S(0,t.apex)),`${t.n}′`,'solved: apex on the axis, on another triangle’s base level');
+      const l=K.given(...Object.values(S(-t.half,t.base)),`${t.n}a`,t.n==='U1'||t.n==='D1'?'solved: base corner on the circle':'solved base corner'),
+        r=K.given(...Object.values(S(t.half,t.base)),`${t.n}b`,l.note);
+      seg[t.n+'s']=[K.seg(a,l,'main'),K.seg(a,r,'main')];seg[t.n+'b']=[K.seg(l,r,'main')];drawn.add(t.n);
+      // a marma appears as soon as its three lines exist: pinned where two of them cross, the third has to pass through
+      SRI.TRIPLE.forEach((tr,j)=>{if(marked.has(j)||!tr.every(k=>drawn.has(k.slice(0,2))))return;marked.add(j);
+        const half=(k,h)=>seg[k][k[2]==='s'?h:0];
+        [0,1].forEach(h=>{const m=K.meet(half(tr[0],h),half(tr[1],h),{name:`m${j+1}${'LR'[h]}`});(m.triples=m.triples||[]).push(tr.map(k=>half(k,h)));K.node(m)})})});
+    K.step('Bindu');const inner=SRI.tris[8],d2t=SRI.tris[2],by=(2*inner.base+d2t.apex)/3,bindu=K.given(...Object.values(S(0,by)),'Bindu','solved: centroid of the innermost triangle');K.dot(bindu,3.4);K.node(bindu);
+    // the enclosures: petals are compass arcs, the bhupura is ruled
+    K.chapter('Enclosures');
+    const ring=(r,kind='boundary')=>K.circle(O,K.given(0,-r*R,`r${r}`,`radius ${r} × the triangle circle`),kind);
+    const lotus=(n,r0,r1,label)=>{K.step(label);ring(r0);const st=2*Math.PI/n,pol=(r,a)=>({x:r*R*Math.sin(a),y:-r*R*Math.cos(a)});
+      const roots=Array.from({length:n},(_,i)=>K.given(...Object.values(pol(r0,i*st)),`${n}·root${i+1}`,'petal root'));
+      for(let i=0;i<n;i++){const A=roots[i],B=roots[(i+1)%n],T=K.given(...Object.values(pol(r1,(i+.5)*st)),`${n}·tip${i+1}`,'petal tip');
+        // each petal edge: an arc through root and tip, its compass point set in from the far root so the petal swells
+        [[A,B],[B,A]].forEach(([p,q])=>{const mx=(p.x+T.x)/2,my=(p.y+T.y)/2,dx=T.x-p.x,dy=T.y-p.y,L=Math.hypot(dx,dy);let nx=-dy/L,ny=dx/L;if((q.x-mx)*nx+(q.y-my)*ny<0){nx=-nx;ny=-ny}
+          const c=K.given(mx+nx*L*1.25,my+ny*L*1.25,'','petal compass point'),cc=K.circle(c,p,'aux');K.retire(cc);const rr=d2(c,p);K.arc(cc,p,T,{x:c.x-(nx*rr),y:c.y-(ny*rr)},'web')})}};
+    lotus(8,1.08,1.36,'Eight petals');lotus(16,1.42,1.66,'Sixteen petals');
+    K.step('Three girdles');[1.72,1.76,1.8].forEach(r=>ring(r,'web'));
+    K.step('Bhupura');const H=1.92,stem=.26,sd=.1,bar=.42,bd=.24;
+    [0,.045,.09].forEach(inset=>{const h=H-inset,s=stem-inset,b=bar-inset,d1=H+sd+inset,dd=H+sd+bd-inset,side=[[-h,h],[-s,h],[-s,d1],[-b,d1],[-b,dd],[b,dd],[b,d1],[s,d1],[s,h]];
+      const rot=[(a,o)=>[a,o],(a,o)=>[o,-a],(a,o)=>[-a,-o],(a,o)=>[-o,a]],pts=rot.flatMap(f=>side.map(([a,o])=>f(a,o))).map(([x,y],k)=>K.given(x*R,-y*R,`B${Math.round(inset/.045)+1}·${k+1}`,'bhupura corner'));
+      pts.forEach((p,k)=>K.seg(p,pts[(k+1)%pts.length],'web'))});
+    return K}
+
   /* ---------- the figures ---------- */
   // Seed: one circle, then six, each centred where the newest circle crosses the first.
   function seed(K,d,labels,kind,extra=()=>{}){
@@ -579,12 +640,8 @@
         K.step('Second circle');const c2=K.circle(A,O);K.node(A);K.step('Shared axis');K.line(O,A,'axis-x');
         K.step('Vesica lens');const T=K.meet(c1,c2,{near:{x:0,y:-r},name:'T'}),B=K.meet(c1,c2,{not:T,name:'B'});K.arc(c1,B,T,A);K.arc(c2,T,B,O);
         K.step('√3 proportion');K.seg(T,B,'axis-y');const ratio=d2(T,B)/d2(O,A);K.label(T,`h ÷ w = ${ratio.toFixed(3)} (√3 = ${SQ3.toFixed(3)})`,0,-26);K.label(A,'w = r',10,-8,'start');return K}},
-    {id:'yantra',title:'Nine-fold Yantra',family:'tri',placed:true,note:'Four triangles up, five down, around a bindu. Placed by hand, not yet constructed: a solved Sri Yantra is still open.',
-      build(){const K=Construction(80,'r');K.step('Bindu');const O=K.given(0,0,'Bindu','the centre'),g1=K.given(238,0,'r238','placed'),g2=K.given(250,0,'r250','placed');K.dot(O,3.4);K.node(O);
-        const defs=[[false,205,5],[true,202,-4],[false,168,18],[true,171,-18],[false,137,-8],[true,139,10],[false,109,17],[true,112,-17],[false,80,0]],ord=['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth'];
-        defs.forEach(([up,s,off],i)=>{K.step(`${ord[i]} triangle · ${up?'▲ Shiva':'▼ Shakti'}`);if(i===0){K.circle(O,g1,'boundary');K.circle(O,g2,'boundary')}
-          const h=s*.9,zf=((i%3)-1)*.15,v=up?[[0,-h+off],[s,h*.62+off],[-s,h*.62+off]]:[[0,h+off],[s,-h*.62+off],[-s,-h*.62+off]],T=v.map(([x,y],k)=>K.given(x,y,`${i+1}${'abc'[k]}`,'placed by hand, not constructed',zf));
-          T.forEach((p,k)=>K.seg(p,T[(k+1)%3]))});return K}}];
+    {id:'yantra',title:'Sri Yantra',family:'tri',solved:true,note:'Nine triangles, four up and five down, locked together at 24 points where three lines meet exactly. No compass can force that, so the levels are solved numerically. Then the lotus, girdles and bhupura around it.',
+      build(){const K=Construction(145,'r');return sriYantra(K)}}];
   const FIG=Object.fromEntries(REGISTRY.map(f=>[f.id,f])),titles=Object.fromEntries(REGISTRY.map(f=>[f.id,f.title]));
   const SPATIAL=REGISTRY.filter(f=>f.spatial).map(f=>f.id),PENTAGONAL=REGISTRY.filter(f=>f.family==='penta').map(f=>f.id);
   const builds=new Map();

@@ -29,9 +29,9 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   const prov = await page.evaluate(() => [...document.querySelectorAll('#pattern option')].map(o => {
     const sel = document.querySelector('#pattern'); sel.value = o.value; sel.dispatchEvent(new Event('change'));
     const K = window.__k(), f = window.__fig(o.value);
-    return { id: o.value, spatial: !!f.spatial, placed: !!f.placed, givens: K.pts.filter(p => p.op === 'given').length, other: K.pts.filter(p => !p.abs && !['given', 'meet'].includes(p.op)).length, orphans: K.pts.filter(p => p.op !== 'given' && !p.parents.length).length };
+    return { id: o.value, spatial: !!f.spatial, solved: !!f.solved, givens: K.pts.filter(p => p.op === 'given').length, other: K.pts.filter(p => !p.abs && !['given', 'meet'].includes(p.op)).length, orphans: K.pts.filter(p => p.op !== 'given' && !p.parents.length).length };
   }));
-  prov.filter(f => !f.spatial && !f.placed).forEach(f => check(`${f.id}: two givens, every other flat point is a meet`, f.givens === 2 && f.other === 0, f));
+  prov.filter(f => !f.spatial && !f.solved).forEach(f => check(`${f.id}: two givens, every other flat point is a meet`, f.givens === 2 && f.other === 0, f));
   prov.forEach(f => check(`${f.id}: no derived point without parents`, f.orphans === 0, f));
 
   // Flower of Life
@@ -63,10 +63,19 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   const W = Math.max(...lp.map(p => p[0])) - Math.min(...lp.map(p => p[0])), H = Math.max(...lp.map(p => p[1])) - Math.min(...lp.map(p => p[1]));
   check('Vesica: lens is two arcs, height ÷ width = √3', lens.length === 2 && Math.abs(H / W - Math.sqrt(3)) < 0.005, { arcs: lens.length, ratio: H / W });
 
-  // Yantra
-  const tri = await page.evaluate(() => { const sel = document.querySelector('#pattern'); sel.value = 'yantra'; sel.dispatchEvent(new Event('change')); const K = window.__k(), by = {}; K.curves.filter(c => c.type === 'seg').forEach(c => (by[c.step] = by[c.step] || new Set()).add(c.a).add(c.b));
-    return Object.values(by).map(s => { const v = [...s].sort((a, b) => a.y - b.y); return Math.abs(v[1].y - v[2].y) < 1e-6 ? 'up' : 'down'; }); });
-  check('Yantra: 4 up, 5 down, innermost down', tri.filter(t => t === 'up').length === 4 && tri.filter(t => t === 'down').length === 5 && tri[tri.length - 1] === 'down', tri);
+  // Sri Yantra: solved, so check what the solution promises
+  const sy = await page.evaluate(() => { const sel = document.querySelector('#pattern'); sel.value = 'yantra'; sel.dispatchEvent(new Event('change')); const K = window.__k();
+    const tri = K.steps.map((s, i) => [s.label, i]).filter(([l]) => /triangle/.test(l)).map(([l, i]) => { const v = [...new Set(K.curves.filter(c => c.step === i && c.kind === 'main').flatMap(c => [c.a, c.b]))].sort((a, b) => a.y - b.y); return Math.abs(v[1].y - v[2].y) < 1e-6 ? 'up' : 'down'; });
+    const dist = (c, q) => { const dx = c.b.x - c.a.x, dy = c.b.y - c.a.y; return Math.abs((q.x - c.a.x) * dy - (q.y - c.a.y) * dx) / Math.hypot(dx, dy); };
+    const inside = (c, q) => { const t = ((q.x - c.a.x) * (c.b.x - c.a.x) + (q.y - c.a.y) * (c.b.y - c.a.y)) / ((c.b.x - c.a.x) ** 2 + (c.b.y - c.a.y) ** 2); return t > -1e-9 && t < 1 + 1e-9; };
+    const triples = K.pts.filter(q => q.triples).flatMap(q => q.triples.map(t => ({ q, t })));
+    const R = K.curves.find(c => c.type === 'circle').r, corners = ['U1a', 'U1b', 'D1a', 'D1b'].map(n => K.pts.find(p => p.name === n)), apexes = ['A', 'Z'].map(n => K.pts.find(p => p.name === n));
+    return { tri, n: triples.length, miss: Math.max(...triples.flatMap(({ q, t }) => t.map(c => dist(c, q)))), outside: triples.filter(({ q, t }) => !t.every(c => inside(c, q))).length,
+      inscribed: Math.max(...corners.concat(apexes).map(p => Math.abs(Math.hypot(p.x, p.y) - R))) }; });
+  check('Sri Yantra: 4 up, 5 down, innermost down', sy.tri.filter(t => t === 'up').length === 4 && sy.tri.filter(t => t === 'down').length === 5 && sy.tri[sy.tri.length - 1] === 'down', sy.tri);
+  check('Sri Yantra: 24 triple points, every third line passes through (< 1e-9)', sy.n === 24 && sy.miss < 1e-9, { n: sy.n, miss: sy.miss });
+  check('Sri Yantra: triple points sit on the segments, not their extensions', sy.outside === 0, sy.outside);
+  check('Sri Yantra: the two outer triangles are inscribed', sy.inscribed < 1e-9, sy.inscribed);
 
   // circumspheres pass through the vertices
   for (const s of ['tetrahedron', 'cube', 'octahedron', 'dodecahedron', 'icosahedron']) {
