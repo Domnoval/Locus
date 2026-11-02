@@ -206,7 +206,7 @@
     body.pv-app .canvas-wrap,body.pv-app .canvas-wrap #geometry{min-height:0;height:100%}
     #overlayLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
     body:not(.pv-app) #pvPlan{display:none}
-    body.pv-app .canvas-wrap{cursor:crosshair}body.pv-app .canvas-wrap.dragging{cursor:grabbing}
+    body.pv-app .canvas-wrap{cursor:crosshair;user-select:none;-webkit-user-select:none}body.pv-app .canvas-wrap.dragging{cursor:grabbing}
     #pvPlan{position:absolute;right:14px;bottom:38px;width:184px;height:184px;background:color-mix(in srgb,var(--canvas) 88%,transparent);border:1px solid var(--line);touch-action:none;cursor:pointer}
     #pvPlan[hidden]{display:none}
     .pv-plan-grid{stroke:var(--line);stroke-width:.6;fill:none}
@@ -230,6 +230,12 @@
     #geometry .pv-cv{cursor:move}#geometry .pv-cv-ring{fill:none;stroke:var(--focus);stroke-width:1}#geometry .pv-cv-cross{stroke:var(--focus);stroke-width:1}
     #geometry .pv-sel{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;pointer-events:none}#geometry .pv-sel.twin{stroke-width:1.2;opacity:.6}
     #geometry .pv-hover{fill:none;stroke:var(--focus);stroke-width:1.6;stroke-linecap:round;pointer-events:none}
+    #geometry .pv-snap{fill:none;stroke:var(--lineage);stroke-width:2;stroke-dasharray:5 4;pointer-events:none}
+    #geometry .pv-stalk{stroke:var(--accent);stroke-width:1;fill:none;pointer-events:none}
+    #overlayLayer .pv-handle{pointer-events:auto;cursor:move}#overlayLayer .pv-handle rect{fill:var(--canvas);stroke:var(--accent);stroke-width:1.4}#overlayLayer .pv-handle:hover rect{fill:var(--accent)}
+    #overlayLayer .pv-dial circle:not(.pv-handle-hit){fill:var(--canvas);stroke:var(--accent);stroke-width:1.4}#overlayLayer .pv-dial:hover circle:not(.pv-handle-hit){fill:var(--accent)}#overlayLayer .pv-dial-arc{fill:none;stroke:var(--accent);stroke-width:1.2}
+    #overlayLayer .pv-handle-hit{fill:transparent;stroke:none}#overlayLayer .pv-dial{cursor:ew-resize}
+    #overlayLayer .pv-live{fill:var(--accent)}
     #geometry .pv-pin{fill:none;stroke:var(--lineage);stroke-width:3;stroke-linecap:round;pointer-events:none}
     #geometry .pv-string{stroke:var(--lineage);stroke-width:1;stroke-dasharray:3 4;fill:none}#geometry .pv-pin-dot{fill:var(--lineage)}
     #geometry .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4}#geometry .vp-dot{fill:var(--perspective)}
@@ -304,7 +310,7 @@
       <label class="label" for="pvScene">Scene</label>
       <select id="pvScene"></select>
       <p class="pattern-note" id="pvSceneNote"></p>
-      <div class="toggle-row" style="margin-top:12px"><button class="chip" id="pvAdd" type="button" title="Add a cube on the floor in front of you (or double-click the floor)">+ Box</button><button class="chip" id="pvDup" type="button" title="Duplicate the selected box (D, or Alt-drag it)" disabled>Duplicate</button><button class="chip" id="pvDel" type="button" title="Delete the selected box (Delete)" disabled>Delete</button><button class="chip" id="pvFit" type="button" title="Fit the canvas in view (F)">Fit</button></div>
+      <div class="toggle-row" style="margin-top:12px"><button class="chip" id="pvAdd" type="button" title="Add a cube on the floor in front of you (or double-click the floor)">+ Box</button><button class="chip" id="pvDup" type="button" title="Duplicate the selected box (D, or Alt-drag it)" disabled>Duplicate</button><button class="chip" id="pvDel" type="button" title="Delete the selected box (Delete)" disabled>Delete</button><button class="chip" id="pvAim" type="button" title="Turn to look straight at the selected box, or the middle of the scene (A)">Aim</button><button class="chip" id="pvFit" type="button" title="Fit the canvas in view (F)">Fit</button></div>
     </section>
     <section class="panel">
       <span class="label">Canvas</span>
@@ -708,13 +714,13 @@
     function clipPoly(pts,R=VR){const out=[];let cur=null;for(let i=1;i<pts.length;i++){const c=clipSeg(pts[i-1],pts[i],R);if(!c){cur=null;continue}if(!cur||c[2]){cur=[c[0]];out.push(cur)}cur.push(c[1]);if(c[3])cur=null}return out.filter(p=>p.length>1)}
 
     // a world segment (or part of it, t0..t1) → polylines in the drawing
-    function segPolys(K,A,B,t0=0,t1=1){const ca=toCam(K,A),cb=toCam(K,B),at=t=>lerp(ca,cb,t);
+    function segPolys(K,A,B,t0=0,t1=1,deg=1.2){const ca=toCam(K,A),cb=toCam(K,B),at=t=>lerp(ca,cb,t);
       if(!K.curvi){let a=t0,b=t1;const za=at(a)[2],zb=at(b)[2];if(za<NEAR&&zb<NEAR)return[];
         if(za<NEAR)a+=(b-a)*(NEAR-za)/(zb-za);else if(zb<NEAR)b=a+(b-a)*(za-NEAR)/(za-zb);
         const p=img(K,at(a)),q=img(K,at(b));return p&&q?clipPoly([toSvg(p),toSvg(q)]):[]}
       // curvilinear: sample evenly in angle as seen from the eye, so arcs stay smooth even when an edge passes close by
       const pa=at(t0),pb=at(t1),u=sub(pb,pa),L=len(u);if(L<1e-9)return[];const du=scl(u,1/L),s0=-dot(pa,du),foot=add(pa,scl(du,s0)),h=len(foot);
-      if(h<1e-6)return[];const psa=Math.atan2(-s0,h),psb=Math.atan2(L-s0,h),n=Math.min(1440,Math.max(2,Math.ceil(Math.abs(psb-psa)*R2D*RES/1.2)+1));
+      if(h<1e-6)return[];const psa=Math.atan2(-s0,h),psb=Math.atan2(L-s0,h),n=Math.min(1440,Math.max(2,Math.ceil(Math.abs(psb-psa)*R2D*RES/deg)+1));
       const pts=[],out=[],lim=60*K.D;for(let i=0;i<n;i++){const ps=psa+(psb-psa)*i/(n-1),q=img(K,add(foot,scl(du,h*Math.tan(ps))));
         if(!q||Math.hypot(q[0],q[1])>lim){if(pts.length>1)out.push(...clipPoly(pts));pts.length=0;continue}pts.push(toSvg(q))}
       if(pts.length>1)out.push(...clipPoly(pts));return out}
@@ -759,7 +765,7 @@
 
     /* ----- vanishing points ----- */
     function vpName(K,c,v){if(Math.abs(Math.abs(v[1])-1)<1e-9)return v[1]>0?(K.curvi?'zenith':'VP up'):(K.curvi?'nadir':'VP down');
-      if(c[2]>Math.abs(c[0]))return K.curvi?'ahead':(c[0]<0?'VP left':'VP right');if(-c[2]>Math.abs(c[0]))return'behind';return c[0]<0?'VP left':'VP right'}
+      if(c[2]>Math.abs(c[0]))return K.curvi||Math.abs(c[0])<.25*c[2]?(K.curvi?'ahead':'VP ahead'):(c[0]<0?'VP left':'VP right');if(-c[2]>Math.abs(c[0]))return'behind';return c[0]<0?'VP left':'VP right'}
     function vanishing(K,dirs){const out=[];dirs.forEach((v,i)=>[1,-1].forEach(sg=>{const w=scl(v,sg),c=mv(K.CT,w);const p=dirImg(K,c);if(!p||Math.hypot(p[0],p[1])>40*K.D)return;
       if(i>2&&out.some(o=>Math.hypot(o.p[0]-p[0],o.p[1]-p[1])<.5))return;out.push({dir:w,c,p,name:(i>2?'box ':'')+vpName(K,c,w)})}));return out}
     function directionsOf(pv,K){const dirs=[[1,0,0],[0,1,0],[0,0,1]],same=(a,b)=>Math.abs(Math.abs(dot(a,b))-1)<1e-9;
@@ -767,7 +773,9 @@
 
     /* ----- drawing ----- */
     let lastFrame=null;
-    function render(){const pv=st(),K=camera(pv);fit();lastFrame={K,list:sceneOf(pv,K)};const {list}=lastFrame;
+    let raf=0,frames=0;const paint=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;render();sync()})};
+    let runsCache=new Map();const runsFor=(I,e,list,K)=>{const key=I.b.id+':'+I.k+':'+e;let r=runsCache.get(key);if(!r){const [a,b]=EDGES[e];r=runsOf(I.P[a],I.P[b],list,K);runsCache.set(key,r)}return r};
+    function render(){if(raf){cancelAnimationFrame(raf);raf=0}frames++;const pv=st(),K=camera(pv);fit();lastFrame={K,list:sceneOf(pv,K)};const {list}=lastFrame;runsCache=new Map();
       [els.grid,els.guides,els.shapes,els.points,els.perspective,els.overlay,els.lineage,els.ghost].forEach(clear);els.svg.style.setProperty('--w',state.weight);els.svg.classList.remove('darkline','tracing');
       if(sel&&!byId(sel.id))sel=null;if(pin&&!byId(pin.id))pin=null;
       const S=pv.show;
@@ -780,14 +788,18 @@
       if(!harvesting){drawPlan(K,list);readouts(K,list);heading(K);save()}}
     function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
       const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
-      for(let i=-R;i<=R;i+=g){emit(els.grid,segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R]),'floor');emit(els.grid,segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i]),'floor')}}
+      // the floor only changes when you move, so it is kept between frames (sampled every 3°: it is a guide, not a line you paint)
+      const key=JSON.stringify([pv.yaw,pv.pitch,pv.eye,pv.dist,pv.proj,pv.cv,view.s,view.ox,view.oy,R,g,RES]);
+      if(floorCache.key!==key){const ds=[];for(let i=-R;i<=R;i+=g){ds.push(dOf(segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R],0,1,3)),dOf(segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i],0,1,3)))}floorCache={key,ds:ds.filter(Boolean)}}
+      floorCache.ds.forEach(d=>{const el=svgEl('path',{d,'vector-effect':'non-scaling-stroke'});el.dataset.kind='floor';els.grid.appendChild(el)})}
+    let floorCache={key:''};
     const LIGHT=unit([-.45,.82,-.36]);
     function drawBoxes(K,list){const S=st().show,fills=svgEl('g',{class:'pv-fills'});els.shapes.appendChild(fills);
       const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1);
       [...list].sort((a,b)=>b.dist-a.dist).forEach(I=>{FACES.forEach(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);if(dot(n,sub(K.E,fc))<=1e-9)return;
         const polys=F.c.map((i,j)=>segPolys(K,I.P[i],I.P[F.c[(j+1)%4]]));if(polys.some(p=>p.length!==1))return;const pts=polys.flatMap(p=>p[0]);
         const tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';fills.appendChild(svgEl('path',{d:'M'+pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L')+'Z',class:'pv-face '+tone}))})});
-      list.forEach(I=>{const t=(I.dist-near)/Math.max(1,far-near);EDGES.forEach(([a,b])=>runsOf(I.P[a],I.P[b],list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;
+      list.forEach(I=>{const t=(I.dist-near)/Math.max(1,far-near);EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;
         const el=emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden');if(el&&S.depth&&v&&!harvesting){el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}}))})}
     function selInstance(list){if(!sel)return null;return list.find(I=>I.b.id===sel.id&&I.k===sel.k)||list.find(I=>I.b.id===sel.id)}
     // every edge of the chosen box, carried on to its vanishing points: straight in linear, the full circle in curvilinear
@@ -819,7 +831,7 @@
         if(K.curvi){ring(2*K.D*Math.tan(30*D2R),'pv-cone','60° · as linear would show it',30);ring(2*K.D,'pv-cone wide','180° · level with your ears',40);ring(2*K.D*Math.tan(67.5*D2R),'pv-cone wide','270° · behind you',50)}
         else{ring(K.D*Math.tan(30*D2R),'pv-cone','60° · undistorted',30);ring(K.D,'pv-cone wide','90° · stretching',40)}}
       // horizon label
-      if(pv.show.horizon){const G=circleOf(K,mv(K.CT,[0,1,0]));if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y]=toSvg(G.p);if(y>R.y-40&&y<R.y+R.h+40)g.appendChild(lbl(R.x+R.w+10,y+3,'HORIZON · EYE LEVEL','vp-label'))}}
+      if(pv.show.horizon){const G=circleOf(K,mv(K.CT,[0,1,0]));if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y]=toSvg(G.p);if(y>R.y-40&&y<R.y+R.h+40)g.appendChild(tag(R.x+R.w+10,y+3,'HORIZON · EYE LEVEL'))}}
       // vanishing points, draggable in linear
       // vanishing points (draggable in linear: drag one and you turn your head); one off the view gets an arrow at the edge pointing to it
       if(pv.show.vps){const V=visibleRect(),[cx0,cy0]=toSvg([0,0]);vanishing(K,directionsOf(pv,K)).forEach((v,i)=>{let [x,y]=toSvg(v.p);const grp=svgEl('g',{'data-pv':K.curvi?'':'vp:'+i,class:'pv-vp'});grp.dataset.dir=v.dir.join(',');
@@ -833,9 +845,17 @@
       // centre of vision: drag it to slide the picture on the canvas
       {const [x,y]=toSvg([0,0]),grp=svgEl('g',{'data-pv':'cv',class:'pv-cv'});grp.appendChild(svgEl('circle',{cx:x,cy:y,r:9,class:'pv-cv-ring'}));grp.appendChild(svgEl('path',{d:`M${x-14},${y}h28M${x},${y-14}v28`,class:'pv-cv-cross'}));grp.appendChild(svgEl('rect',{x:x+9,y:y+7,width:112,height:13,class:'pv-cv-hit'}));grp.appendChild(lbl(x+12,y+16,'✥ CENTRE OF VISION','pv-cone-label'));g.appendChild(grp)}
       // selection and hover
-      const outline=(I,cls)=>EDGES.forEach(([a,b])=>runsOf(I.P[a],I.P[b],list,K).forEach(([t0,t1,v])=>{if(v)emit(g,segPolys(K,I.P[a],I.P[b],t0,t1),null,{class:cls})}));
+      const outline=(I,cls)=>EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(v)emit(g,segPolys(K,I.P[a],I.P[b],t0,t1),null,{class:cls})}));
       if(hover&&!(sel&&hover.id===sel.id))list.filter(I=>I.b.id===hover.id).forEach(I=>outline(I,'pv-hover'));
       if(sel)list.filter(I=>I.b.id===sel.id).forEach(I=>outline(I,I.k===sel.k?'pv-sel':'pv-sel twin'));
+      if(sel&&!harvesting){const G=gizmo();if(G){const at=w=>{const q=img(K,toCam(K,w));return q&&toSvg(q)};
+        G.faces.forEach(F=>{if(!F.front)return;const a=at(F.c),t=at(F.tip);if(!a||!t)return;g.appendChild(svgEl('path',{d:`M${a[0]},${a[1]}L${t[0]},${t[1]}`,class:'pv-stalk'}));
+          const h=svgEl('g',{'data-pv':'face:'+F.f,class:'pv-handle'});h.appendChild(svgEl('rect',{x:t[0]-4.5,y:t[1]-4.5,width:9,height:9}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:11,class:'pv-handle-hit'}));g.appendChild(h);
+          if(liveDim&&liveDim.f===F.f)g.appendChild(tag(t[0]+12,t[1]-10,liveDim.text,'start','vp-label pv-live'))});
+        if(G.dial){const a=at(G.base),t=at(G.dial);if(a&&t){g.appendChild(svgEl('path',{d:`M${a[0]},${a[1]}L${t[0]},${t[1]}`,class:'pv-stalk'}));const h=svgEl('g',{'data-pv':'turn',class:'pv-handle pv-dial'});
+          h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:6}));h.appendChild(svgEl('path',{d:`M${t[0]-10},${t[1]-3}A10.5,10.5 0 0 1 ${t[0]+10},${t[1]-3}`,class:'pv-dial-arc'}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:13,class:'pv-handle-hit'}));g.appendChild(h);
+          if(liveDim&&liveDim.f==='turn')g.appendChild(tag(t[0]+14,t[1]+4,liveDim.text,'start','vp-label pv-live'))}}}}
+      if(snapCue)list.filter(I=>I.b.id===snapCue).forEach(I=>outline(I,'pv-snap'));
       if(pin)drawArc(K,list,g,tag)}
     // the arc an edge sits on: its centre and radius in canvas inches, the thing you swing with a string
     function arcOf(K,list,e){const I=list.find(I=>I.b.id===e.id&&I.k===e.k);if(!I)return null;const [a,b]=EDGES[e.edge],ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);const n=unit(cross(ca,cb)),G=circleOf(K,n);return{I,a,b,G}}
@@ -878,11 +898,13 @@
     function planeHit(K,X,Y,P0,n){const d=rayDir(K,X,Y),den=dot(d,n);if(Math.abs(den)<1e-9)return null;const t=dot(sub(P0,K.E),n)/den;return t>0?add(K.E,scl(d,t)):null}
     const snap=v=>st().show.snap?Math.round(v/3)*3:r1(v);
     let drag=null;const touches=new Map();
-    function down(e){const p=ev(e);touches.set(e.pointerId,p);els.wrap.setPointerCapture(e.pointerId);beginChange();
+    function down(e){const p=ev(e);touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
       if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
       const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
       if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
       if(ctl&&ctl.startsWith('vp:')){drag={type:'vp',dir:e.target.closest('[data-pv]').dataset.dir.split(',').map(Number)};return}
+      if(ctl&&ctl.startsWith('face:')&&sel){const G=gizmo();if(G){const F=G.faces[+ctl.slice(5)];drag={type:'face',f:+ctl.slice(5),axis:F.n,at:F.c,start:structuredClone(byId(sel.id)),s0:null};drag.s0=axisParam(drag,p)}return}
+      if(ctl==='turn'&&sel){const G=gizmo();if(G&&G.dial){const b=byId(sel.id);drag={type:'turn',ry0:b.ry,base:G.base,up:G.up,a0:null};drag.a0=dialAngle(drag,p)}return}
       if(e.button===1||e.altKey&&!pick(p[0],p[1])){drag={type:'pan',p,ox:view.ox,oy:view.oy};return}
       const edge=K.curvi&&pickEdge(p[0],p[1]);
       const h=pick(p[0],p[1]);
@@ -890,23 +912,26 @@
         drag={type:'move',id:h.id,p,hit:h.hit,start:{x:b.x,y:b.y,z:b.z},vert,rest:Math.abs(b.y-supportUnder(st(),b))<1e-6,edge,moved:false};render();sync();return}
       drag={type:'look',p,yaw:st().yaw,pitch:st().pitch,moved:false,edge}}
     function move(e){const p=ev(e);if(touches.has(e.pointerId))touches.set(e.pointerId,p);
-      if(!drag){const h=pick(p[0],p[1]),id=h&&h.id;if((hover&&hover.id)!==id){hover=h;render()}els.wrap.style.cursor=h?'grab':'';return}
+      if(!drag){const h=pick(p[0],p[1]),id=h&&h.id;if((hover&&hover.id)!==id){hover=h;paint()}els.wrap.style.cursor=e.target.closest('.pv-handle')?'':h?'grab':'';return}
       const dx=p[0]-(drag.p?.[0]??0),dy=p[1]-(drag.p?.[1]??0);if(Math.hypot(dx,dy)>3)drag.moved=true;const K=camera(),pv=st();
       if(drag.type==='pinch'){if(touches.size<2)return;const [a,b]=[...touches.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=[(a[0]+b[0])/2,(a[1]+b[1])/2],f=d/drag.d;
-        view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;render();return}
-      if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;render();return}
-      if(drag.type==='cv'){set({cv:{x:r1(drag.cv.x+dx/view.s),y:r1(drag.cv.y-dy/view.s)}});render();sync();return}
-      if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;set({yaw:wrap180(drag.yaw-dx*k),pitch:clamp(drag.pitch+dy*k,-lim,lim)});render();sync();return}
-      if(drag.type==='vp'){aimAt(drag.dir,fromSvg(p[0],p[1]));render();sync();return}
+        view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;paint();return}
+      if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;paint();return}
+      if(drag.type==='cv'){set({cv:{x:r1(drag.cv.x+dx/view.s),y:r1(drag.cv.y-dy/view.s)}});paint();return}
+      if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;set({yaw:wrap180(drag.yaw-dx*k),pitch:clamp(drag.pitch+dy*k,-lim,lim)});paint();return}
+      if(drag.type==='vp'){aimAt(drag.dir,fromSvg(p[0],p[1]));paint();return}
+      if(drag.type==='face'){stretch(drag,p);paint();return}
+      if(drag.type==='turn'){turnBy(drag,p);paint();return}
       if(drag.type==='move'){if(!drag.moved)return;const [X,Y]=fromSvg(p[0],p[1]),b=byId(drag.id);let q;
         if(drag.vert){const f=mv(K.C,[0,0,1]),n=unit([f[0],0,f[2]]);q=planeHit(K,X,Y,drag.hit,len(n)?n:[0,0,1]);if(!q)return;setBox(drag.id,{y:Math.max(0,snap(drag.start.y+q[1]-drag.hit[1]))})}
-        else{q=planeHit(K,X,Y,drag.hit,[0,1,0]);if(!q||len(sub(q,K.E))>5000)return;const nb={...b,x:snap(drag.start.x+q[0]-drag.hit[0]),z:snap(drag.start.z+q[2]-drag.hit[2])};if(drag.rest)nb.y=supportUnder(st(),nb);setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
-        render();sync()}}
-    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;
+        else{q=planeHit(K,X,Y,drag.hit,[0,1,0]);if(!q||len(sub(q,K.E))>5000)return;let nb={...b,x:snap(drag.start.x+q[0]-drag.hit[0]),z:snap(drag.start.z+q[2]-drag.hit[2])};if(drag.rest)nb.y=supportUnder(st(),nb);
+          if(st().show.snap&&!e.ctrlKey&&!e.metaKey){const f=flush(st(),nb);nb={...nb,x:f.x,z:f.z};snapCue=f.cue;if(drag.rest)nb.y=supportUnder(st(),nb)}else snapCue=null;setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
+        paint()}}
+    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;if(snapCue||d.type==='face'||d.type==='turn'){snapCue=null;liveDim=null;render();sync()}
       if(!d.moved&&(d.type==='look'||d.type==='move')){if(d.edge&&(d.type==='look'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'){sel=null;pin=null}render();sync()}
       commitChange()}
     const wrap180=a=>((a+180)%360+360)%360-180;
-    function wheel(e){e.preventDefault();const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;render()}
+    function wheel(e){e.preventDefault();const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;paint()}
     // turn your head until world direction v lands under the pointer (Gauss–Newton on yaw and pitch)
     function aimAt(v,target){let y=st().yaw,p=st().pitch;const f=(yy,pp)=>{const K=camera({...st(),yaw:yy,pitch:pp}),c=mv(K.CT,v);return dirImg(K,c)};
       for(let it=0;it<8;it++){const q=f(y,p);if(!q)break;const r=[q[0]-target[0],q[1]-target[1]];if(Math.hypot(...r)<1e-3)break;const h=1e-3,qy=f(y+h,p),qp=f(y,p+h);if(!qy||!qp)break;
@@ -915,6 +940,35 @@
       set({yaw:wrap180(r1(y*100)/100),pitch:r1(p*100)/100})}
     function dblclick(e){const [x,y]=ev(e);if(pick(x,y))return;const K=camera(),[X,Y]=fromSvg(x,y),d=rayDir(K,X,Y);if(d[1]>=-1e-6)return;const t=-K.E[1]/d[1],q=add(K.E,scl(d,t));
       beginChange();addBox({x:snap(q[0]),z:snap(q[2])});commitChange()}
+    // the selected copy's handles: one on a stalk out of each face you can see, and a turn dial at its foot
+    let liveDim=null,snapCue=null;
+    function gizmo(){if(!sel||!lastFrame)return null;const {K,list}=lastFrame,I=selInstance(list);if(!I)return null;const b=I.b,s=clamp(.35*Math.min(b.w,b.h,b.d),3,14);
+      const faces=[[1,0,0,'w',1],[-1,0,0,'w',-1],[0,1,0,'h',1],[0,-1,0,'h',-1],[0,0,1,'d',1],[0,0,-1,'d',-1]].map(([x,y,z,dim,sg],f)=>{const n=mv(I.R,[x,y,z]),c=add(I.t,mv(I.R,[x*I.hw,y>0?I.h:y<0?0:I.h/2,z*I.hd]));
+        return{f,n,c,tip:add(c,scl(n,s)),dim,sg,front:dot(n,sub(K.E,c))>1e-9}});
+      const up=mv(I.R,[0,1,0]),upright=Math.abs(up[1]-1)<1e-9,fwd=mv(I.R,[0,0,1]),reach=I.hd+Math.max(8,.3*Math.max(b.w,b.d));
+      return{I,faces,base:I.t,up,dial:upright?add(I.t,scl(fwd,reach)):null}}
+    // where the pointer's ray passes closest to a handle's axis, measured along the axis
+    function axisParam(d,p){const K=camera(),[X,Y]=fromSvg(p[0],p[1]),r=rayDir(K,X,Y),w=sub(d.at,K.E),b=dot(d.axis,r),den=1-b*b;if(Math.abs(den)<1e-6)return null;return(b*dot(r,w)-dot(d.axis,w))/den}
+    function stretch(d,p){const s1=axisParam(d,p);if(s1==null||d.s0==null)return;const b0=d.start,F=[[1,0,0,'w'],[-1,0,0,'w'],[0,1,0,'h'],[0,-1,0,'h'],[0,0,1,'d'],[0,0,-1,'d']][d.f],dim=F[3];
+      const fine=v=>st().show.snap?Math.round(v):r1(v),size=Math.max(1,fine(b0[dim]+s1-d.s0)),grow=size-b0[dim],patch={[dim]:size};
+      // the opposite face stays put: sideways faces shift the base centre by half the growth; the bottom face moves the base down
+      if(dim==='h'){if(F[1]<0){patch.y=Math.max(0,b0.y-grow);patch.h=b0.h+(b0.y-patch.y)}}
+      else{const o=mv(boxR(b0),[F[0]*grow/2,0,F[2]*grow/2]);patch.x=r1(b0.x+o[0]);patch.z=r1(b0.z+o[2])}
+      setBox(b0.id,patch);liveDim={f:d.f,text:`${{w:'WIDTH',h:'HEIGHT',d:'DEPTH'}[dim]} ${fmtIn(patch[dim]).toUpperCase()}`}}
+    function dialAngle(d,p){const K=camera(),[X,Y]=fromSvg(p[0],p[1]),q=planeHit(K,X,Y,d.base,d.up);if(!q)return null;const v=sub(q,d.base);return Math.atan2(v[0],v[2])*R2D}
+    function turnBy(d,p){const a=dialAngle(d,p);if(a==null||d.a0==null)return;let ry=wrap180(d.ry0+a-d.a0);if(st().show.snap)ry=Math.round(ry/5)*5;setBox(sel.id,{ry});liveDim={f:'turn',text:`TURN ${Math.round(ry)}°`}}
+    // flush: a moved box clicks against its neighbours' faces (touching or lined up) when it comes within a few inches
+    function flush(pv,nb){const th=(nb.ry||0)*D2R,toL=([x,z])=>[x*Math.cos(th)-z*Math.sin(th),x*Math.sin(th)+z*Math.cos(th)],toW=([x,z])=>[x*Math.cos(th)+z*Math.sin(th),-x*Math.sin(th)+z*Math.cos(th)];
+      const [mx,mz]=toL([nb.x,nb.z]),hw=nb.w/2,hd=nb.d/2,TOLS=4;let best={x:null,z:null},cue=null;
+      pv.boxes.forEach(o=>{if(o.id===nb.id)return;instances(pv,o).forEach(I=>{if(Math.abs(I.R[1][1]-1)>1e-9)return;const yawI=Math.atan2(I.R[0][2],I.R[2][2])*R2D,diff=((yawI-(nb.ry||0))%90+90)%90;if(Math.min(diff,90-diff)>1e-6)return;
+        if(!(nb.y<I.t[1]+I.h-.01&&nb.y+nb.h>I.t[1]+.01))return;const pts=[[-1,-1],[1,-1],[-1,1],[1,1]].map(([sx,sz])=>toL([I.t[0]+I.R[0][0]*sx*I.hw+I.R[0][2]*sz*I.hd,I.t[2]+I.R[2][0]*sx*I.hw+I.R[2][2]*sz*I.hd])),x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0])),z0=Math.min(...pts.map(p=>p[1])),z1=Math.max(...pts.map(p=>p[1]));
+        const near=(a0,a1,b0,b1,g)=>a0<b1+g&&a1>b0-g;
+        const tryAxis=(k,c,h,lo,hi,olo,ohi,oc,oh)=>{if(!near(oc-oh,oc+oh,olo,ohi,TOLS))return;[[hi+h,'touch'],[lo-h,'touch'],[lo+h,'align'],[hi-h,'align']].forEach(([t,kind])=>{if(kind==='align'&&!near(oc-oh,oc+oh,olo,ohi,36))return;const d=Math.abs(t-c);if(d<TOLS&&(best[k]==null||d<best[k].d))best[k]={t,d,id:o.id}})};
+        tryAxis('x',mx,hw,x0,x1,z0,z1,mz,hd);tryAxis('z',mz,hd,z0,z1,x0,x1,mx,hw)})});
+      const lx=best.x?best.x.t:mx,lz=best.z?best.z.t:mz,[x,z]=toW([lx,lz]);if(best.x||best.z)cue=(best.x||best.z).id;return{x:r1(x*1e4)/1e4,z:r1(z*1e4)/1e4,cue}}
+    // turn to look straight at the selected copy, or at the middle of everything
+    function aim(){const pv=st(),K=camera(pv),list=sceneOf(pv,K),I=selInstance(list),pts=I?[add(I.t,mv(I.R,[0,I.h/2,0]))]:list.map(I=>add(I.t,mv(I.R,[0,I.h/2,0])));if(!pts.length)return;
+      const c=scl(pts.reduce(add,[0,0,0]),1/pts.length),v=sub(c,K.E),lim=K.curvi?90:80;set({yaw:r1(Math.atan2(v[0],v[2])*R2D*100)/100,pitch:clamp(Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D,-lim,lim),cv:{x:0,y:0}})}
     function nextId(){return Math.max(0,...st().boxes.map(b=>b.id))+1}
     function addBox(at){const K=camera(),f=mv(K.C,[0,0,1]),hz=len([f[0],0,f[2]])>1e-6?unit([f[0],0,f[2]]):[0,0,1],s=18,p=at||{x:snap(K.E[0]+hz[0]*72),z:snap(K.E[2]+hz[2]*72)};
       const b=box(nextId(),p.x,0,p.z,s,{ry:r1(Math.atan2(hz[0],hz[2])*R2D)});b.y=supportUnder({...st(),boxes:[...st().boxes,b]},b);set({boxes:[...st().boxes,b]});sel={id:b.id,k:0};pin=null;render();sync();return b}
@@ -923,6 +977,7 @@
     function key(e){const k=e.key,b=sel&&byId(sel.id);
       if(k==='Escape'){sel=null;pin=null;render();sync();return}
       if(k==='f'||k==='F'){fit(true);render();return}
+      if(k==='a'||k==='A'){beginChange();aim();render();sync();commitChange();return}
       if(!b){return}
       if(k==='Delete'||k==='Backspace'){e.preventDefault();remove();return}
       if(k==='d'||k==='D'){beginChange();dupe(b);render();sync();commitChange();return}
@@ -967,6 +1022,7 @@
     q('pvDup').addEventListener('click',()=>{const b=sel&&byId(sel.id);if(!b)return;beginChange();dupe(b);render();sync();commitChange()});
     q('pvDel').addEventListener('click',remove);
     q('pvFit').addEventListener('click',()=>{fit(true);render()});
+    q('pvAim').addEventListener('click',()=>{beginChange();aim();render();sync();commitChange()});
     $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));
     function sync(skip){const pv=st(),K=camera(pv),val=(id,v)=>{if(id!==skip)q(id).value=v};
       val('pvScene',pv.scene in SCENES?pv.scene:'blank');const wide=pv.canvas.w>pv.canvas.h;if(sizesWide!==wide){q('pvCanvas').innerHTML=sizeOptions(wide);sizesWide=wide}const ck=Math.min(pv.canvas.w,pv.canvas.h)+'x'+Math.max(pv.canvas.w,pv.canvas.h),known=CANVASES.some(([w,h])=>w+'x'+h===ck);q('pvCanvas').value=known?ck:'custom';q('pvCustom').hidden=known;val('pvCw',pv.canvas.w);val('pvCh',pv.canvas.h);
@@ -984,7 +1040,7 @@
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{get frames(){return frames},gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -1534,7 +1590,7 @@
   $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
   // in Perspective the planner takes the pointer first; the plan inset handles its own
   const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan'))return;e.stopPropagation();fn(e)};
-  els.wrap.addEventListener('pointerdown',pvOnly(e=>{els.wrap.classList.add('dragging');PV.down(e)}),true);
+  els.wrap.addEventListener('pointerdown',pvOnly(e=>{e.preventDefault();getSelection()?.removeAllRanges();els.wrap.classList.add('dragging');PV.down(e)}),true);
   els.wrap.addEventListener('pointermove',pvOnly(PV.move),true);
   ['pointerup','pointercancel'].forEach(t=>els.wrap.addEventListener(t,pvOnly(e=>{els.wrap.classList.remove('dragging');PV.up(e)}),true));
   els.wrap.addEventListener('dblclick',pvOnly(PV.dblclick),true);

@@ -49,13 +49,15 @@ The **Perspective** tab at the top of the sidebar. It's built around the real si
 
 - **The canvas** is a real size (16 × 20 in up to 4 × 8 ft, or custom), and **Stand back** is how far your eye is from it. That distance is the focal length, so it's also the distance from which the finished painting reads true. The readout says how many degrees across the canvas takes in.
 - **You** have an eye height, and you can look up or down and turn. You can also drag the empty drawing to look around, or drag **YOU** in the plan (bottom right) to walk.
-- **Boxes**: double-click the floor or press **+ Box**. Drag a box to slide it along the floor, Shift-drag to lift it, Alt-drag to copy it, and drop it on another box to stack it. Each box has a width, height and depth in inches, a turn and a tip. **Repeat** makes rows (across or running away), grids, towers, a ring around you, or an arch from the box up over your head and down behind.
+- **Boxes**: double-click the floor or press **+ Box**. Drag a box to slide it along the floor, Shift-drag to lift it, Alt-drag to copy it, and drop it on another box to stack it. Bring a box within 4 in of a neighbour turned the same way and it clicks flush against it, or lines up with its faces; the neighbour lights up gold while it holds (Ctrl/⌘ drag to place freely). The selected box grows a handle out of each face you can see: pull one to stretch the box that way while the opposite face stays put. The dial at its foot turns it in 5° steps. Each box also has a width, height and depth in inches, a turn and a tip in the panel. **Repeat** makes rows (across or running away), grids, towers, a ring around you, or an arch from the box up over your head and down behind.
 - **Linear** projection keeps edges straight, and every family of parallel edges meets at one vanishing point. That gives 1-, 2- or 3-point perspective depending only on how you're turned and tilted, with nothing to set. Drag a vanishing point and you turn your head so it follows your hand. The 60° circle is where linear is honest; past 90° it stretches, and it can't show anything beside or behind you. Switch the *Cubes overhead* scene to Linear to watch it tear.
 - **Curvilinear** projection is stereographic. A straight edge and your eye span a plane, which meets the sphere of directions around your eye in a great circle, and stereographic projection maps every circle to a circle. So each edge is an exact circular arc. Click an edge of the selected box and Locus gives its pin position and string length on your canvas. The whole room fits: overhead (zenith), underfoot (nadir), ahead and behind, up to six vanishing points.
 - **Hidden edges** are found by casting a ray from your eye to each point of each edge. That's exact, it's the same in both projections, and it covers boxes hiding each other.
 - **On your canvas** lists the horizon, every vanishing point and the centre of vision, measured from the canvas's bottom-left corner. Rows marked *off canvas* go on the wall beside it.
 - **Studio** in this mode uses your canvas as the page at full size: box edges on the Figure layer, hidden edges and the horizon on Construction, vanishing-point marks on Centre marks, and the floor grid and lines to vanishing points on Drafting. Tile it onto letter paper or cut it as a stencil.
-- Keys: **Delete** removes the selected box, **D** duplicates it, **R** turns it, the arrow keys nudge it (Shift for 1 in), PageUp and PageDown lift it, **F** fits the view, **Esc** deselects, and Ctrl/⌘-Z undoes.
+- **Aim** (or **A**) turns you to look straight at the selected box, or at the middle of the scene.
+- Drags draw at most once per screen frame, the floor is kept between frames while only boxes move, and hidden-line results are shared between the drawing and the selection outline.
+- Keys: **Delete** removes the selected box, **D** duplicates it, **R** turns it, **A** aims, the arrow keys nudge it (Shift for 1 in), PageUp and PageDown lift it, **F** fits the view, **Esc** deselects, and Ctrl/⌘-Z undoes.
 
 ## Perspective (Geometry mode)
 
@@ -89,7 +91,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 92 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export …
+node tools/verify.js              # 101 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 ```
@@ -99,7 +101,7 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
-- **v8, Perspective planner**: the Perspective mode above (scene, canvas, you, boxes and repeats, linear and curvilinear, hidden lines, plan, readouts, real-size Studio output) and the Geometry-mode 3-point horizon fix. 18 new checks: vanishing points meet to 1e-9, arcs are circles to 1e-9, both projections agree at the centre, hidden lines, arches, rings, horizon, dragging, stacking, VP dragging, pin and string, export size, undo across modes. 92 checks.
+- **v8, Perspective planner**: the Perspective mode above (scene, canvas, you, boxes and repeats, linear and curvilinear, hidden lines, plan, readouts, real-size Studio output) and the Geometry-mode 3-point horizon fix. 18 new checks: vanishing points meet to 1e-9, arcs are circles to 1e-9, both projections agree at the centre, hidden lines, arches, rings, horizon, dragging, stacking, VP dragging, pin and string, export size, undo across modes. Then the hands-on round: face handles, the turn dial, flush snapping, aim, one draw per frame, double-click to add. 101 checks.
 - **v7, Sri Yantra**: the solved nine triangles with 24 exact triple points, the bindu, the lotus rings, girdles and bhupura, and four checks for it in place of the old placement check. 74 checks.
 - **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.

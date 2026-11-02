@@ -295,6 +295,53 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   await page.click('#undoBtn');const back=await page.evaluate(()=>window.__state.app);
   check('Switching back to Geometry restores it, and undo steps back across the switch',gt&&gt!=='A street of cubes'&&steps&&back==='perspective',{gt,steps,back});
   }
+  {
+  // hands on: handles, flush snapping, aim, one draw per frame
+  await page.click('#appMode [data-app="perspective"]');
+  const scene=id=>page.evaluate(id=>{const s=document.querySelector('#pvScene');s.value=id;s.dispatchEvent(new Event('change'))},id);
+  const T = {
+  // 1 stretch a side face: it grows, the opposite face stays put
+  async side(){await scene('blank');await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const P=window.__pv,G=P.gizmo(),F=G.faces.find(F=>F.front&&(F.dim==='w'||F.dim==='d')),el=document.querySelector(`[data-pv="face:${F.f}"] rect`),r=el.getBoundingClientRect(),K=P.camera(),a=P.toSvg(P.img(K,P.toCam(K,F.c))),t=P.toSvg(P.img(K,P.toCam(K,F.tip))),m=document.querySelector('#geometry').getScreenCTM();
+      const A=new DOMPoint(...a).matrixTransform(m),B=new DOMPoint(...t).matrixTransform(m),opp=G.faces.find(o=>o.dim===F.dim&&o.f!==F.f);return{f:F.f,dim:F.dim,x:r.x+r.width/2,y:r.y+r.height/2,dx:B.x-A.x,dy:B.y-A.y,opp:opp.c,size:window.__state.pv.boxes[0][F.dim]}});
+    const L=Math.hypot(h.dx,h.dy);await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x+h.dx/L*4*i,h.y+h.dy/L*4*i);await page.mouse.up();
+    const after=await page.evaluate(f=>{const G=window.__pv.gizmo(),F=G.faces[f],opp=G.faces.find(o=>o.dim===F.dim&&o.f!==F.f);return{opp:opp.c,b:window.__state.pv.boxes[0]}},h.f);
+    const moved=Math.hypot(...after.opp.map((v,i)=>v-h.opp[i]));
+    check('Pull a side handle: the box grows that way and the opposite face stays put (< 0.06 in)',after.b[h.dim]>h.size+3&&moved<0.06,{dim:h.dim,from:h.size,to:after.b[h.dim],moved})},
+  // 2 the top handle makes it taller without lifting it
+  async top(){await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const el=document.querySelector('[data-pv="face:2"] rect');if(!el)return null;const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,at=document.elementFromPoint(x,y);return{x,y,h:window.__state.pv.boxes[0].h,y0:window.__state.pv.boxes[0].y,at:at&&(at.getAttribute('class')+' '+at.closest('[data-pv]')?.dataset.pv),pv:{yaw:window.__state.pv.yaw,pitch:window.__state.pv.pitch,proj:window.__state.pv.proj}}});
+    if(!h){check('Pull the top handle: taller, base stays on the floor',false,'no top handle');return}
+    await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x,h.y-5*i);await page.mouse.up();
+    const b1=await page.evaluate(()=>window.__state.pv.boxes[0]);check('Pull the top handle: taller, base stays on the floor',b1.h>h.h+3&&b1.y===h.y0,{h0:h.h,h1:b1.h,y:b1.y,at:h.at,pv:h.pv,xy:[h.x,h.y]})},
+  // 3 the dial turns it about its own foot
+  async dial(){await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const el=document.querySelector('[data-pv="turn"] circle');const r=el.getBoundingClientRect();const b=window.__state.pv.boxes[0];return{x:r.x+r.width/2,y:r.y+r.height/2,ry:b.ry,bx:b.x,bz:b.z}});
+    await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x+8*i,h.y);await page.mouse.up();
+    const b1=await page.evaluate(()=>window.__state.pv.boxes[0]);check('Swing the dial: the box turns (in 5° steps) about its own foot',b1.ry!==h.ry&&b1.ry%5===0&&b1.x===h.bx&&b1.z===h.bz,{ry0:h.ry,ry1:b1.ry})},
+  // 4 flush snapping
+  async flush(){const r=await page.evaluate(()=>{const P=window.__pv,S=window.__state,b={...S.pv.boxes[0],ry:0,w:24,h:24,d:24,x:0,y:0,z:96,arr:{...S.pv.boxes[0].arr,type:'none'}};S.pv={...S.pv,boxes:[b,{...structuredClone(b),id:2,x:40}]};
+      const touch=P.flush(S.pv,{...S.pv.boxes[1],x:26.5,z:97.5}),far=P.flush(S.pv,{...S.pv.boxes[1],x:33}),turned=P.flush({...S.pv,boxes:S.pv.boxes.map(o=>({...o,ry:30}))},{...S.pv.boxes[1],ry:30,x:26.5});return{touch,far,turned}});
+    check('Flush: a box within 4 in of a neighbour clicks against its face and lines up with it',r.touch.x===24&&r.touch.z===96&&r.touch.cue===1,r.touch);
+    check('Flush: farther than 4 in it stays where you put it',r.far.x===33&&r.far.cue==null,r.far);
+    const th=30*Math.PI/180,lx=r.turned.x*Math.cos(th)-(r.turned.z-96)*Math.sin(th);check('Flush works for boxes turned the same way (touching along their own axes)',r.turned.cue===1&&Math.abs(lx-24)<1e-3,{...r.turned,lx})},
+  // 5 aim
+  async aim(){await scene('room');const c=await page.evaluate(()=>{const P=window.__pv,S=window.__state;P.sel={id:1,k:5};P.aim();P.render();const K=P.camera(),I=P.sceneOf(S.pv,K).find(I=>I.b.id===1&&I.k===5),c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2);return P.img(K,P.toCam(K,c))});
+    check('Aim: the selected box lands dead centre (< 0.01 in)',Math.hypot(...c)<.01,c)},
+  // 6 one draw per frame however fast the pointer moves
+  async frames(){await scene('overhead');const r=await page.evaluate(async()=>{const P=window.__pv,w=document.querySelector('#canvasWrap'),g=document.querySelector('#geometry'),R=w.getBoundingClientRect(),x=R.x+60,y=R.y+60,f0=P.frames;
+      const fire=(t,dx)=>g.dispatchEvent(new PointerEvent(t,{bubbles:true,clientX:x+dx,clientY:y,pointerId:7,pointerType:'mouse',button:0}));fire('pointerdown',0);for(let i=1;i<=30;i++)fire('pointermove',i*3);const sync=P.frames-f0;
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const later=P.frames-f0;fire('pointerup',90);return{sync,later,yaw:window.__state.pv.yaw}});
+    check('Thirty pointer moves in one frame cost one redraw',r.sync===0&&r.later===1,r)}};
+for(const k of Object.keys(T))await T[k]();
+  }
+  {
+  // double-click the floor to put a box there
+  await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});
+  const [x,y]=await page.evaluate(()=>{const P=window.__pv,K=P.camera(),[sx,sy]=P.toSvg(P.img(K,P.toCam(K,[-40,0,110]))),m=document.querySelector('#geometry').getScreenCTM(),q=new DOMPoint(sx,sy).matrixTransform(m);return[q.x,q.y]});
+  await page.mouse.dblclick(x,y);const nb=await page.evaluate(()=>window.__state.pv.boxes.slice(-1)[0]);
+  check('Double-click the floor: a new box lands there, on the floor, snapped to 3 in',nb.id===2&&nb.y===0&&Math.abs(nb.x+40)<=1.5&&Math.abs(nb.z-110)<=1.5&&nb.x%3===0,[nb.x,nb.y,nb.z]);
+  }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
   const failed = results.filter(r => !r.ok);
