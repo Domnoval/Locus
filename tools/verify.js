@@ -204,6 +204,97 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   const svg = require('fs').readFileSync(await dl.path(), 'utf8');
   check('Export: no unresolved tokens, kind rules inlined, depth resolved, no lineage overlay', !svg.includes('var(--') && !svg.includes('--dz') && svg.includes('[data-kind="main"]') && !svg.includes('lineageLayer'), { tokens: (svg.match(/var\(--/g) || []).length });
 
+  // three-point (Geometry): dropping the horizon keeps a real camera; looking up swings VP 3 overhead
+  await go('cube', 'perspective'); if (await page.$eval('#autoRotateBtn', b => b.classList.contains('active'))) await page.click('#autoRotateBtn');
+  await page.click('#perspectiveMode button[data-points="3"]');
+  const drop = []; for (const h of [150, 500, 630]) { await page.$eval('#horizon', (e, h) => { e.value = h; e.dispatchEvent(new Event('input', { bubbles: true })); }, h); drop.push(await page.evaluate(() => { const c = window.__cam(), s = window.__state, x = c.vps.find(v => v.axis === 1); return { f: c.f, ab: (x.x - s.vpLeft) * (s.vpRight - x.x), vp3: x.y, h: s.horizon }; })); }
+  check('3-point: dropping the horizon never collapses the camera (f ≥ 0.6·√ab) and VP 3 flips above when you look up', drop.every(d => d.f >= 0.6 * Math.sqrt(d.ab) - 1e-6) && drop[0].vp3 > drop[0].h && drop[2].vp3 < drop[2].h, drop);
+
+  /* ---------- Perspective planner ---------- */
+  await page.click('#appMode [data-app="perspective"]');
+  {
+  const scene=id=>page.evaluate(id=>{const s=document.querySelector('#pvScene');s.value=id;s.dispatchEvent(new Event('change'))},id);
+  // 1 linear: every family of parallel edges meets exactly at its vanishing point
+  await scene('blank');
+  const lin=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,boxes:S.pv.boxes.map(b=>({...b,ry:30,rx:12})),pitch:-14,yaw:9};P.render();const K=P.camera(),I=P.sceneOf(S.pv,K)[0];
+    const im=p=>P.img(K,P.toCam(K,p)),meet=([a,b],[c,d])=>{const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]);const t=((a[0]-c[0])*(c[1]-d[1])-(a[1]-c[1])*(c[0]-d[0]))/den;return[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])]};
+    let worst=0;[1,2,4].forEach(bit=>{const fam=P.EDGES.filter(([a,b])=>(a^b)===bit).map(([a,b])=>[im(I.P[a]),im(I.P[b])]),j=bit===1?0:bit===2?1:2,v=[I.R[0][j],I.R[1][j],I.R[2][j]],c=K.CT.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]),vp=P.dirImg(K,c[2]>0?c:c.map(x=>-x));
+      fam.slice(1).forEach(f=>{const m=meet(fam[0],f);worst=Math.max(worst,Math.hypot(m[0]-vp[0],m[1]-vp[1])/Math.max(1,Math.hypot(vp[0],vp[1])))})});return worst});
+  check('Linear: every family of parallel edges meets at its vanishing point (relative miss < 1e-9)',lin<1e-9,lin);
+  // 2 curvilinear: every edge lies on its circle, in the maths and in the drawing
+  await scene('overhead');
+  const cur=await page.evaluate(()=>{const P=window.__pv,S=window.__state,K=P.camera(),list=P.sceneOf(S.pv,K);let worst=0,worstPx=0,n=0;
+    list.forEach(I=>P.EDGES.forEach(([a,b])=>{const ca=P.toCam(K,I.P[a]),cb=P.toCam(K,I.P[b]),cr=[ca[1]*cb[2]-ca[2]*cb[1],ca[2]*cb[0]-ca[0]*cb[2],ca[0]*cb[1]-ca[1]*cb[0]],l=Math.hypot(...cr),G=P.circleOf(K,cr.map(x=>x/l));if(G.type!=='circle')return;
+      for(let i=0;i<=20;i++){const t=i/20,p=I.P[a].map((v,k)=>v+(I.P[b][k]-v)*t),q=P.img(K,P.toCam(K,p));if(!q)continue;n++;worst=Math.max(worst,Math.abs(Math.hypot(q[0]-G.c[0],q[1]-G.c[1])-G.r)/G.r)}
+      const [cx,cy]=P.toSvg(G.c),rs=G.r*P.view.s;P.segPolys(K,I.P[a],I.P[b]).forEach(poly=>poly.forEach(([x,y])=>{if(x<=-1799.999||x>=2699.999||y<=-1399.999||y>=2099.999)return;worstPx=Math.max(worstPx,Math.abs(Math.hypot(x-cx,y-cy)-rs))}))}));return{worst,worstPx,n}});
+  check('Curvilinear: every edge is an exact circle (relative miss < 1e-9), and the drawn arc sits on it (< 1e-6 px)',cur.worst<1e-9&&cur.worstPx<1e-6&&cur.n>1000,cur);
+  // 3 the two projections agree near the centre
+  const agree=await page.evaluate(()=>{const P=window.__pv,S=window.__state,K1=P.camera({...S.pv,proj:'linear'}),K2=P.camera({...S.pv,proj:'curvi'}),a=1*Math.PI/180,c=[Math.sin(a),0,Math.cos(a)].map(x=>x*100),p=P.img(K1,c),q=P.img(K2,c);return Math.abs(p[0]-q[0])/p[0]});
+  check('Linear and curvilinear agree at the centre of vision (1° off: < 0.01%)',agree<1e-4,agree);
+  // 4 hidden lines: a lone cube seen from above and turned shows 9 edges and hides 3
+  await scene('blank');
+  const hl=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,boxes:S.pv.boxes.map(b=>({...b,ry:30,rx:0})),pitch:-20,yaw:0};const K=P.camera(),list=P.sceneOf(S.pv,K),I=list[0];let vis=0,hid=0;
+    P.EDGES.forEach(([a,b])=>{const r=P.runsOf(I.P[a],I.P[b],list,K);if(r.length===1&&r[0][2])vis++;else if(r.length===1&&!r[0][2])hid++});return{vis,hid}});
+  check('Hidden lines: a turned cube seen from above shows 9 edges, hides 3',hl.vis===9&&hl.hid===3,hl);
+  const occ=await page.evaluate(()=>{const P=window.__pv,S=window.__state,base=S.pv.boxes[0];S.pv={...S.pv,pitch:0,yaw:0,eye:{x:0,y:20,z:0},boxes:[{...base,id:1,x:0,y:0,z:60,w:40,h:40,d:40,ry:0,arr:{...base.arr,type:'none'}},{...base,id:2,x:0,y:10,z:160,w:10,h:10,d:10,ry:0,arr:{...base.arr,type:'none'}}]};
+    const K=P.camera(),list=P.sceneOf(S.pv,K),I=list.find(I=>I.b.id===2);return P.EDGES.every(([a,b])=>P.runsOf(I.P[a],I.P[b],list,K).every(r=>!r[2]))});
+  check('Hidden lines: a small box straight behind a big one is hidden completely',occ);
+  // 5 arrays
+  await scene('overhead');
+  const arr=await page.evaluate(()=>{const P=window.__pv,S=window.__state,E=[S.pv.eye.x,S.pv.eye.y,S.pv.eye.z],arch=P.instances(S.pv,S.pv.boxes[0]),ring=P.instances(S.pv,S.pv.boxes[1]);
+    const dist=I=>{const c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2);return Math.hypot(c[0]-E[0],c[1]-E[1],c[2]-E[2])},hd=I=>Math.hypot(I.t[0]-E[0],I.t[2]-E[2]);
+    const ad=arch.map(dist),rd=ring.map(hd),spread=a=>Math.max(...a)-Math.min(...a);
+    const ang=(A,B)=>{const u=[0,1,2].map(k=>A.t[k]-E[k]),v=[0,1,2].map(k=>B.t[k]-E[k]);return Math.acos(Math.min(1,(u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/Math.hypot(...u)/Math.hypot(...v)))};const steps=arch.slice(1).map((I,i)=>ang(arch[i],I));
+    const top=Math.max(...arch.map(I=>I.t[1]));return{n:arch.length,ns:S.pv.boxes[0].arr.n,ad:spread(ad),rd:spread(rd),step:spread(steps),top,eye:E[1]}});
+  check('Arch: the right count, all the same distance from your eye, evenly spaced, and over your head',arr.n===arr.ns&&arr.ad<1e-9&&arr.step<1e-9&&arr.top>arr.eye+40,arr);
+  check('Ring: every copy the same distance from where you stand',arr.rd<1e-9,arr.rd);
+  // 6 horizon
+  const hz=await page.evaluate(()=>{const P=window.__pv,S=window.__state,out={};for(const proj of ['linear','curvi'])for(const pitch of [0,25]){const K=P.camera({...S.pv,proj,pitch}),n=K.CT.map(r=>r[1]),G=P.circleOf(K,n);
+    out[proj+pitch]=G.type==='line'?G.p[1]-(G.d[0]?0:0):G.c[1]-G.r}out.D=S.pv.dist;return out});
+  const D=hz.D;check('Horizon: through the centre when level; drops by D·tan φ (linear) and 2D·tan(φ/2) (curvilinear) when you look up',Math.abs(hz.linear0)<1e-9&&Math.abs(hz.curvi0)<1e-9&&Math.abs(hz.linear25+D*Math.tan(25*Math.PI/180))<1e-9&&Math.abs(hz.curvi25+2*D*Math.tan(12.5*Math.PI/180))<1e-9,hz);
+  // 7 hands: drag a box, look around, undo
+  await scene('blank');await page.waitForTimeout(100);
+  const at=async (w)=>page.evaluate(w=>{const P=window.__pv,K=P.camera(),[x,y]=P.toSvg(P.img(K,P.toCam(K,w))),m=document.querySelector('#geometry').getScreenCTM(),p=new DOMPoint(x,y).matrixTransform(m);return[p.x,p.y]},w);
+  const b0=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));let [sx,sy]=await at([b0.x,b0.h,b0.z]);
+  await page.mouse.move(sx,sy);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(sx+i*12,sy);await page.mouse.up();
+  const b1=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));
+  check('Dragging a box slides it along the floor (it stays on the floor, snapped to 3 in)',Math.abs(b1.x-b0.x)>6&&b1.y===0&&b1.x%3===0,{b0:[b0.x,b0.y,b0.z],b1:[b1.x,b1.y,b1.z]});
+  await page.click('#undoBtn');const b2=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));check('Undo puts the box back',b2.x===b0.x&&b2.z===b0.z,[b2.x,b2.z]);
+  const y0=await page.evaluate(()=>window.__state.pv.yaw);const box=await (await page.$('#canvasWrap')).boundingBox();await page.mouse.move(box.x+120,box.y+140);await page.mouse.down();for(let i=1;i<=8;i++)await page.mouse.move(box.x+120+i*15,box.y+140);await page.mouse.up();
+  const y1=await page.evaluate(()=>window.__state.pv.yaw);check('Dragging empty space turns your head',y1<y0-3,{y0,y1});
+  // 8 stacking: drop one box onto another
+  await scene('blank');await page.evaluate(()=>{const S=window.__state,b={...S.pv.boxes[0],ry:0};S.pv={...S.pv,boxes:[b,{...structuredClone(b),id:2,x:b.x+40}]};window.__pv.sel=null;window.__pv.render()});
+  const c2=await page.evaluate(()=>({...window.__state.pv.boxes[1]}));[sx,sy]=await at([c2.x,c2.h,c2.z]);const [tx,ty]=await at([b0.x,b0.h,b0.z]);
+  await page.mouse.move(sx,sy);await page.mouse.down();for(let i=1;i<=16;i++)await page.mouse.move(sx+(tx-sx)*i/16,sy+(ty-sy)*i/16);await page.mouse.up();
+  const c3=await page.evaluate(()=>({...window.__state.pv.boxes[1]}));check('Drop a box onto another and it sits on top',c3.y===b0.h,[c3.x,c3.y,c3.z]);
+  // 9 VP drag turns you so the point follows the hand
+  await scene('street');await page.waitForTimeout(100);
+  const vp=await page.evaluate(()=>{const g=[...document.querySelectorAll('#overlayLayer .pv-vp')].find(g=>g.querySelector('.vp-handle'));const c=g.querySelector('.vp-handle'),r=c.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2,dir:g.dataset.dir}});
+  await page.mouse.move(vp.x,vp.y);await page.mouse.down();await page.mouse.move(vp.x-30,vp.y,{steps:5});await page.mouse.move(vp.x-60,vp.y+20,{steps:5});await page.mouse.up();
+  const vp2=await page.evaluate(d=>{const P=window.__pv,K=P.camera(),v=d.split(',').map(Number),c=K.CT.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]),[x,y]=P.toSvg(P.dirImg(K,c)),m=document.querySelector('#geometry').getScreenCTM(),p=new DOMPoint(x,y).matrixTransform(m);return[p.x,p.y]},vp.dir);
+  check('Dragging a vanishing point turns your head so the point follows the hand (< 1.5 px)',Math.hypot(vp2[0]-(vp.x-60),vp2[1]-(vp.y+20))<1.5,{want:[vp.x-60,vp.y+20],got:vp2});
+  // 10 an edge in curvilinear gives its pin and string
+  await scene('overhead');await page.waitForTimeout(100);
+  await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:4};P.pin={id:1,k:4,edge:3};P.render()});
+  const pinTxt=await page.evaluate(()=>[...document.querySelectorAll('#overlayLayer text')].map(t=>t.textContent).find(t=>t.startsWith('PIN')));
+  const arc=await page.evaluate(()=>{const P=window.__pv,A=P.arcOf({id:1,k:4,edge:3});return A&&A.G});
+  check('Click an arc edge and it gives the pin position and string length on your canvas',pinTxt&&arc&&arc.type==='circle'&&pinTxt.includes('STRING'),pinTxt);
+  // 11 Studio: the canvas is the page at full size
+  await scene('street');
+  await page.click('#studioBtn');await page.waitForTimeout(300);await page.click('#stModes [data-v="print"]');
+  const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#stDownload')]);const svg=require('fs').readFileSync(await dl.path(),'utf8');
+  const wmm=+(svg.match(/width="([\d.]+)mm"/)||[])[1],hmm=+(svg.match(/height="([\d.]+)mm"/)||[])[1];
+  const nums=[...svg.matchAll(/ d="([^"]+)"/g)].flatMap(m=>m[1].match(/-?\d*\.?\d+/g).map(Number));let okIn=true;for(let i=0;i+1<nums.length;i+=2){if(nums[i]<-0.01||nums[i]>wmm+0.01||nums[i+1]<-0.01||nums[i+1]>hmm+0.01){okIn=false;break}}
+  check('Studio print: the page is your canvas at full size (48 × 36 in → 1219.2 × 914.4 mm) and nothing runs off it',Math.abs(wmm-1219.2)<.05&&Math.abs(hmm-914.4)<.05&&okIn&&nums.length>100,{wmm,hmm,okIn,n:nums.length});
+  await page.click('#stClose');
+  // screen export from the planner resolves every token
+  const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('#exportBtn')]);const psvg = require('fs').readFileSync(await dl2.path(), 'utf8');
+  check('Planner export: a standalone SVG with no unresolved tokens', psvg.startsWith('<svg') && !psvg.includes('var(--') && psvg.includes('pv-face'), { tokens: (psvg.match(/var\(--/g) || []).length });
+  // 12 back to geometry and forward again
+  await page.click('#appMode [data-app="geometry"]');const gt=await page.textContent('#patternTitle');const steps=await page.isVisible('.steps');
+  await page.click('#undoBtn');const back=await page.evaluate(()=>window.__state.app);
+  check('Switching back to Geometry restores it, and undo steps back across the switch',gt&&gt!=='A street of cubes'&&steps&&back==='perspective',{gt,steps,back});
+  }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
   const failed = results.filter(r => !r.ok);

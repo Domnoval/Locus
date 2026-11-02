@@ -15,22 +15,22 @@
         --paper:#0b0d12; --ink:#ddd7c8; --muted:#868c97; --panel:#11141b;
         --line:#232833; --strong:#363d4b; --accent:#e0553a; --accent-ink:#140806;
         --canvas:#0e1118; --grid:#171b24; --ghost:#4b5466; --geometry:#ece6d6;
-        --focus:#5fb3aa; --z-axis:#c9973a; --perspective:#9d8cc6; --lineage:#d8a443; --shadow:0 24px 60px rgba(0,0,0,.45); }
+        --focus:#5fb3aa; --z-axis:#c9973a; --perspective:#9d8cc6; --lineage:#d8a443; --shadow:0 24px 60px rgba(0,0,0,.45); --pv-light:#2c313c; --pv-mid:#1a1e27; --pv-dark:#0c0e13; }
     @media (prefers-color-scheme:light){
       :root:not([data-theme="dark"]) { color-scheme:light;
         --paper:#ebe5d7; --ink:#2b2721; --muted:#776e60; --panel:#e3dccb;
         --line:#d3c9b4; --strong:#b5a88e; --accent:#b8432e; --accent-ink:#fff8f0;
         --canvas:#f3ede0; --grid:#e6dfcf; --ghost:#7f9cc4; --geometry:#34302a;
-        --focus:#2f6f8f; --z-axis:#9b6c10; --perspective:#7f5f86; --lineage:#a8741a; --shadow:0 18px 46px rgba(60,48,30,.14); }
+        --focus:#2f6f8f; --z-axis:#9b6c10; --perspective:#7f5f86; --lineage:#a8741a; --shadow:0 18px 46px rgba(60,48,30,.14); --pv-light:#fbf8f2; --pv-mid:#dcd3c1; --pv-dark:#b8ac95; }
     }
     :root[data-theme="dark"]{ color-scheme:dark; --paper:#0b0d12; --ink:#ddd7c8; --muted:#868c97; --panel:#11141b;
         --line:#232833; --strong:#363d4b; --accent:#e0553a; --accent-ink:#140806;
         --canvas:#0e1118; --grid:#171b24; --ghost:#4b5466; --geometry:#ece6d6;
-        --focus:#5fb3aa; --z-axis:#c9973a; --perspective:#9d8cc6; --lineage:#d8a443; --shadow:0 24px 60px rgba(0,0,0,.45); }
+        --focus:#5fb3aa; --z-axis:#c9973a; --perspective:#9d8cc6; --lineage:#d8a443; --shadow:0 24px 60px rgba(0,0,0,.45); --pv-light:#2c313c; --pv-mid:#1a1e27; --pv-dark:#0c0e13; }
     :root[data-theme="light"]{ color-scheme:light; --paper:#ebe5d7; --ink:#2b2721; --muted:#776e60; --panel:#e3dccb;
         --line:#d3c9b4; --strong:#b5a88e; --accent:#b8432e; --accent-ink:#fff8f0;
         --canvas:#f3ede0; --grid:#e6dfcf; --ghost:#7f9cc4; --geometry:#34302a;
-        --focus:#2f6f8f; --z-axis:#9b6c10; --perspective:#7f5f86; --lineage:#a8741a; --shadow:0 18px 46px rgba(60,48,30,.14); }
+        --focus:#2f6f8f; --z-axis:#9b6c10; --perspective:#7f5f86; --lineage:#a8741a; --shadow:0 18px 46px rgba(60,48,30,.14); --pv-light:#fbf8f2; --pv-mid:#dcd3c1; --pv-dark:#b8ac95; }
     *{box-sizing:border-box}
     html,body{margin:0;min-height:100%;background:var(--paper);color:var(--ink)}
     body{overflow-x:hidden}
@@ -198,12 +198,54 @@
       .app{padding:8px}.workspace-head{padding:4px 2px}.construction-label{font-size:10px}h1{font-size:25px}.head-actions{gap:5px}.head-actions .action{padding:9px 11px}.history-actions .action{min-width:34px;padding:6px}.canvas-wrap{min-height:52vh}.canvas-wrap #geometry{min-height:52vh}.axis-key{display:none}.status-line{left:8px;right:8px;bottom:8px;gap:4px}.status-line span{padding:4px 5px}.steps{grid-template-columns:auto minmax(85px,1fr) auto auto;padding:8px;gap:6px}.speed-select{grid-column:2/5;width:100%}.sidebar{grid-template-columns:1fr}.panel{padding:14px}.step-readout{min-width:50px;font-size:10px}.step-caption{font-size:11px}}
     @media(prefers-reduced-motion:reduce){.toast{transition:none}}
     @media print{.sidebar,.head-actions,.steps,.canvas-badge,.axis-key{display:none}.app{display:block;padding:0}.workspace-head{margin-bottom:12px}.canvas-wrap{box-shadow:none;border:0;height:90vh}}
+    /* perspective planner */
+    .side-group{display:contents}.side-group[hidden]{display:none}
+    .app-switch{margin:0 0 14px}.app-switch button{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;padding:9px 4px}
+    body.pv-app .steps,body.pv-app .axis-key,body.pv-app #axisHud,body.pv-app #lineageTip{display:none!important}
+    body.pv-app .workspace{grid-template-rows:auto 1fr;position:sticky;top:18px;align-self:start;height:calc(100vh - 36px);min-height:600px}
+    body.pv-app .canvas-wrap,body.pv-app .canvas-wrap #geometry{min-height:0;height:100%}
+    #overlayLayer .vp-label{font:500 10px "IBM Plex Mono",monospace;fill:var(--perspective);paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+    body:not(.pv-app) #pvPlan{display:none}
+    body.pv-app .canvas-wrap{cursor:crosshair}body.pv-app .canvas-wrap.dragging{cursor:grabbing}
+    #pvPlan{position:absolute;right:14px;bottom:38px;width:184px;height:184px;background:color-mix(in srgb,var(--canvas) 88%,transparent);border:1px solid var(--line);touch-action:none;cursor:pointer}
+    #pvPlan[hidden]{display:none}
+    .pv-plan-grid{stroke:var(--line);stroke-width:.6;fill:none}
+    .pv-plan-box{fill:color-mix(in srgb,var(--geometry) 12%,transparent);stroke:var(--geometry);stroke-width:.8;fill-rule:nonzero}
+    .pv-plan-box.on{stroke:var(--accent);fill:color-mix(in srgb,var(--accent) 22%,transparent)}
+    .pv-plan-view{fill:color-mix(in srgb,var(--perspective) 14%,transparent);stroke:var(--perspective);stroke-width:.8}
+    #pvPlan text{font:500 8px "IBM Plex Mono",monospace;fill:var(--muted)}
+    .pv-plan-eye{fill:var(--accent);stroke:var(--canvas);stroke-width:2;cursor:move}
+    #geometry .pv-face{stroke:none}
+    #geometry .pv-face.flat{fill:var(--canvas);opacity:.9}
+    #geometry .pv-face.light{fill:var(--pv-light)}#geometry .pv-face.mid{fill:var(--pv-mid)}#geometry .pv-face.dark{fill:var(--pv-dark)}
+    #geometry .pv-dim{fill:var(--paper);opacity:.55;pointer-events:none}
+    #geometry .pv-frame{fill:none;stroke:var(--strong);stroke-width:1;pointer-events:none}
+    #geometry .pv-ticks{stroke:var(--muted);stroke-width:.8;fill:none}
+    #geometry .pv-rule,#geometry .pv-cone-label{font:500 9px "IBM Plex Mono",monospace;fill:var(--muted);paint-order:stroke;stroke:var(--canvas);stroke-width:3px;stroke-linejoin:round}
+    #geometry .pv-cone{fill:none;stroke:var(--focus);stroke-width:.8;opacity:.55;pointer-events:none}#geometry .pv-cone.wide{stroke-dasharray:4 6;opacity:.45}
+    #geometry .pv-vp-hit{fill:transparent;stroke:none}
+    #overlayLayer .pv-vp:not([data-pv=""]) :is(.vp-handle,.pv-vp-hit),#overlayLayer .pv-cv-hit{pointer-events:auto}
+    #overlayLayer .pv-cv-hit{fill:transparent;stroke:none;cursor:move}
+    #geometry .pv-vp{cursor:move}#geometry .pv-vp[data-pv=""]{cursor:default}
+    #geometry .pv-cv{cursor:move}#geometry .pv-cv-ring{fill:none;stroke:var(--focus);stroke-width:1}#geometry .pv-cv-cross{stroke:var(--focus);stroke-width:1}
+    #geometry .pv-sel{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;pointer-events:none}#geometry .pv-sel.twin{stroke-width:1.2;opacity:.6}
+    #geometry .pv-hover{fill:none;stroke:var(--focus);stroke-width:1.6;stroke-linecap:round;pointer-events:none}
+    #geometry .pv-pin{fill:none;stroke:var(--lineage);stroke-width:3;stroke-linecap:round;pointer-events:none}
+    #geometry .pv-string{stroke:var(--lineage);stroke-width:1;stroke-dasharray:3 4;fill:none}#geometry .pv-pin-dot{fill:var(--lineage)}
+    #geometry .vp-handle{fill:var(--canvas);stroke:var(--perspective);stroke-width:1.4}#geometry .vp-dot{fill:var(--perspective)}
+    .pv-readout{display:grid;gap:6px;font-size:12px}
+    .pv-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:5px}.pv-row span{color:var(--muted);text-transform:capitalize}.pv-row b{font:500 11px "IBM Plex Mono",monospace;text-align:right}
+    .pv-row.off b{color:var(--muted)}.pv-row.pv-arc span,.pv-row.pv-arc b{color:var(--lineage)}.pv-row.off span::after{content:" · off canvas";text-transform:none}
+    .pv-dims{grid-template-columns:repeat(4,1fr)}
+    @media(max-width:820px){#pvPlan{width:96px;height:96px;bottom:34px;right:8px}body.pv-app .workspace{position:static;height:auto;min-height:0}body.pv-app .canvas-wrap,body.pv-app .canvas-wrap #geometry{height:min(72vh,640px);min-height:min(72vh,640px)}}
   </style>
 </head>
 <body>
 <main class="app">
   <aside class="sidebar" aria-label="Drawing controls">
     <div class="brand"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="11" cy="10" r="8.5"/><circle cx="19" cy="10" r="8.5"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg><div><b>LOCUS</b><small>geometry, constructed</small></div></div>
+    <div class="segmented two app-switch" id="appMode" role="group" aria-label="Mode"><button data-app="geometry" type="button">Geometry</button><button data-app="perspective" type="button">Perspective</button></div>
+    <div class="side-group" id="geoSide">
     <section class="panel">
       <label class="label" for="pattern">Construction</label>
       <select id="pattern"></select><!-- options come from REGISTRY -->
@@ -256,6 +298,55 @@
       <p class="picker-note" id="overlayNote">Layer whirling φ squares (pentagonal figures only), symbolic measurements, and an orthographic plan beneath the active view.</p>
     </section>
     <p class="tip">Drag the drawing to rotate it. Use <kbd>←</kbd> <kbd>→</kbd> to move through the construction.</p>
+    </div>
+    <div class="side-group" id="pvSide" hidden>
+    <section class="panel">
+      <label class="label" for="pvScene">Scene</label>
+      <select id="pvScene"></select>
+      <p class="pattern-note" id="pvSceneNote"></p>
+      <div class="toggle-row" style="margin-top:12px"><button class="chip" id="pvAdd" type="button" title="Add a cube on the floor in front of you (or double-click the floor)">+ Box</button><button class="chip" id="pvDup" type="button" title="Duplicate the selected box (D, or Alt-drag it)" disabled>Duplicate</button><button class="chip" id="pvDel" type="button" title="Delete the selected box (Delete)" disabled>Delete</button><button class="chip" id="pvFit" type="button" title="Fit the canvas in view (F)">Fit</button></div>
+    </section>
+    <section class="panel">
+      <span class="label">Canvas</span>
+      <div class="st-row"><label class="st-field">Size<select id="pvCanvas"></select></label><button class="chip" id="pvTurnCanvas" type="button" style="align-self:end" title="Swap width and height">⟲ Turn</button></div>
+      <div class="st-row" id="pvCustom" hidden><label class="st-field">Width in<input type="number" id="pvCw" min="4" step="1"></label><label class="st-field">Height in<input type="number" id="pvCh" min="4" step="1"></label></div>
+      <div class="control"><div class="control-head"><label for="pvDist">Stand back</label><span class="value" id="pvDistValue">40 in</span></div><input id="pvDist" type="range" min="6" max="240" step="1"></div>
+      <div class="segmented two" id="pvProj" role="group" aria-label="Projection" style="margin-top:14px"><button data-v="linear">Linear</button><button data-v="curvi">Curvilinear</button></div>
+      <p class="picker-note" id="pvProjNote"></p>
+    </section>
+    <section class="panel">
+      <span class="label">You</span>
+      <div class="control"><div class="control-head"><label for="pvEye">Eye height</label><span class="value" id="pvEyeValue">62 in</span></div><input id="pvEye" type="range" min="6" max="240" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvPitch">Look up / down</label><span class="value" id="pvPitchValue">0°</span></div><input id="pvPitch" type="range" min="-90" max="90" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvYaw">Turn</label><span class="value" id="pvYawValue">0°</span></div><input id="pvYaw" type="range" min="-180" max="180" step="1"></div>
+      <p class="picker-note">Drag the empty drawing to look around, drag a box to move it (Shift lifts it), wheel to zoom. In the plan, drag <b>YOU</b> to walk.</p>
+    </section>
+    <section class="panel" id="pvBoxPanel" hidden>
+      <span class="label">Selected box · inches</span>
+      <div class="st-row pv-dims"><label class="st-field">Width<input type="number" id="pvW" min="0.5" step="1"></label><label class="st-field">Height<input type="number" id="pvH" min="0.5" step="1"></label><label class="st-field">Depth<input type="number" id="pvD" min="0.5" step="1"></label><label class="st-field">Off floor<input type="number" id="pvY" min="0" step="1"></label></div>
+      <div class="control"><div class="control-head"><label for="pvRy">Turn</label><span class="value" id="pvRyValue">0°</span></div><input id="pvRy" type="range" min="-180" max="180" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvRx">Tip</label><span class="value" id="pvRxValue">0°</span></div><input id="pvRx" type="range" min="-90" max="90" step="1"></div>
+      <label class="st-field" style="margin-top:14px">Repeat<select id="pvArr"><option value="none">None</option><option value="row">Row</option><option value="grid">Grid</option><option value="tower">Tower</option><option value="ring">Ring around you</option><option value="arch">Arch over you</option></select></label>
+      <p class="picker-note" id="pvArrNote"></p>
+      <div id="pvAxisRow" style="margin-top:10px"><div class="segmented two" id="pvAxis" role="group" aria-label="Row direction"><button data-v="across" type="button">Across</button><button data-v="away" type="button">Away from you</button></div></div>
+      <div class="control" id="pvCountRow"><div class="control-head"><label for="pvCount">Count</label><span class="value" id="pvCountValue">6</span></div><input id="pvCount" type="range" min="1" max="48" step="1"></div>
+      <div class="control" id="pvRowsRow"><div class="control-head"><label for="pvRows">Rows</label><span class="value" id="pvRowsValue">3</span></div><input id="pvRows" type="range" min="1" max="24" step="1"></div>
+      <div class="control" id="pvGapRow"><div class="control-head"><label for="pvGap">Gap</label><span class="value" id="pvGapValue">6 in</span></div><input id="pvGap" type="range" min="0" max="120" step="1"></div>
+      <div class="control" id="pvSpanRow"><div class="control-head"><label for="pvSpan">Sweep</label><span class="value" id="pvSpanValue">180°</span></div><input id="pvSpan" type="range" min="10" max="360" step="5"></div>
+    </section>
+    <section class="panel">
+      <span class="label">Guides</span>
+      <div class="toggle-row" id="pvShow">
+        <button class="chip" data-show="floor" type="button">Floor grid</button><button class="chip" data-show="horizon" type="button">Horizon</button><button class="chip" data-show="vps" type="button">Vanishing points</button>
+        <button class="chip" data-show="guides" type="button" title="Carry the selected box’s edges on to their vanishing points">Lines to VPs</button><button class="chip" data-show="cone" type="button">Cone of vision</button><button class="chip" data-show="hidden" type="button">Hidden edges</button>
+        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap moves to 3 inches">Snap</button>
+      </div>
+    </section>
+    <section class="panel">
+      <span class="label">On your canvas</span>
+      <div id="pvReadout" class="pv-readout"></div>
+    </section>
+    </div>
   </aside>
 
   <section class="workspace">
@@ -278,6 +369,7 @@
         <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
         <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="ghostLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
       </svg>
+      <svg id="pvPlan" viewBox="0 0 200 200" role="img" aria-label="Plan: where you stand and what the canvas takes in" hidden></svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
       <div class="status-line" id="statusLine" aria-live="polite"></div>
@@ -310,6 +402,7 @@
     <p class="st-note" data-for="plotter">One path per stroke, one numbered layer per pen, overlapping chords merged so no line is drawn twice, and strokes ordered to keep pen-up travel short. Layer numbers work with AxiDraw’s layer mode.</p>
     <p class="st-note" data-for="stencil">Each layer becomes its own sheet. Lines become slots of the width you set, and every stretch of slot between two crossings keeps at least one bridge, so no piece can drop out. Black is cut. The corner crosses are cut too, so you can register each sheet on the wall.</p>
     <section><span class="label">Size</span>
+      <p class="st-note" id="stCanvasNote" hidden></p>
       <label class="st-field">Sheet<select id="stPage"></select></label>
       <div class="st-row" id="stCustom"><label class="st-field">Width mm<input type="number" id="stW" min="50" step="1"></label><label class="st-field">Height mm<input type="number" id="stH" min="50" step="1"></label></div>
       <div class="st-row"><div class="segmented two" id="stOrient" role="group" aria-label="Orientation"><button data-v="portrait">Portrait</button><button data-v="landscape">Landscape</button></div><label class="st-field">Margin mm<input type="number" id="stMargin" min="0" step="1"></label></div>
@@ -335,8 +428,8 @@
   const NS='http://www.w3.org/2000/svg';
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   const els={svg:$('#geometry'),grid:$('#gridLayer'),perspective:$('#perspectiveLayer'),guides:$('#guideLayer'),shapes:$('#shapeLayer'),points:$('#pointLayer'),overlay:$('#overlayLayer'),lineage:$('#lineageLayer'),ghost:$('#ghostLayer'),pattern:$('#pattern'),title:$('#patternTitle'),note:$('#patternNote'),phase:$('#phaseLabel'),step:$('#step'),caption:$('#stepCaption'),breakpoints:$('#stepBreakpoints'),readout:$('#stepReadout'),status:$('#statusLine'),rotation:$('#rotation'),tilt:$('#tilt'),depth:$('#depth'),weight:$('#weight'),horizon:$('#horizon'),perspectiveControls:$('#perspectiveControls'),badge:$('#canvasBadge'),play:$('#playBtn'),speed:$('#speed'),wrap:$('#canvasWrap'),toast:$('#toast'),undo:$('#undoBtn'),redo:$('#redoBtn'),autoRotate:$('#autoRotateBtn')};
-  const state={pattern:'continuum',mode:'axon',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:0,depth:45,weight:1.1,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,workings:false,depthInk:true,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
-  const historyKeys=['pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','workings','depthInk','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
+  const state={app:'geometry',pv:null,pattern:'continuum',mode:'axon',primitive:'flat',perspectivePoints:1,step:1,rotation:0,tilt:0,depth:45,weight:1.1,guides:true,points:true,mirror:false,darkline:false,perspectiveLines:true,phi:false,dimensions:false,multiView:false,fruit:false,workings:false,depthInk:true,horizon:350,vp1X:450,vpLeft:145,vpRight:755,vp3X:450,vp3Y:615,playing:false,autoRotate:!matchMedia('(prefers-reduced-motion: reduce)').matches};
+  const historyKeys=['app','pv','pattern','mode','primitive','perspectivePoints','step','rotation','tilt','depth','weight','guides','points','mirror','darkline','perspectiveLines','phi','dimensions','multiView','fruit','workings','depthInk','horizon','vp1X','vpLeft','vpRight','vp3X','vp3Y','autoRotate'];
   const undoStack=[],redoStack=[];let pendingSnapshot=null;
   const snapshot=()=>Object.fromEntries(historyKeys.map(k=>[k,state[k]]));
   const sameSnapshot=(a,b)=>historyKeys.every(k=>a[k]===b[k]);
@@ -348,8 +441,9 @@
     els.pattern.value=state.pattern;els.step.value=state.step;els.rotation.value=state.rotation;els.tilt.value=state.tilt;els.depth.value=state.depth;els.weight.value=Math.round(state.weight*10);els.horizon.value=state.horizon;
     $$('#viewMode button').forEach(x=>x.classList.toggle('active',x.dataset.mode===state.mode));$$('#primitiveMode button').forEach(x=>x.classList.toggle('active',x.dataset.primitive===state.primitive));$$('#perspectiveMode button').forEach(x=>x.classList.toggle('active',+x.dataset.points===state.perspectivePoints));
     $$('.chip[data-toggle]').forEach(x=>x.classList.toggle('active',state[x.dataset.toggle]));$('#perspectiveLinesBtn').classList.toggle('active',state.perspectiveLines);els.autoRotate.classList.toggle('active',state.autoRotate);
-    $('#fruitChip').hidden=!FIG[state.pattern].fruit;const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=FIG[state.pattern].note;$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube centre marks.':'Planar circles with a compass pinhole at every centre.';syncValues();
+    $('#fruitChip').hidden=!FIG[state.pattern].fruit;const phiOk=PENTAGONAL.includes(state.pattern);$('#phiChip').disabled=!phiOk;$('#phiChip').title=phiOk?'Whirling golden squares':'φ governs the pentagonal figures (dodecahedron, icosahedron). Hexagonal figures run on √3.';syncPressed();els.perspectiveControls.hidden=state.mode!=='perspective';els.title.textContent=titles[state.pattern];els.note.textContent=FIG[state.pattern].note;$('#primitiveNote').textContent=state.primitive==='solid'?'Wireframe spheres with cube centre marks.':'Planar circles with a compass pinhole at every centre.';syncValues();syncApp();
   }
+  function syncApp(){const pv=state.app==='perspective';document.body.classList.toggle('pv-app',pv);$('#geoSide').hidden=pv;$('#pvSide').hidden=!pv;$$('#appMode button').forEach(b=>{b.classList.toggle('active',b.dataset.app===state.app);b.setAttribute('aria-pressed',b.dataset.app===state.app)});$('#svgTitle').textContent=pv?'Perspective plan':'Sacred geometry construction';if(pv)PV.sync()}
   function syncPressed(){$$('.chip,.segmented button').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')))}
   function restoreSnapshot(s){stopPlayback();inertia=0;Object.assign(state,s);syncAllControls();render();updateHistoryButtons()}
   function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restoreSnapshot(undoStack.pop())}
@@ -537,6 +631,363 @@
       const rot=[(a,o)=>[a,o],(a,o)=>[o,-a],(a,o)=>[-a,-o],(a,o)=>[-o,a]],pts=rot.flatMap(f=>side.map(([a,o])=>f(a,o))).map(([x,y],k)=>K.given(x*R,-y*R,`B${Math.round(inset/.045)+1}·${k+1}`,'bhupura corner'));
       pts.forEach((p,k)=>K.seg(p,pts[(k+1)%pts.length],'web'))});
     return K}
+
+  /* ---------- Perspective planner: you, a canvas, and boxes in the room ----------
+     World units are inches, y is up and the floor is y = 0. The camera is your eye. The canvas is the picture plane,
+     held `dist` inches in front of the eye, so `dist` is also the distance from which the finished painting reads true.
+     Linear: a point lands where the ray from your eye pierces the canvas plane, so straight edges stay straight and
+     parallel edges meet at one vanishing point. It can only hold what is in front of you.
+     Curvilinear (stereographic): each ray's direction is projected from the point straight behind you, so the whole
+     room fits. A straight edge and your eye span a plane; that plane cuts the sphere of directions in a great circle,
+     and stereographic projection sends every circle to a circle. So every edge is an exact arc, and each arc has a
+     centre and radius you can measure and swing with a pin and a string. Near the centre the two projections agree. */
+  const PV=(()=>{
+    const D2R=Math.PI/180,R2D=180/Math.PI,NEAR=1,TOL=.02;
+    const ev=e=>{const m=els.svg.getScreenCTM().inverse(),pt=new DOMPoint(e.clientX,e.clientY).matrixTransform(m);return[pt.x,pt.y]};
+    const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],scl=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+    const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+    const len=a=>Math.hypot(a[0],a[1],a[2]),unit=a=>scl(a,1/len(a)),lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+    const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),r1=v=>Math.round(v*10)/10;
+    // 3×3 matrices as rows
+    const mm=(A,B)=>A.map(r=>[0,1,2].map(j=>r[0]*B[0][j]+r[1]*B[1][j]+r[2]*B[2][j])),mv=(A,v)=>A.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]),tr=A=>[0,1,2].map(i=>A.map(r=>r[i]));
+    const rotY=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,0,s],[0,1,0],[-s,0,c]]};   // turns +z toward +x
+    const rotX=a=>{const c=Math.cos(a),s=Math.sin(a);return[[1,0,0],[0,c,s],[0,-s,c]]};   // tips +z up toward +y
+    const turn=(k,a)=>{const c=Math.cos(a),s=Math.sin(a),t=1-c,[x,y,z]=k;return[[c+x*x*t,x*y*t-z*s,x*z*t+y*s],[y*x*t+z*s,c+y*y*t,y*z*t-x*s],[z*x*t-y*s,z*y*t+x*s,c+z*z*t]]};   // Rodrigues, right-handed about k
+
+    /* ----- scenes ----- */
+    const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across'};
+    const box=(id,x,y,z,s,extra={})=>({id,x,y,z,w:s,h:s,d:s,ry:0,rx:0,...extra,arr:{...ARR,...(extra.arr||{})}});
+    const SHOW={floor:true,horizon:true,vps:true,guides:true,cone:true,hidden:false,values:true,depth:true,plan:true,snap:true};
+    const SCENES={
+      overhead:{name:'Cubes overhead',note:'An arch of cubes rising from the floor in front of you, over your head and down behind. Linear perspective can’t hold it: switch to Linear and watch it tear.',
+        pv:{canvas:{w:48,h:48},dist:15,proj:'curvi',eye:{x:0,y:62,z:0},yaw:-32,pitch:42,boxes:[box(1,0,0,84,18,{arr:{type:'arch',n:15,span:250}}),box(2,0,0,132,14,{arr:{type:'ring',n:16,span:360}})]}},
+      street:{name:'A street of cubes',note:'Two rows of blocks running away from you, turned a little: classic two-point perspective. The horizon is your eye level.',
+        pv:{canvas:{w:48,h:36},dist:44,proj:'linear',eye:{x:0,y:62,z:0},yaw:18,pitch:0,cv:{x:0,y:9},boxes:[box(1,-54,0,96,30,{h:42,arr:{type:'row',n:7,gap:30,axis:'away'}}),box(2,54,0,96,30,{h:54,arr:{type:'row',n:7,gap:30,axis:'away'}})]}},
+      tower:{name:'Tower, looking up',note:'A stack of cubes over your head. Tilt your eyes up and the verticals lean in toward a third vanishing point.',
+        pv:{canvas:{w:36,h:48},dist:34,proj:'linear',eye:{x:0,y:62,z:0},yaw:22,pitch:30,boxes:[box(1,52,0,138,26,{arr:{type:'tower',n:8,gap:0}})]}},
+      room:{name:'A room of cubes',note:'A grid of cubes on the floor, seen from a little above and turned: three-point perspective, looking down.',
+        pv:{canvas:{w:48,h:36},dist:40,proj:'linear',eye:{x:0,y:80,z:0},yaw:30,pitch:-18,boxes:[box(1,-60,0,60,16,{arr:{type:'grid',n:4,n2:4,gap:28}})]}},
+      blank:{name:'One cube',note:'A single cube on the floor in front of you. Add more, drag them around, and look at them from anywhere.',
+        pv:{canvas:{w:36,h:48},dist:40,proj:'linear',eye:{x:0,y:62,z:0},yaw:0,pitch:-20,boxes:[box(1,0,0,96,24,{ry:28})]}}};
+    const fromScene=id=>{const S=SCENES[id];return{scene:id,name:S.name,cv:{x:0,y:0},grid:12,show:{...SHOW},...structuredClone(S.pv)}};
+    function initial(){try{const v=JSON.parse(localStorage.getItem('locus-pv')||'null');if(v&&Array.isArray(v.boxes)&&v.canvas&&v.eye)return{...fromScene('overhead'),...v,show:{...SHOW,...(v.show||{})}}}catch{}return fromScene('overhead')}
+    const st=()=>state.pv;
+    function set(patch){state.pv={...state.pv,...patch}}
+    function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
+    const byId=id=>st().boxes.find(b=>b.id===id);
+    let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
+
+    /* ----- the camera ----- */
+    function camera(pv=st()){const C=mm(rotY(pv.yaw*D2R),rotX(pv.pitch*D2R));
+      return{C,CT:tr(C),E:[pv.eye.x,pv.eye.y,pv.eye.z],D:pv.dist,curvi:pv.proj==='curvi',cv:pv.cv,W:pv.canvas.w,H:pv.canvas.h}}
+    const toCam=(K,P)=>mv(K.CT,sub(P,K.E));
+    // camera space → picture-plane inches about the centre of vision (x right, y up), or null when it can't be drawn
+    function img(K,c){if(K.curvi){const n=len(c),k=n+c[2];if(n<1e-12||!(k>1e-9*n))return null;return[2*K.D*c[0]/k,2*K.D*c[1]/k]}
+      if(c[2]<NEAR*(1-1e-9))return null;return[K.D*c[0]/c[2],K.D*c[1]/c[2]]}
+    // where a direction (camera space) vanishes on the picture plane: the near plane doesn't apply to directions
+    function dirImg(K,c){if(K.curvi)return img(K,c);if(c[2]<=1e-9)return null;return[K.D*c[0]/c[2],K.D*c[1]/c[2]]}
+    // picture-plane inches → world direction of the ray through that spot
+    function rayDir(K,X,Y){let c;if(K.curvi){const sx=X/(2*K.D),sy=Y/(2*K.D),q=sx*sx+sy*sy;c=[2*sx/(1+q),2*sy/(1+q),(1-q)/(1+q)]}else c=unit([X,Y,K.D]);return mv(K.C,c)}
+    // the image of a whole great circle (all directions perpendicular to n, camera space): a line in linear, a circle in curvilinear
+    function circleOf(K,n){if(K.curvi){if(Math.abs(n[2])>1e-9)return{type:'circle',c:[2*K.D*n[0]/n[2],2*K.D*n[1]/n[2]],r:2*K.D/Math.abs(n[2])};return{type:'line',p:[0,0],d:[-n[1],n[0]]}}
+      // linear: n·(X,Y,D) = 0
+      const a=n[0],b=n[1],c=n[2]*K.D,l2=a*a+b*b;if(l2<1e-18)return null;return{type:'line',p:[-a*c/l2,-b*c/l2],d:[-b,a]}}
+
+    /* ----- view: picture-plane inches ↔ the 900 × 700 drawing ----- */
+    const view={s:8,ox:450,oy:350,key:''};
+    function fit(force){const {w,h}=st().canvas,key=w+'x'+h;if(!force&&view.key===key)return;view.key=key;view.s=Math.min(900*.66/w,700*.74/h);view.ox=450;view.oy=350}
+    const toSvg=([X,Y])=>[view.ox+(X+st().cv.x)*view.s,view.oy-(Y+st().cv.y)*view.s];
+    const fromSvg=(x,y)=>[(x-view.ox)/view.s-st().cv.x,(view.oy-y)/view.s-st().cv.y];
+    const canvasRect=()=>{const {w,h}=st().canvas;return{x:view.ox-w/2*view.s,y:view.oy-h/2*view.s,w:w*view.s,h:h*view.s}};
+    // picture-plane inches → inches from the canvas's bottom-left corner
+    const onCanvas=([X,Y])=>[X+st().cv.x+st().canvas.w/2,Y+st().cv.y+st().canvas.h/2];
+
+    // clip a polyline to a generous window round the drawing so nothing runs off to infinity
+    const VR={x0:-1800,y0:-1400,x1:2700,y1:2100};
+    function clipSeg(a,b,R){let t0=0,t1=1;const dx=b[0]-a[0],dy=b[1]-a[1];for(const [p,q] of [[-dx,a[0]-R.x0],[dx,R.x1-a[0]],[-dy,a[1]-R.y0],[dy,R.y1-a[1]]]){if(Math.abs(p)<1e-12){if(q<0)return null;continue}const r=q/p;if(p<0){if(r>t1)return null;if(r>t0)t0=r}else{if(r<t0)return null;if(r<t1)t1=r}}return[[a[0]+t0*dx,a[1]+t0*dy],[a[0]+t1*dx,a[1]+t1*dy],t0>0,t1<1]}
+    function clipPoly(pts,R=VR){const out=[];let cur=null;for(let i=1;i<pts.length;i++){const c=clipSeg(pts[i-1],pts[i],R);if(!c){cur=null;continue}if(!cur||c[2]){cur=[c[0]];out.push(cur)}cur.push(c[1]);if(c[3])cur=null}return out.filter(p=>p.length>1)}
+
+    // a world segment (or part of it, t0..t1) → polylines in the drawing
+    function segPolys(K,A,B,t0=0,t1=1){const ca=toCam(K,A),cb=toCam(K,B),at=t=>lerp(ca,cb,t);
+      if(!K.curvi){let a=t0,b=t1;const za=at(a)[2],zb=at(b)[2];if(za<NEAR&&zb<NEAR)return[];
+        if(za<NEAR)a+=(b-a)*(NEAR-za)/(zb-za);else if(zb<NEAR)b=a+(b-a)*(za-NEAR)/(za-zb);
+        const p=img(K,at(a)),q=img(K,at(b));return p&&q?clipPoly([toSvg(p),toSvg(q)]):[]}
+      // curvilinear: sample evenly in angle as seen from the eye, so arcs stay smooth even when an edge passes close by
+      const pa=at(t0),pb=at(t1),u=sub(pb,pa),L=len(u);if(L<1e-9)return[];const du=scl(u,1/L),s0=-dot(pa,du),foot=add(pa,scl(du,s0)),h=len(foot);
+      if(h<1e-6)return[];const psa=Math.atan2(-s0,h),psb=Math.atan2(L-s0,h),n=Math.min(1440,Math.max(2,Math.ceil(Math.abs(psb-psa)*R2D*RES/1.2)+1));
+      const pts=[],out=[],lim=60*K.D;for(let i=0;i<n;i++){const ps=psa+(psb-psa)*i/(n-1),q=img(K,add(foot,scl(du,h*Math.tan(ps))));
+        if(!q||Math.hypot(q[0],q[1])>lim){if(pts.length>1)out.push(...clipPoly(pts));pts.length=0;continue}pts.push(toSvg(q))}
+      if(pts.length>1)out.push(...clipPoly(pts));return out}
+    const dOf=polys=>polys.map(p=>'M'+p.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L')).join('');
+    function emit(layer,polys,kind,extra={}){if(!polys.length)return null;const el=svgEl('path',{d:dOf(polys),'vector-effect':'non-scaling-stroke',...extra});if(kind)el.dataset.kind=kind;layer.appendChild(el);return el}
+    function circlePolys(K,G,R=VR){if(!G)return[];if(G.type==='line'){const [px,py]=G.p,[dx,dy]=G.d,l=Math.hypot(dx,dy),big=1e5;return clipPoly([toSvg([px-dx/l*big,py-dy/l*big]),toSvg([px+dx/l*big,py+dy/l*big])],R)}
+      const n=Math.max(96,Math.min(2880,Math.round(G.r*view.s/2.5*RES))),pts=[];for(let i=0;i<=n;i++){const a=i/n*2*Math.PI;pts.push(toSvg([G.c[0]+G.r*Math.cos(a),G.c[1]+G.r*Math.sin(a)]))}return clipPoly(pts,R)}
+
+    /* ----- boxes and their repeats ----- */
+    const CORNERS=Array.from({length:8},(_,i)=>[i&1?1:-1,i&2?1:0,i&4?1:-1]);
+    const EDGES=[];for(let i=0;i<8;i++)for(const b of [1,2,4])if(!(i&b))EDGES.push([i,i|b]);
+    const FACES=[{c:[0,4,6,2],n:[-1,0,0]},{c:[1,3,7,5],n:[1,0,0]},{c:[0,1,5,4],n:[0,-1,0]},{c:[2,6,7,3],n:[0,1,0]},{c:[0,2,3,1],n:[0,0,-1]},{c:[4,5,7,6],n:[0,0,1]}];
+    const boxR=b=>mm(rotY((b.ry||0)*D2R),rotX((b.rx||0)*D2R));
+    function instances(pv,b){const R0=boxR(b),t0=[b.x,b.y,b.z],a=b.arr||ARR,n=Math.max(1,Math.round(a.n||1)),gap=+a.gap||0,out=[];
+      const put=(R,t,k)=>out.push({b,k,R,t,hw:b.w/2,h:b.h,hd:b.d/2});
+      if(a.type==='row'){const away=a.axis==='away',dir=mv(R0,away?[0,0,1]:[1,0,0]),step=(away?b.d:b.w)+gap;for(let i=0;i<n;i++)put(R0,add(t0,scl(dir,i*step)),i)}
+      else if(a.type==='grid'){const m=Math.max(1,Math.round(a.n2||1)),dx=mv(R0,[1,0,0]),dz=mv(R0,[0,0,1]);for(let i=0;i<n;i++)for(let j=0;j<m;j++)put(R0,add(t0,add(scl(dx,i*(b.w+gap)),scl(dz,j*(b.d+gap)))),i*m+j)}
+      else if(a.type==='tower'){const up=mv(R0,[0,1,0]);for(let i=0;i<n;i++)put(R0,add(t0,scl(up,i*(b.h+gap))),i)}
+      else if(a.type==='ring'||a.type==='arch'){
+        // a ring turns about the vertical through your eye; an arch turns about the level line through your eye that is square to the box, so it rises over you
+        const E=[pv.eye.x,pv.eye.y,pv.eye.z],span=clamp(+a.span||0,-360,360)*D2R,full=Math.abs(Math.abs(span)-2*Math.PI)<1e-9,step=n>1?span/(full?n:n-1):0;
+        let axis=[0,1,0];if(a.type==='arch'){const c=add(t0,mv(R0,[0,b.h/2,0])),hz=[c[0]-E[0],0,c[2]-E[2]];axis=len(hz)<1e-9?[-1,0,0]:unit(cross(hz,[0,1,0]))}
+        for(let i=0;i<n;i++){const Q=turn(axis,i*step);put(mm(Q,R0),add(E,mv(Q,sub(t0,E))),i)}}
+      else put(R0,t0,0);
+      return out}
+    function sceneOf(pv,K){const list=[];pv.boxes.forEach(b=>instances(pv,b).forEach(I=>{I.RT=tr(I.R);I.P=CORNERS.map(([x,y,z])=>add(I.t,mv(I.R,[x*I.hw,y*I.h,z*I.hd])));
+      const c=add(I.t,mv(I.R,[0,I.h/2,0])),dv=sub(c,K.E),dist=len(dv);I.c=c;I.rad=Math.hypot(I.hw,I.h/2,I.hd);I.dist=dist;I.dirC=dist>1e-9?scl(dv,1/dist):[0,0,1];I.cosR=dist>I.rad?Math.cos(Math.asin(I.rad/dist)):-2;list.push(I)}));return list}
+    // where the segment E→P first enters box I, as a fraction of the way to P (Infinity if it doesn't, or if the eye is inside)
+    function entry(I,E,P){const e=mv(I.RT,sub(E,I.t)),p=mv(I.RT,sub(P,I.t)),d=sub(p,e),lo=[-I.hw,0,-I.hd],hi=[I.hw,I.h,I.hd];let t0=-Infinity,t1=Infinity;
+      for(let k=0;k<3;k++){if(Math.abs(d[k])<1e-12){if(e[k]<lo[k]||e[k]>hi[k])return Infinity;continue}let a=(lo[k]-e[k])/d[k],b=(hi[k]-e[k])/d[k];if(a>b)[a,b]=[b,a];if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return Infinity}
+      return t0>0?t0:Infinity}
+    // hidden lines by casting a ray from the eye: exact, and the same in both projections
+    function hidden(P,list,K){const v=sub(P,K.E),dp=len(v);if(dp<1e-9)return false;const u=scl(v,1/dp);
+      for(const I of list){if(I.dist-I.rad>=dp)continue;if(dot(u,I.dirC)<I.cosR-1e-9)continue;const t=entry(I,K.E,P);if(t<1&&(1-t)*dp>TOL)return true}return false}
+    function runsOf(A,B,list,K){const N=Math.max(10,Math.round(24*RES)),vis=[];for(let i=0;i<=N;i++)vis.push(!hidden(lerp(A,B,i/N),list,K));
+      const runs=[];let start=0;for(let i=1;i<=N;i++)if(vis[i]!==vis[i-1]){let lo=(i-1)/N,hi=i/N;for(let k=0;k<24;k++){const m=(lo+hi)/2;if(!hidden(lerp(A,B,m),list,K)===vis[i-1])lo=m;else hi=m}const m=(lo+hi)/2;runs.push([start,m,vis[i-1]]);start=m}
+      runs.push([start,1,vis[N]]);const L=len(sub(B,A)),out=[];runs.forEach(r=>{const last=out[out.length-1];if(last&&((r[1]-r[0])*L<.05||last[2]===r[2]))last[1]=r[1];else if(!last&&(r[1]-r[0])*L<.05&&runs.length>1){runs[1]&&(runs[1][0]=r[0])}else out.push([...r])});
+      for(let i=1;i<out.length;i++)if(out[i][2]===out[i-1][2]){out[i-1][1]=out[i][1];out.splice(i--,1)}return out}
+    function supportUnder(pv,b){let top=0;const me=instances(pv,b)[0];if(!me)return 0;const xs=[me.t[0]-me.hw,me.t[0]+me.hw],zs=[me.t[2]-me.hd,me.t[2]+me.hd];
+      pv.boxes.forEach(o=>{if(o.id===b.id)return;instances(pv,o).forEach(I=>{if(Math.abs(I.R[1][1]-1)>1e-9)return;const ox=[I.t[0]-I.hw*Math.abs(I.R[0][0])-I.hd*Math.abs(I.R[0][2]),I.t[0]+I.hw*Math.abs(I.R[0][0])+I.hd*Math.abs(I.R[0][2])],oz=[I.t[2]-I.hw*Math.abs(I.R[2][0])-I.hd*Math.abs(I.R[2][2]),I.t[2]+I.hw*Math.abs(I.R[2][0])+I.hd*Math.abs(I.R[2][2])];
+        if(xs[0]<ox[1]-.01&&xs[1]>ox[0]+.01&&zs[0]<oz[1]-.01&&zs[1]>oz[0]+.01){top=Math.max(top,I.t[1]+I.h)}})});return top}
+
+    /* ----- vanishing points ----- */
+    function vpName(K,c,v){if(Math.abs(Math.abs(v[1])-1)<1e-9)return v[1]>0?(K.curvi?'zenith':'VP up'):(K.curvi?'nadir':'VP down');
+      if(c[2]>Math.abs(c[0]))return K.curvi?'ahead':(c[0]<0?'VP left':'VP right');if(-c[2]>Math.abs(c[0]))return'behind';return c[0]<0?'VP left':'VP right'}
+    function vanishing(K,dirs){const out=[];dirs.forEach((v,i)=>[1,-1].forEach(sg=>{const w=scl(v,sg),c=mv(K.CT,w);const p=dirImg(K,c);if(!p||Math.hypot(p[0],p[1])>40*K.D)return;
+      if(i>2&&out.some(o=>Math.hypot(o.p[0]-p[0],o.p[1]-p[1])<.5))return;out.push({dir:w,c,p,name:(i>2?'box ':'')+vpName(K,c,w)})}));return out}
+    function directionsOf(pv,K){const dirs=[[1,0,0],[0,1,0],[0,0,1]],same=(a,b)=>Math.abs(Math.abs(dot(a,b))-1)<1e-9;
+      const s=sel&&byId(sel.id);if(s){const I=instances(pv,s)[sel.k]||instances(pv,s)[0];[0,1,2].forEach(j=>{const a=[I.R[0][j],I.R[1][j],I.R[2][j]];if(!dirs.some(d=>same(d,a)))dirs.push(a)})}return dirs}
+
+    /* ----- drawing ----- */
+    let lastFrame=null;
+    function render(){const pv=st(),K=camera(pv);fit();lastFrame={K,list:sceneOf(pv,K)};const {list}=lastFrame;
+      [els.grid,els.guides,els.shapes,els.points,els.perspective,els.overlay,els.lineage,els.ghost].forEach(clear);els.svg.style.setProperty('--w',state.weight);els.svg.classList.remove('darkline','tracing');
+      if(sel&&!byId(sel.id))sel=null;if(pin&&!byId(pin.id))pin=null;
+      const S=pv.show;
+      if(S.floor)drawFloor(K,list);
+      if(S.horizon){emit(els.guides,circlePolys(K,circleOf(K,mv(K.CT,[0,1,0]))),'horizon')}
+      drawBoxes(K,list);
+      if(S.guides&&sel)drawGuides(K,list);
+      drawMarks(K);
+      if(!harvesting)drawOverlay(K,list);
+      if(!harvesting){drawPlan(K,list);readouts(K,list);heading(K);save()}}
+    function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
+      const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
+      for(let i=-R;i<=R;i+=g){emit(els.grid,segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R]),'floor');emit(els.grid,segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i]),'floor')}}
+    const LIGHT=unit([-.45,.82,-.36]);
+    function drawBoxes(K,list){const S=st().show,fills=svgEl('g',{class:'pv-fills'});els.shapes.appendChild(fills);
+      const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1);
+      [...list].sort((a,b)=>b.dist-a.dist).forEach(I=>{FACES.forEach(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);if(dot(n,sub(K.E,fc))<=1e-9)return;
+        const polys=F.c.map((i,j)=>segPolys(K,I.P[i],I.P[F.c[(j+1)%4]]));if(polys.some(p=>p.length!==1))return;const pts=polys.flatMap(p=>p[0]);
+        const tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';fills.appendChild(svgEl('path',{d:'M'+pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L')+'Z',class:'pv-face '+tone}))})});
+      list.forEach(I=>{const t=(I.dist-near)/Math.max(1,far-near);EDGES.forEach(([a,b])=>runsOf(I.P[a],I.P[b],list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;
+        const el=emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden');if(el&&S.depth&&v&&!harvesting){el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}}))})}
+    function selInstance(list){if(!sel)return null;return list.find(I=>I.b.id===sel.id&&I.k===sel.k)||list.find(I=>I.b.id===sel.id)}
+    // every edge of the chosen box, carried on to its vanishing points: straight in linear, the full circle in curvilinear
+    function drawGuides(K,list){const I=selInstance(list);if(!I)return;EDGES.forEach(([a,b])=>{const ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);let n=cross(ca,cb);if(len(n)<1e-9)return;n=unit(n);
+      emit(els.guides,circlePolys(K,circleOf(K,n)),'perspective-line')})}
+    // exported marks: vanishing points and the centre of vision, so they land on the canvas
+    function drawMarks(K){if(!st().show.vps)return;const cross=(p,r=.8)=>{const [x,y]=toSvg(p),s=r*view.s;return[[[x-s,y],[x+s,y]],[[x,y-s],[x,y+s]]]};
+      vanishing(K,directionsOf(st(),K)).forEach(v=>emit(els.points,cross(v.p),'vp-mark'));emit(els.points,cross([0,0],.5),'vp-mark')}
+    function heading(K){const pv=st();els.title.textContent=pv.name||'Perspective';els.phase.textContent=`Perspective planner · ${K.curvi?'curvilinear':'linear'}`;
+      els.badge.textContent=`${K.curvi?'CURVILINEAR':'LINEAR'} · ${fmtIn(pv.canvas.w)} × ${fmtIn(pv.canvas.h)} CANVAS · STAND ${fmtIn(pv.dist)} BACK`;
+      const n=st().boxes.reduce((s,b)=>s+instances(pv,b).length,0),status=`<span>${n} box${n===1?'':'es'}</span><span>eye ${fmtIn(pv.eye.y)} up</span><span>looking ${Math.round(pv.pitch)>0?Math.round(pv.pitch)+'° up':Math.round(pv.pitch)<0?-Math.round(pv.pitch)+'° down':'level'}</span><span>${fov(K)}° across</span>`;
+      if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}}
+    function visibleRect(){const r=els.svg.getBoundingClientRect(),m=els.svg.getScreenCTM();if(!m||!r.width)return{x0:0,y0:0,x1:900,y1:700};const i=m.inverse(),a=new DOMPoint(r.left,r.top).matrixTransform(i),b=new DOMPoint(r.right,r.bottom).matrixTransform(i);return{x0:a.x,y0:a.y,x1:b.x,y1:b.y}}
+    const fmtIn=v=>`${r1(v)} in`.replace('.0 in',' in');
+    const fov=K=>Math.round(K.curvi?4*Math.atan(K.W/(4*K.D))*R2D:2*Math.atan(K.W/(2*K.D))*R2D);
+    const lbl=(x,y,text,cls='vp-label',anchor='start')=>{const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;return t};
+    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];
+      const tag=(x,y,text,anchor='start',cls='vp-label')=>{const w=text.length*6.1+4,x0=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;let yy=y;
+        for(let k=0;k<10;k++){if(!placed.some(r=>x0<r[0]+r[2]&&x0+w>r[0]&&yy-10<r[1]+r[3]&&yy+2>r[1]))break;yy=y+(k%2?-1:1)*13*Math.ceil((k+1)/2)}placed.push([x0,yy-10,w,12]);return lbl(x,yy,text,cls,anchor)};
+      // dim everything off the canvas, frame it and rule it in inches
+      g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim','fill-rule':'evenodd'}));
+      g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));
+      const step=view.s>=6?1:view.s>=2?6:12,major=pv.canvas.w>60||pv.canvas.h>60?24:12;let ticks='';
+      for(let i=0;i<=pv.canvas.w+1e-9;i+=step){const x=R.x+i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${x.toFixed(1)},${R.y+R.h}v${l}`;if(i%major===0)g.appendChild(lbl(x,R.y+R.h+17,`${i}`,'pv-rule','middle'))}
+      for(let i=0;i<=pv.canvas.h+1e-9;i+=step){const y=R.y+R.h-i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${R.x},${y.toFixed(1)}h${-l}`;if(i%major===0&&i)g.appendChild(lbl(R.x-10,y+3,`${i}`,'pv-rule','end'))}
+      g.appendChild(svgEl('path',{d:ticks,class:'pv-ticks'}));g.appendChild(lbl(R.x-10,R.y+R.h+17,'in','pv-rule','end'));
+      // the cone of comfortable vision, and where linear perspective gives up
+      if(pv.show.cone){const ring=(r,cls,text,ang)=>{const [cx,cy]=toSvg([0,0]);g.appendChild(svgEl('circle',{cx,cy,r:r*view.s,class:cls}));const a=-ang*D2R;g.appendChild(lbl(cx+Math.cos(a)*r*view.s+4,cy+Math.sin(a)*r*view.s,text,'pv-cone-label'))};
+        if(K.curvi){ring(2*K.D*Math.tan(30*D2R),'pv-cone','60° · as linear would show it',30);ring(2*K.D,'pv-cone wide','180° · level with your ears',40);ring(2*K.D*Math.tan(67.5*D2R),'pv-cone wide','270° · behind you',50)}
+        else{ring(K.D*Math.tan(30*D2R),'pv-cone','60° · undistorted',30);ring(K.D,'pv-cone wide','90° · stretching',40)}}
+      // horizon label
+      if(pv.show.horizon){const G=circleOf(K,mv(K.CT,[0,1,0]));if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y]=toSvg(G.p);if(y>R.y-40&&y<R.y+R.h+40)g.appendChild(lbl(R.x+R.w+10,y+3,'HORIZON · EYE LEVEL','vp-label'))}}
+      // vanishing points, draggable in linear
+      // vanishing points (draggable in linear: drag one and you turn your head); one off the view gets an arrow at the edge pointing to it
+      if(pv.show.vps){const V=visibleRect(),[cx0,cy0]=toSvg([0,0]);vanishing(K,directionsOf(pv,K)).forEach((v,i)=>{let [x,y]=toSvg(v.p);const grp=svgEl('g',{'data-pv':K.curvi?'':'vp:'+i,class:'pv-vp'});grp.dataset.dir=v.dir.join(',');
+        const pad=26,inside=x>V.x0+pad&&x<V.x1-pad&&y>V.y0+pad&&y<V.y1-pad;
+        if(inside){grp.appendChild(svgEl('circle',{cx:x,cy:y,r:7,class:'vp-handle'}));grp.appendChild(svgEl('circle',{cx:x,cy:y,r:2,class:'vp-dot'}));const flip=x>V.x1-140;grp.appendChild(tag(flip?x-11:x+11,y-9,v.name.toUpperCase(),flip?'end':'start'))}
+        else{const dx=x-cx0,dy=y-cy0;let t=1;if(dx>0)t=Math.min(t,(V.x1-pad-cx0)/dx);if(dx<0)t=Math.min(t,(V.x0+pad-cx0)/dx);if(dy>0)t=Math.min(t,(V.y1-pad-cy0)/dy);if(dy<0)t=Math.min(t,(V.y0+pad-cy0)/dy);
+          const ax=cx0+dx*Math.max(0,t),ay=cy0+dy*Math.max(0,t),a=Math.atan2(dy,dx),tip=(r,o)=>`${(ax+Math.cos(a+o)*r).toFixed(1)},${(ay+Math.sin(a+o)*r).toFixed(1)}`,[ux,uy]=onCanvas(v.p);
+          grp.appendChild(svgEl('path',{d:`M${tip(9,0)}L${tip(7,2.5)}L${tip(7,-2.5)}Z`,class:'vp-dot'}));grp.appendChild(svgEl('circle',{cx:ax,cy:ay,r:12,class:'pv-vp-hit'}));
+          const right=ax>(V.x0+V.x1)/2;grp.appendChild(tag(ax+(right?-14:14),ay+(ay<(V.y0+V.y1)/2?20:-12),`${v.name.toUpperCase()} · ${fmtIn(Math.hypot(ux-pv.canvas.w/2,uy-pv.canvas.h/2)).toUpperCase()} FROM CENTRE`,right?'end':'start'))}
+        g.appendChild(grp)})}
+      // centre of vision: drag it to slide the picture on the canvas
+      {const [x,y]=toSvg([0,0]),grp=svgEl('g',{'data-pv':'cv',class:'pv-cv'});grp.appendChild(svgEl('circle',{cx:x,cy:y,r:9,class:'pv-cv-ring'}));grp.appendChild(svgEl('path',{d:`M${x-14},${y}h28M${x},${y-14}v28`,class:'pv-cv-cross'}));grp.appendChild(svgEl('rect',{x:x+9,y:y+7,width:112,height:13,class:'pv-cv-hit'}));grp.appendChild(lbl(x+12,y+16,'✥ CENTRE OF VISION','pv-cone-label'));g.appendChild(grp)}
+      // selection and hover
+      const outline=(I,cls)=>EDGES.forEach(([a,b])=>runsOf(I.P[a],I.P[b],list,K).forEach(([t0,t1,v])=>{if(v)emit(g,segPolys(K,I.P[a],I.P[b],t0,t1),null,{class:cls})}));
+      if(hover&&!(sel&&hover.id===sel.id))list.filter(I=>I.b.id===hover.id).forEach(I=>outline(I,'pv-hover'));
+      if(sel)list.filter(I=>I.b.id===sel.id).forEach(I=>outline(I,I.k===sel.k?'pv-sel':'pv-sel twin'));
+      if(pin)drawArc(K,list,g,tag)}
+    // the arc an edge sits on: its centre and radius in canvas inches, the thing you swing with a string
+    function arcOf(K,list,e){const I=list.find(I=>I.b.id===e.id&&I.k===e.k);if(!I)return null;const [a,b]=EDGES[e.edge],ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);const n=unit(cross(ca,cb)),G=circleOf(K,n);return{I,a,b,G}}
+    function drawArc(K,list,g,tag){const A=arcOf(K,list,pin);if(!A)return;const {G}=A;emit(g,segPolys(K,A.I.P[A.a],A.I.P[A.b]),null,{class:'pv-pin'});
+      if(G.type==='circle'){const [cx,cy]=toSvg(G.c),mid=segPolys(K,A.I.P[A.a],A.I.P[A.b])[0];if(!mid)return;const m=mid[Math.floor(mid.length/2)];
+        g.appendChild(svgEl('path',{d:`M${cx},${cy}L${m[0]},${m[1]}`,class:'pv-string'}));g.appendChild(svgEl('circle',{cx,cy,r:4,class:'pv-pin-dot'}));
+        const c=onCanvas(G.c);g.appendChild(tag(cx+8,cy-8,`PIN ${fmtIn(c[0])} ACROSS, ${fmtIn(c[1])} UP · STRING ${fmtIn(G.r)}`.toUpperCase()))}}
+
+    /* ----- the plan: where you stand, from above ----- */
+    const plan=$('#pvPlan');let planT=null,planHold=false;
+    function drawPlan(K,list){plan.toggleAttribute('hidden',!st().show.plan);if(!st().show.plan)return;clear(plan);const pv=st();
+      if(!planHold||!planT){let b=[K.E[0]-60,K.E[2]-60,K.E[0]+60,K.E[2]+60];list.forEach(I=>I.P.forEach(p=>{b[0]=Math.min(b[0],p[0]);b[1]=Math.min(b[1],p[2]);b[2]=Math.max(b[2],p[0]);b[3]=Math.max(b[3],p[2])}));
+        const w=b[2]-b[0],h=b[3]-b[1],k=170/Math.max(w,h,1);planT={k,cx:(b[0]+b[2])/2,cz:(b[1]+b[3])/2}}
+      const P=(x,z)=>[100+(x-planT.cx)*planT.k,100-(z-planT.cz)*planT.k];
+      const g=pv.grid*(planT.k*pv.grid<6?4:1);let d='';for(let x=Math.floor((planT.cx-100/planT.k)/g)*g;x<=planT.cx+100/planT.k;x+=g){const [px]=P(x,0);d+=`M${px.toFixed(1)},0V200`}for(let z=Math.floor((planT.cz-100/planT.k)/g)*g;z<=planT.cz+100/planT.k;z+=g){const [,py]=P(0,z);d+=`M0,${py.toFixed(1)}H200`}
+      plan.appendChild(svgEl('path',{d,class:'pv-plan-grid'}));
+      list.forEach(I=>{const q=[0,1,5,4].map(i=>P(I.P[i][0],I.P[i][2])),u=[2,3,7,6].map(i=>P(I.P[i][0],I.P[i][2]));const on=sel&&I.b.id===sel.id;
+        plan.appendChild(svgEl('path',{d:'M'+q.map(p=>p.join(',')).join('L')+'ZM'+u.map(p=>p.join(',')).join('L')+'Z',class:'pv-plan-box'+(on?' on':''),'data-box':I.b.id}))});
+      // what the canvas takes in, at eye level
+      const half=K.W/2,ang=K.curvi?[2*Math.atan((-half-pv.cv.x)/(2*K.D)),2*Math.atan((half-pv.cv.x)/(2*K.D))]:[Math.atan((-half-pv.cv.x)/K.D),Math.atan((half-pv.cv.x)/K.D)];
+      const yaw=pv.yaw*D2R,[ex,ez]=P(K.E[0],K.E[2]),reach=Math.max(60,Math.min(400,90/planT.k)),ray=a=>{const t=yaw+a;return P(K.E[0]+Math.sin(t)*reach,K.E[2]+Math.cos(t)*reach)};
+      const [l,r]=[ray(ang[0]),ray(ang[1])];plan.appendChild(svgEl('path',{d:`M${ex},${ez}L${l.join(',')}A${reach*planT.k},${reach*planT.k} 0 ${Math.abs(ang[1]-ang[0])>Math.PI?1:0} 1 ${r.join(',')}Z`,class:'pv-plan-view'}));
+      plan.appendChild(svgEl('circle',{cx:ex,cy:ez,r:6,class:'pv-plan-eye','data-eye':'1'}));plan.appendChild(lbl(ex+9,ez+14,'YOU','pv-cone-label'))}
+
+    /* ----- what to mark on the canvas ----- */
+    const readout=$('#pvReadout');
+    function readouts(K,list){const pv=st(),rows=[],put=(k,v,off)=>rows.push(`<div class="pv-row${off?' off':''}"><span>${k}</span><b>${v}</b></div>`),where=p=>{const [x,y]=onCanvas(p);return[x,y,x<-1e-6||x>pv.canvas.w+1e-6||y<-1e-6||y>pv.canvas.h+1e-6]};
+      const G=circleOf(K,mv(K.CT,[0,1,0]));
+      if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y,off]=where(G.p);put('Horizon',`${fmtIn(y)} up`,off)}else if(G&&G.type==='circle'){const [x,y,off]=where(G.c);put('Horizon arc',`pin ${fmtIn(x)}, ${fmtIn(y)} · r ${fmtIn(G.r)}`,off)}
+      if(pv.show.vps)vanishing(K,directionsOf(pv,K)).forEach(v=>{const [x,y,off]=where(v.p);put(v.name,`${fmtIn(x)} across, ${fmtIn(y)} up`,off)});
+      const [cx,cy]=onCanvas([0,0]);put('Centre of vision',`${fmtIn(cx)} across, ${fmtIn(cy)} up`);
+      if(pin){const A=arcOf(K,list,pin);if(A&&A.G.type==='circle'){const [x,y,off]=where(A.G.c);rows.unshift(`<div class="pv-row pv-arc${off?' off':''}"><span>Highlighted edge</span><b>pin ${fmtIn(x)}, ${fmtIn(y)} · string ${fmtIn(A.G.r)}</b></div>`)}}
+      readout.innerHTML=rows.join('')+`<p class="picker-note">Measured from the canvas’s bottom-left corner. Greyed rows are off the canvas: mark them on the wall.${K.curvi?' Click an edge of the selected box to get its arc.':''}</p>`}
+    let saveTimer=null;function save(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem('locus-pv',JSON.stringify(st()))}catch{}},400)}
+
+    /* ----- hands on the drawing ----- */
+    function pick(x,y){if(!lastFrame)return null;const {K,list}=lastFrame,[X,Y]=fromSvg(x,y),dir=rayDir(K,X,Y),far=add(K.E,scl(dir,1e5));let best=null;
+      list.forEach(I=>{const t=entry(I,K.E,far);if(t<Infinity&&(!best||t<best.t))best={t,I}});return best&&{id:best.I.b.id,k:best.I.k,hit:add(K.E,scl(dir,1e5*best.t))}}
+    function pickEdge(x,y){if(!lastFrame||!sel)return null;const {K,list}=lastFrame;let best=null,bd=9;list.filter(I=>I.b.id===sel.id).forEach(I=>EDGES.forEach(([a,b],e)=>segPolys(K,I.P[a],I.P[b]).forEach(p=>p.forEach((q,i)=>{if(!i)return;const r=p[i-1],dx=q[0]-r[0],dy=q[1]-r[1],l2=dx*dx+dy*dy||1,t=clamp(((x-r[0])*dx+(y-r[1])*dy)/l2,0,1),d=Math.hypot(r[0]+t*dx-x,r[1]+t*dy-y);if(d<bd){bd=d;best={id:I.b.id,k:I.k,edge:e}}}))));return best}
+    function planeHit(K,X,Y,P0,n){const d=rayDir(K,X,Y),den=dot(d,n);if(Math.abs(den)<1e-9)return null;const t=dot(sub(P0,K.E),n)/den;return t>0?add(K.E,scl(d,t)):null}
+    const snap=v=>st().show.snap?Math.round(v/3)*3:r1(v);
+    let drag=null;const touches=new Map();
+    function down(e){const p=ev(e);touches.set(e.pointerId,p);els.wrap.setPointerCapture(e.pointerId);beginChange();
+      if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
+      const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
+      if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
+      if(ctl&&ctl.startsWith('vp:')){drag={type:'vp',dir:e.target.closest('[data-pv]').dataset.dir.split(',').map(Number)};return}
+      if(e.button===1||e.altKey&&!pick(p[0],p[1])){drag={type:'pan',p,ox:view.ox,oy:view.oy};return}
+      const edge=K.curvi&&pickEdge(p[0],p[1]);
+      const h=pick(p[0],p[1]);
+      if(h){let b=byId(h.id);if(e.altKey){const c=dupe(b);b=c;h.id=c.id;h.k=0}sel={id:h.id,k:h.k};const vert=e.shiftKey;
+        drag={type:'move',id:h.id,p,hit:h.hit,start:{x:b.x,y:b.y,z:b.z},vert,rest:Math.abs(b.y-supportUnder(st(),b))<1e-6,edge,moved:false};render();sync();return}
+      drag={type:'look',p,yaw:st().yaw,pitch:st().pitch,moved:false,edge}}
+    function move(e){const p=ev(e);if(touches.has(e.pointerId))touches.set(e.pointerId,p);
+      if(!drag){const h=pick(p[0],p[1]),id=h&&h.id;if((hover&&hover.id)!==id){hover=h;render()}els.wrap.style.cursor=h?'grab':'';return}
+      const dx=p[0]-(drag.p?.[0]??0),dy=p[1]-(drag.p?.[1]??0);if(Math.hypot(dx,dy)>3)drag.moved=true;const K=camera(),pv=st();
+      if(drag.type==='pinch'){if(touches.size<2)return;const [a,b]=[...touches.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=[(a[0]+b[0])/2,(a[1]+b[1])/2],f=d/drag.d;
+        view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;render();return}
+      if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;render();return}
+      if(drag.type==='cv'){set({cv:{x:r1(drag.cv.x+dx/view.s),y:r1(drag.cv.y-dy/view.s)}});render();sync();return}
+      if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;set({yaw:wrap180(drag.yaw-dx*k),pitch:clamp(drag.pitch+dy*k,-lim,lim)});render();sync();return}
+      if(drag.type==='vp'){aimAt(drag.dir,fromSvg(p[0],p[1]));render();sync();return}
+      if(drag.type==='move'){if(!drag.moved)return;const [X,Y]=fromSvg(p[0],p[1]),b=byId(drag.id);let q;
+        if(drag.vert){const f=mv(K.C,[0,0,1]),n=unit([f[0],0,f[2]]);q=planeHit(K,X,Y,drag.hit,len(n)?n:[0,0,1]);if(!q)return;setBox(drag.id,{y:Math.max(0,snap(drag.start.y+q[1]-drag.hit[1]))})}
+        else{q=planeHit(K,X,Y,drag.hit,[0,1,0]);if(!q||len(sub(q,K.E))>5000)return;const nb={...b,x:snap(drag.start.x+q[0]-drag.hit[0]),z:snap(drag.start.z+q[2]-drag.hit[2])};if(drag.rest)nb.y=supportUnder(st(),nb);setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
+        render();sync()}}
+    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;
+      if(!d.moved&&(d.type==='look'||d.type==='move')){if(d.edge&&(d.type==='look'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'){sel=null;pin=null}render();sync()}
+      commitChange()}
+    const wrap180=a=>((a+180)%360+360)%360-180;
+    function wheel(e){e.preventDefault();const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;render()}
+    // turn your head until world direction v lands under the pointer (Gauss–Newton on yaw and pitch)
+    function aimAt(v,target){let y=st().yaw,p=st().pitch;const f=(yy,pp)=>{const K=camera({...st(),yaw:yy,pitch:pp}),c=mv(K.CT,v);return dirImg(K,c)};
+      for(let it=0;it<8;it++){const q=f(y,p);if(!q)break;const r=[q[0]-target[0],q[1]-target[1]];if(Math.hypot(...r)<1e-3)break;const h=1e-3,qy=f(y+h,p),qp=f(y,p+h);if(!qy||!qp)break;
+        const J=[[(qy[0]-q[0])/h,(qp[0]-q[0])/h],[(qy[1]-q[1])/h,(qp[1]-q[1])/h]],det=J[0][0]*J[1][1]-J[0][1]*J[1][0];if(Math.abs(det)<1e-12)break;
+        y-=clamp((J[1][1]*r[0]-J[0][1]*r[1])/det,-20,20);p-=clamp((-J[1][0]*r[0]+J[0][0]*r[1])/det,-20,20);p=clamp(p,-80,80)}
+      set({yaw:wrap180(r1(y*100)/100),pitch:r1(p*100)/100})}
+    function dblclick(e){const [x,y]=ev(e);if(pick(x,y))return;const K=camera(),[X,Y]=fromSvg(x,y),d=rayDir(K,X,Y);if(d[1]>=-1e-6)return;const t=-K.E[1]/d[1],q=add(K.E,scl(d,t));
+      beginChange();addBox({x:snap(q[0]),z:snap(q[2])});commitChange()}
+    function nextId(){return Math.max(0,...st().boxes.map(b=>b.id))+1}
+    function addBox(at){const K=camera(),f=mv(K.C,[0,0,1]),hz=len([f[0],0,f[2]])>1e-6?unit([f[0],0,f[2]]):[0,0,1],s=18,p=at||{x:snap(K.E[0]+hz[0]*72),z:snap(K.E[2]+hz[2]*72)};
+      const b=box(nextId(),p.x,0,p.z,s,{ry:r1(Math.atan2(hz[0],hz[2])*R2D)});b.y=supportUnder({...st(),boxes:[...st().boxes,b]},b);set({boxes:[...st().boxes,b]});sel={id:b.id,k:0};pin=null;render();sync();return b}
+    function dupe(b){const R=boxR(b),o=mv(R,[b.w+6,0,0]),c={...structuredClone(b),id:nextId(),x:r1(b.x+o[0]),z:r1(b.z+o[2])};set({boxes:[...st().boxes,c]});sel={id:c.id,k:0};return c}
+    function remove(){if(!sel)return;beginChange();set({boxes:st().boxes.filter(b=>b.id!==sel.id)});sel=null;pin=null;render();sync();commitChange()}
+    function key(e){const k=e.key,b=sel&&byId(sel.id);
+      if(k==='Escape'){sel=null;pin=null;render();sync();return}
+      if(k==='f'||k==='F'){fit(true);render();return}
+      if(!b){return}
+      if(k==='Delete'||k==='Backspace'){e.preventDefault();remove();return}
+      if(k==='d'||k==='D'){beginChange();dupe(b);render();sync();commitChange();return}
+      const K=camera(),f=mv(K.C,[0,0,1]),fw=Math.abs(f[0])>Math.abs(f[2])?[Math.sign(f[0]),0]:[0,Math.sign(f[2])||1],rt=[fw[1],-fw[0]],s=e.shiftKey?1:6;
+      const mvBy={ArrowRight:rt,ArrowLeft:[-rt[0],-rt[1]],ArrowUp:fw,ArrowDown:[-fw[0],-fw[1]]}[k];
+      if(mvBy){e.preventDefault();beginChange();setBox(b.id,{x:b.x+mvBy[0]*s,z:b.z+mvBy[1]*s});render();sync();commitChange();return}
+      if(k==='PageUp'||k==='PageDown'){e.preventDefault();beginChange();setBox(b.id,{y:Math.max(0,b.y+(k==='PageUp'?s:-s))});render();sync();commitChange();return}
+      if(k==='r'||k==='R'){beginChange();setBox(b.id,{ry:wrap180(b.ry+(e.shiftKey?-15:15))});render();sync();commitChange()}}
+
+    // the plan inset takes its own pointer: move where you stand, turn, or slide a box
+    let planDrag=null;
+    const planWorld=e=>{const r=plan.getBoundingClientRect(),x=(e.clientX-r.left)*200/r.width,y=(e.clientY-r.top)*200/r.height;return[planT.cx+(x-100)/planT.k,planT.cz-(y-100)/planT.k]};
+    plan.addEventListener('pointerdown',e=>{e.stopPropagation();if(!planT)return;plan.setPointerCapture(e.pointerId);planHold=true;beginChange();const [x,z]=planWorld(e),pv=st();
+      const boxId=e.target.closest('[data-box]')?.dataset.box;
+      if(e.target.closest('[data-eye]'))planDrag={type:'eye'};else if(boxId){const b=byId(+boxId);sel={id:b.id,k:0};planDrag={type:'box',id:b.id,x0:x,z0:z,bx:b.x,bz:b.z}}else planDrag={type:'turn'};
+      if(planDrag.type==='turn')set({yaw:r1(Math.atan2(x-pv.eye.x,z-pv.eye.z)*R2D)});render();sync()});
+    plan.addEventListener('pointermove',e=>{if(!planDrag)return;e.stopPropagation();const [x,z]=planWorld(e),pv=st();
+      if(planDrag.type==='eye')set({eye:{...pv.eye,x:snap(x),z:snap(z)}});else if(planDrag.type==='box'){const b=byId(planDrag.id),nb={...b,x:snap(planDrag.bx+x-planDrag.x0),z:snap(planDrag.bz+z-planDrag.z0)};setBox(b.id,{x:nb.x,z:nb.z})}
+      else set({yaw:r1(Math.atan2(x-pv.eye.x,z-pv.eye.z)*R2D)});render();sync()});
+    const planUp=e=>{if(!planDrag)return;e.stopPropagation();planDrag=null;planHold=false;render();commitChange()};plan.addEventListener('pointerup',planUp);plan.addEventListener('pointercancel',planUp);
+
+    /* ----- the panel ----- */
+    const q=id=>$('#'+id);
+    const CANVASES=[[16,20],[18,24],[24,30],[24,36],[30,40],[36,48],[48,48],[48,60],[48,72],[48,96]];
+    const sizeOptions=wide=>CANVASES.map(([w,h])=>{const [a,b]=wide?[h,w]:[w,h];return`<option value="${w}x${h}">${a} × ${b} in${w===48&&h===96?' · 4 × 8 ft':''}</option>`}).join('')+'<option value="custom">Custom…</option>';let sizesWide=null;
+    q('pvScene').innerHTML=Object.entries(SCENES).map(([k,S])=>`<option value="${k}">${S.name}</option>`).join('');
+    const ranges={pvDist:['dist',v=>v],pvEye:['eye',v=>({...st().eye,y:v})],pvPitch:['pitch',v=>v],pvYaw:['yaw',v=>v]};
+    Object.entries(ranges).forEach(([id,[k,f]])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{set({[k]:f(+el.value)});render();sync(id)})});
+    const boxRanges={pvRy:'ry',pvRx:'rx'},arrRanges={pvCount:'n',pvGap:'gap',pvRows:'n2',pvSpan:'span'};
+    Object.entries(boxRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{[k]:+el.value});render();sync(id)})});
+    Object.entries(arrRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{arr:{[k]:+el.value}});render();sync(id)})});
+    const nums={pvW:'w',pvH:'h',pvD:'d',pvY:'y'};
+    Object.entries(nums).forEach(([id,k])=>q(id).addEventListener('change',e=>{if(!sel)return;const v=Math.max(k==='y'?0:.5,+e.target.value||0);beginChange();setBox(sel.id,{[k]:v});render();sync();commitChange()}));
+    q('pvArr').addEventListener('change',e=>{if(!sel)return;beginChange();const t=e.target.value,b=byId(sel.id),patch={type:t};if((t==='ring'||t==='arch')&&b.arr.type!==t)patch.span=t==='ring'?360:180;if(t!=='none'&&b.arr.n<2)patch.n=6;setBox(sel.id,{arr:patch});sel.k=0;render();sync();commitChange()});
+    $$('#pvAxis button').forEach(b=>b.addEventListener('click',()=>{if(!sel)return;beginChange();setBox(sel.id,{arr:{axis:b.dataset.v}});render();sync();commitChange()}));
+    $$('#pvProj button').forEach(b=>b.addEventListener('click',()=>{if(st().proj===b.dataset.v)return;beginChange();set({proj:b.dataset.v,pitch:clamp(st().pitch,-80,80)});pin=null;render();sync();commitChange()}));
+    q('pvScene').addEventListener('change',e=>{beginChange();state.pv=fromScene(e.target.value);sel=null;pin=null;hover=null;fit(true);render();sync();commitChange()});
+    q('pvCanvas').addEventListener('change',e=>{if(e.target.value==='custom'){q('pvCustom').hidden=false;return}beginChange();let [w,h]=e.target.value.split('x').map(Number);if(st().canvas.w>st().canvas.h)[w,h]=[h,w];set({canvas:{w,h}});fit(true);render();sync();commitChange()});
+    ['pvCw','pvCh'].forEach(id=>q(id).addEventListener('change',()=>{const w=clamp(+q('pvCw').value||36,4,600),h=clamp(+q('pvCh').value||48,4,600);beginChange();set({canvas:{w,h}});fit(true);render();sync();commitChange()}));
+    q('pvTurnCanvas').addEventListener('click',()=>{const {w,h}=st().canvas;beginChange();set({canvas:{w:h,h:w}});fit(true);render();sync();commitChange()});
+    q('pvAdd').addEventListener('click',()=>{beginChange();addBox();commitChange()});
+    q('pvDup').addEventListener('click',()=>{const b=sel&&byId(sel.id);if(!b)return;beginChange();dupe(b);render();sync();commitChange()});
+    q('pvDel').addEventListener('click',remove);
+    q('pvFit').addEventListener('click',()=>{fit(true);render()});
+    $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));
+    function sync(skip){const pv=st(),K=camera(pv),val=(id,v)=>{if(id!==skip)q(id).value=v};
+      val('pvScene',pv.scene in SCENES?pv.scene:'blank');const wide=pv.canvas.w>pv.canvas.h;if(sizesWide!==wide){q('pvCanvas').innerHTML=sizeOptions(wide);sizesWide=wide}const ck=Math.min(pv.canvas.w,pv.canvas.h)+'x'+Math.max(pv.canvas.w,pv.canvas.h),known=CANVASES.some(([w,h])=>w+'x'+h===ck);q('pvCanvas').value=known?ck:'custom';q('pvCustom').hidden=known;val('pvCw',pv.canvas.w);val('pvCh',pv.canvas.h);
+      val('pvDist',pv.dist);q('pvDistValue').textContent=`${fmtIn(pv.dist)} · ${fov(K)}° across`;
+      $$('#pvProj button').forEach(b=>b.classList.toggle('active',b.dataset.v===pv.proj));
+      q('pvProjNote').textContent=K.curvi?'Every straight edge becomes an exact circular arc. Wraps all the way round: over your head, beside you, behind.':'Straight edges stay straight. Honest inside the 60° circle; past 90° it stretches, and it can’t show anything beside or behind you.';
+      val('pvEye',pv.eye.y);q('pvEyeValue').textContent=fmtIn(pv.eye.y);q('pvPitch').min=K.curvi?-90:-80;q('pvPitch').max=K.curvi?90:80;val('pvPitch',pv.pitch);q('pvPitchValue').textContent=`${Math.round(pv.pitch)}°`;val('pvYaw',pv.yaw);q('pvYawValue').textContent=`${Math.round(pv.yaw)}°`;
+      const b=sel&&byId(sel.id);q('pvBoxPanel').hidden=!b;q('pvDup').disabled=q('pvDel').disabled=!b;
+      if(b){val('pvW',b.w);val('pvH',b.h);val('pvD',b.d);val('pvY',r1(b.y));val('pvRy',b.ry);q('pvRyValue').textContent=`${Math.round(b.ry)}°`;val('pvRx',b.rx||0);q('pvRxValue').textContent=`${Math.round(b.rx||0)}°`;
+        const a=b.arr;val('pvArr',a.type);val('pvCount',a.n);q('pvCountValue').textContent=a.type==='grid'?`${a.n} × ${a.n2}`:a.n;val('pvGap',a.gap);q('pvGapValue').textContent=fmtIn(a.gap);val('pvRows',a.n2);q('pvRowsValue').textContent=a.n2;val('pvSpan',a.span);q('pvSpanValue').textContent=`${Math.round(a.span)}°`;
+        const t=a.type,showIf=(id,on)=>q(id).hidden=!on;showIf('pvCountRow',t!=='none');showIf('pvGapRow',['row','grid','tower'].includes(t));showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvAxisRow',t==='row');
+        $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
+        q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
+      $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',!!pv.show[x.dataset.show]));q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
+
+    // Studio: the canvas is the page, at its real size
+    function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
+    return{initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+      get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
+
+  state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
 
   /* ---------- the figures ---------- */
   // Seed: one circle, then six, each centred where the newest circle crosses the first.
@@ -732,7 +1183,7 @@
   const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],'perspective-box':['perspective',.4,.75],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
     node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
-    aux:['perspective',.6,.75,'2 4'],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
+    aux:['perspective',.6,.75,'2 4'],hidden:['ghost',.8,.8,'4 4'],floor:['ghost',.4,.6],'vp-mark':['perspective',0,.8],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
   function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px * var(--dzw,1)))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):weight==null?`calc(${w}px * var(--dzw,1))`:`${w}px`;
     return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${weight==null?`calc(${o} * var(--dzo,1))`:o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
   document.head.appendChild(Object.assign(document.createElement('style'),{textContent:kindCss('#geometry ',c=>c==='ink'?'var(--ink-line)':`var(--${c})`)}));
@@ -766,7 +1217,8 @@
   let lastSeen={pattern:null,step:0};
   function startTween(si){const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;if(reduce)return;const tilt0=state.tilt,tilt1=state.mode!=='plan'&&state.tilt<14?36:null,t0=performance.now();tween={step:si,e:0};
     const tick=now=>{if(!tween)return;const x=Math.min(1,(now-t0)/1600);tween.e=x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;if(tilt1!=null){state.tilt=tilt0+(tilt1-tilt0)*tween.e;els.tilt.value=state.tilt;syncValues()}if(x>=1)tween=null;render();if(tween)requestAnimationFrame(tick)};requestAnimationFrame(tick)}
-  function render(){{const K=figure();if(!tween&&lastSeen.pattern===state.pattern&&state.step===lastSeen.step+1&&K.steps[state.step-1]?.lift)startTween(state.step-1);lastSeen={pattern:state.pattern,step:state.step}}
+  function render(){if(state.app==='perspective'){PV.render();if(onRendered)onRendered();return}
+    {const K=figure();if(!tween&&lastSeen.pattern===state.pattern&&state.step===lastSeen.step+1&&K.steps[state.step-1]?.lift)startTween(state.step-1);lastSeen={pattern:state.pattern,step:state.step}}
     ink.on=state.depthInk&&state.mode!=='plan'&&!harvesting;ink.R=radiusOf(figure());clear(els.shapes);clear(els.guides);clear(els.points);clear(els.perspective);clear(els.overlay);drawGrid();drawPerspective();drawActivePattern();drawPhiOverlay();drawDimensions();drawDraftingOverlays();drawSymmetry();els.svg.style.setProperty('--w',state.weight);els.svg.classList.toggle('darkline',state.darkline);
     if(tracing&&(!figure().pts.includes(tracing)||tracing.step>state.step-1))tracing=null;drawLineage();
     const K=figure(),max=K.steps.length;if(state.step>max)state.step=max;const phase=K.steps[state.step-1].label;els.step.max=max;els.step.value=state.step;els.readout.textContent=`${String(state.step).padStart(2,'0')} / ${String(max).padStart(2,'0')}`;els.caption.textContent=phase;els.phase.textContent=`${phase} · Step ${state.step}`;$('#prevBtn').disabled=state.step<=1;$('#nextBtn').disabled=state.step>=max;drawStepBreakpoints();const viewLabel=state.mode==='plan'?'2D · ORTHOGRAPHIC':state.mode==='axon'?'3D · AXONOMETRIC':`3D · ${state.perspectivePoints}-POINT PERSPECTIVE`;els.badge.textContent=`${viewLabel} · ${state.primitive==='solid'?'SOLIDS':'PLANAR'}${state.multiView&&state.mode!=='plan'?' · STUDY SHEET':''}`;
@@ -779,7 +1231,10 @@
   $$('#primitiveMode button').forEach(b=>b.addEventListener('click',()=>{if(state.primitive===b.dataset.primitive)return;beginChange();state.primitive=b.dataset.primitive;syncAllControls();render();commitChange()}));
   $$('#perspectiveMode button').forEach(b=>b.addEventListener('click',()=>{const value=+b.dataset.points;if(state.perspectivePoints===value)return;beginChange();state.perspectivePoints=value;if(value===3&&camera().f<220){Object.assign(state,{horizon:150,vpLeft:90,vpRight:810,vp3X:450,vp3Y:801});els.horizon.value=150}syncAllControls();render();commitChange()}));
   function rangeHistory(el){el.addEventListener('pointerdown',beginChange);el.addEventListener('keydown',beginChange);el.addEventListener('change',commitChange);el.addEventListener('blur',commitChange)}
-  rangeHistory(els.horizon);els.horizon.addEventListener('input',e=>{state.horizon=+e.target.value;syncValues();render()});
+  rangeHistory(els.horizon);els.horizon.addEventListener('input',e=>{let h=+e.target.value;if(state.perspectivePoints===3){
+    // three-point: keep the centre of vision and the side points, swing VP 3 so the camera stays a real one; looking up flips it overhead
+    const c=camera(),x=vp3Effective().x,ab=(x-state.vpLeft)*(state.vpRight-x),r=Math.sqrt(ab);let d=c.P.y-h;d=(d<0?-1:1)*Math.min(.8*r,Math.max(.08*r,Math.abs(d)));h=c.P.y-d;state.vp3Y=h+ab/d;state.vp3X=x;e.target.value=h}
+    state.horizon=h;syncValues();render()});
   $('#perspectiveLinesBtn').addEventListener('click',e=>{beginChange();state.perspectiveLines=!state.perspectiveLines;e.currentTarget.classList.toggle('active',state.perspectiveLines);syncPressed();render();commitChange()});
   els.autoRotate.addEventListener('click',()=>{beginChange();state.autoRotate=!state.autoRotate;els.autoRotate.classList.toggle('active',state.autoRotate);syncPressed();render();commitChange()});
   function syncValues(){$('#rotationValue').textContent=`${Math.round(state.rotation)}°`;$('#tiltValue').textContent=`${Math.round(state.tilt)}°`;$('#depthValue').textContent=Math.round(state.depth);$('#weightValue').textContent=state.weight.toFixed(1);$('#horizonValue').textContent=`${Math.round((1-state.horizon/700)*100)}%`}
@@ -793,7 +1248,7 @@
   els.play.addEventListener('click',()=>{state.playing=!state.playing;els.play.textContent=state.playing?'Ⅱ':'▶';els.play.setAttribute('aria-label',state.playing?'Pause construction':'Play construction');clearInterval(timer);if(state.playing)startPlayback()});
   els.speed.addEventListener('change',()=>{if(state.playing)startPlayback()});
   els.undo.addEventListener('click',undo);els.redo.addEventListener('click',redo);
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){snapToAxis();return}if(e.key==='ArrowRight'&&state.step<stepCount()){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(e.target.matches('input,select'))return;if(state.app==='perspective'){PV.key(e);return}if(e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){snapToAxis();return}if(e.key==='ArrowRight'&&state.step<stepCount()){beginChange();state.step++;render();commitChange()}if(e.key==='ArrowLeft'&&state.step>1){beginChange();state.step--;render();commitChange()}});
   function eventToSvg(e){const r=els.svg.getBoundingClientRect();return {x:(e.clientX-r.left)*900/r.width,y:(e.clientY-r.top)*700/r.height}}
   let drag=null,inertia=0,lastFrame=performance.now();
   els.wrap.addEventListener('pointerdown',e=>{if(e.target.closest('.axis-hud'))return;beginChange();inertia=0;const picker=e.target.closest('[data-picker]');if(picker&&state.mode==='perspective'){drag={picker:picker.dataset.picker};els.wrap.setPointerCapture(e.pointerId);return}if(state.autoRotate){state.autoRotate=false;els.autoRotate.classList.remove('active')}drag={x:e.clientX,y:e.clientY,r:state.rotation,t:state.tilt,lastX:e.clientX,lastTime:performance.now(),velocity:0};els.wrap.setPointerCapture(e.pointerId);els.wrap.classList.add('dragging')});
@@ -801,7 +1256,7 @@
   const endDrag=()=>{const rotating=drag&&!drag.picker;if(rotating)inertia=drag.velocity||0;drag=null;els.wrap.classList.remove('dragging');commitChange();if(rotating&&Math.abs(inertia)<.05){const ax=nearestAxis();if(ax&&ax.deg<5&&ax.deg>=0.01)snapToAxis(ax)}};
   $('#snapBtn').addEventListener('click',()=>snapToAxis());els.wrap.addEventListener('pointerleave',()=>{if(tracing&&!drag){tracing=null;drawLineage()}});
   els.wrap.addEventListener('pointerup',e=>{if(drag&&!drag.picker&&!drag.moved&&e.pointerType!=='mouse'){const p=eventToSvg(e),hit=pickAt(p.x,p.y);tracing=hit===tracing?null:hit;drawLineage()}endDrag()});els.wrap.addEventListener('pointercancel',endDrag);
-  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const K=figure(),isSpatial=SPATIAL.includes(state.pattern)||!!(K.sym&&vis(K.sym[0],state.step-1));if(!drag&&state.mode!=='plan'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
+  function animate(now){const dt=Math.min(40,now-lastFrame);lastFrame=now;const K=figure(),isSpatial=SPATIAL.includes(state.pattern)||!!(K.sym&&vis(K.sym[0],state.step-1));if(!drag&&state.mode!=='plan'&&state.app!=='perspective'){let changed=false;if(state.autoRotate&&isSpatial){state.rotation=((state.rotation+dt*.008+180)%360+360)%360-180;changed=true}else if(Math.abs(inertia)>.002){state.rotation=((state.rotation+inertia*dt+180)%360+360)%360-180;inertia*=Math.pow(.93,dt/16);changed=true}else inertia=0;if(changed){els.rotation.value=state.rotation;syncValues();render()}}requestAnimationFrame(animate)}requestAnimationFrame(animate);
   function downloadableSvg(){
     // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
     // and inline the class rules the live page gets from CSS.
@@ -813,7 +1268,7 @@
     const style=svgEl('style');style.textContent=[
       'path{fill:none}',`text{font-family:${mono}}`,
       `.horizon-handle,.vp-handle{fill:${T('canvas')};stroke:${T('perspective')};stroke-width:1.4}`,
-      `.vp-dot{fill:${T('perspective')}}`,`.vp-arrow{fill:none;stroke:${T('perspective')};stroke-width:1.4}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
+      `.vp-dot{fill:${T('perspective')}}`,`.pv-dim{fill:${T('paper')};opacity:.55}`,`.pv-frame,.pv-ticks{fill:none;stroke:${T('strong')};stroke-width:1}`,`.pv-cone{fill:none;stroke:${T('focus')};stroke-width:.8;opacity:.5}`,`.pv-cone.wide{stroke-dasharray:4 6}`,`.pv-face{stroke:none}`,`.pv-face.flat{fill:${T('canvas')}}`,`.pv-face.light{fill:${T('pv-light')}}`,`.pv-face.mid{fill:${T('pv-mid')}}`,`.pv-face.dark{fill:${T('pv-dark')}}`,`.pv-sel{fill:none;stroke:${T('accent')};stroke-width:2.2}`,`.pv-hover{fill:none;stroke:${T('focus')};stroke-width:1.6}`,`.pv-pin,.pv-string{fill:none;stroke:${T('lineage')};stroke-width:2}`,`.pv-pin-dot{fill:${T('lineage')}}`,`.pv-cv-ring{fill:none;stroke:${T('focus')}}`,`.pv-cv-cross{stroke:${T('focus')}}`,`.pv-rule,.pv-cone-label{${label};fill:${T('muted')}}`,`.vp-arrow{fill:none;stroke:${T('perspective')};stroke-width:1.4}`,`.vp-label{${label};letter-spacing:0;fill:${T('perspective')}}`,
       `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
       `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
       `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`,kindCss('',c=>T(c==='ink'?(state.darkline?'accent':'geometry'):c),state.weight)].join('\n');
@@ -822,7 +1277,7 @@
   const saver=window.claude?.use?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);
   async function download(name,blob){const dl=await saver;if(dl){try{await dl.save({filename:name,data:blob});showToast(`Saved ${name}`)}catch(e){if(e?.code!=='declined')showToast('Save unavailable here — use Copy SVG')}return}
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-  $('#exportBtn').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
+  $('#exportBtn').addEventListener('click',()=>download(state.app==='perspective'?`perspective-${state.pv.scene||'scene'}.svg`:`${state.pattern}-step-${state.step}.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
   $('#copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(downloadableSvg());showToast('SVG copied to clipboard')}catch{showToast('Copy unavailable — use Export')}});
   function showToast(msg){els.toast.textContent=msg;els.toast.classList.add('show');setTimeout(()=>els.toast.classList.remove('show'),1800)}
   /* ================= Studio: physical outputs =================
@@ -852,12 +1307,13 @@
   const saveST=()=>{try{localStorage.setItem('sg-studio',JSON.stringify(ST))}catch{}};
   const f2=n=>+n.toFixed(2),fmtLen=mm=>mm>=1000?`${(mm/1000).toFixed(2)} m`:`${Math.round(mm)} mm`;
 
-  function pageSize(){let w,h;if(ST.page==='custom'){w=+ST.cw||1000;h=+ST.ch||1000}else{const p=PAGES.find(p=>p.id===ST.page)||PAGES[8];w=p.w;h=p.h}
+  function pageSize(){if(state.app==='perspective'){const f=PV.frame();return{W:f.W,H:f.H}}let w,h;if(ST.page==='custom'){w=+ST.cw||1000;h=+ST.ch||1000}else{const p=PAGES.find(p=>p.id===ST.page)||PAGES[8];w=p.w;h=p.h}
     if((ST.orient==='landscape')!==(w>h))[w,h]=[h,w];return {W:w,H:h}}
 
   // --- read the drawing back out of the SVG ---
   let harvesting=false;
   function layerOf(kind,src){
+    if(kind==='hidden'||kind==='horizon')return 'construction';if(kind==='vp-mark')return 'marks';
     if(src==='grid')return 'drafting';
     if(kind==='main'||kind==='web'||kind==='bindu')return 'figure';
     if(kind==='lens'||kind==='boundary'||kind==='phi-spiral')return 'accent';
@@ -881,6 +1337,12 @@
   function geometry(tol){
     const {W,H}=pageSize(),on=LAYERS.filter(l=>ST.layers[l.id].on).map(l=>l.id);
     const key=JSON.stringify([snapshot(),W,H,ST.margin,on,tol]);if(geoCache.key===key)return geoCache.geo;
+    if(state.app==='perspective'){
+      // the canvas rectangle maps straight onto the page at its real size; anything off the canvas is trimmed
+      const fr=PV.frame(),k=W/fr.w,raw=harvest(2).filter(s=>on.includes(s.layer)),strokes=[],R={x0:0,y0:0,x1:W,y1:H};
+      raw.forEach(st=>{const pts=st.pts.map(([x,y])=>[(x-fr.x)*k,(y-fr.y)*k]);if(st.fill){if(pts.every(([x,y])=>x>=0&&x<=W&&y>=0&&y<=H))strokes.push({...st,pts});return}
+        PV.clip(st.closed?[...pts,pts[0]]:pts,R).forEach(p=>strokes.push({...st,pts:p,closed:false}))});
+      const geo=strokes.length?{W,H,s:k,res:2,strokes,span:[W,H]}:null;geoCache={key,geo};return geo}
     const bbox=list=>{let a=[1e9,1e9,-1e9,-1e9];list.forEach(s=>s.pts.forEach(([x,y])=>{if(x<a[0])a[0]=x;if(y<a[1])a[1]=y;if(x>a[2])a[2]=x;if(y>a[3])a[3]=y}));return a};
     let raw=harvest(1).filter(s=>on.includes(s.layer));if(!raw.length){geoCache={key,geo:null};return null}
     let b=bbox(raw);const bw=Math.max(1,b[2]-b[0]),bh=Math.max(1,b[3]-b[1]),m=Math.min(ST.margin,Math.min(W,H)/3),s=Math.min((W-2*m)/bw,(H-2*m)/bh);
@@ -893,7 +1355,7 @@
   const dOf=(pts,closed)=>'M'+pts.map(p=>f2(p[0])+' '+f2(p[1])).join('L')+(closed?'Z':'');
   const svgOpen=(W,H,title)=>`<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(W)}mm" height="${f2(H)}mm" viewBox="0 0 ${f2(W)} ${f2(H)}"><title>${title}</title>`;
   const esc=t=>t.replace(/[<&>]/g,c=>({'<':'&lt;','&':'&amp;','>':'&gt;'}[c]));
-  const fileTitle=()=>`${titles[state.pattern]} · step ${state.step} · ${state.mode}`;
+  const fileTitle=()=>state.app==='perspective'?`${state.pv.name} · ${state.pv.proj==='curvi'?'curvilinear':'linear'} perspective`:`${titles[state.pattern]} · step ${state.step} · ${state.mode}`;
 
   // --- print: one group per layer, real pen widths in mm ---
   function printInner(g){let out='';LAYERS.forEach(L=>{const cfg=ST.layers[L.id];if(!cfg.on)return;const list=g.strokes.filter(s=>s.layer===L.id);if(!list.length)return;
@@ -996,13 +1458,13 @@
 
   // --- UI ---
   const sEl=id=>document.getElementById(id),dlg=sEl('studio'),preview=sEl('studioPreview'),statsEl=sEl('studioStats');
-  const baseName=()=>`${state.pattern}-step${state.step}-${Math.round(pageSize().W)}x${Math.round(pageSize().H)}mm`;
+  const baseName=()=>`${state.app==='perspective'?'perspective-'+(state.pv.scene||'scene'):state.pattern+'-step'+state.step}-${Math.round(pageSize().W)}x${Math.round(pageSize().H)}mm`;
   sEl('stPage').innerHTML=PAGES.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
   sEl('stSheet').innerHTML=SHEETS.map(p=>`<option value="${p.id}">${p.label}</option>`).join('');
   sEl('stLayers').innerHTML=LAYERS.map(L=>`<div class="st-layer"><label class="st-check"><input type="checkbox" id="stOn-${L.id}"><span><b>${L.label}</b><small>${L.hint}</small></span></label>`+
     `<label class="st-num" title="Pen / line width"><input type="number" id="stPen-${L.id}" min="0.05" max="50" step="0.05"><i>mm</i></label><input type="color" id="stCol-${L.id}" aria-label="${L.label} colour"></div>`).join('');
-  function syncStudio(){sEl('stPage').value=ST.page;sEl('stOrient').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===ST.orient));
-    sEl('stCustom').hidden=ST.page!=='custom';sEl('stW').value=ST.cw;sEl('stH').value=ST.ch;sEl('stMargin').value=ST.margin;
+  function syncStudio(){const pvApp=state.app==='perspective';sEl('stPage').closest('.st-field').hidden=pvApp;sEl('stOrient').parentElement.hidden=pvApp;sEl('stCanvasNote').hidden=!pvApp;if(pvApp)sEl('stCanvasNote').textContent=`Your canvas, ${state.pv.canvas.w} × ${state.pv.canvas.h} in, at full size. Change it in the Canvas panel.`;sEl('stPage').value=ST.page;sEl('stOrient').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.v===ST.orient));
+    sEl('stCustom').hidden=pvApp||ST.page!=='custom';sEl('stW').value=ST.cw;sEl('stH').value=ST.ch;sEl('stMargin').value=ST.margin;
     LAYERS.forEach(L=>{const c=ST.layers[L.id];sEl('stOn-'+L.id).checked=c.on;sEl('stPen-'+L.id).value=c.pen;sEl('stCol-'+L.id).value=c.color});
     sEl('stSlot').value=ST.slot;sEl('stBridge').value=ST.bridge;sEl('stSpan').value=ST.span;sEl('stSheet').value=ST.sheet;sEl('stOverlap').value=ST.overlap;sEl('stDpi').value=ST.dpi;
     sEl('stModes').querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.v===ST.mode);b.setAttribute('aria-pressed',b.dataset.v===ST.mode)});
@@ -1060,7 +1522,7 @@
     const svg=svgOpen(W,H,esc(fileTitle())).replace(/width="[^"]+mm" height="[^"]+mm"/,`width="${w}" height="${h}"`)+printInner(g)+'</svg>';
     try{download(`${baseName()}@${Math.round(dpi)}dpi.png`,await rasterize(svg,w,h,'#ffffff'));if(dpi<+ST.dpi-1)showToast(`Capped at ${Math.round(dpi)} dpi (${w}×${h} px, the browser's limit). Use the SVG for full resolution.`)}catch{showToast('PNG too large for this browser — use the SVG')}});
   sEl('stScreenSvg').addEventListener('click',()=>download(`${state.pattern}-step-${state.step}-screen.svg`,new Blob([downloadableSvg()],{type:'image/svg+xml'})));
-  window.__k=()=>figure();window.__fig=id=>FIG[id];window.__cam=()=>camera();window.__model=p=>modelPoint(p);window.__view=W=>viewWorld(W);window.__axes=()=>axesOf(figure());window.__nearest=()=>nearestAxis();window.__snap=()=>snapToAxis();window.__proj=q=>project(V(q));
+  window.__pv=PV;window.__state=state;window.__k=()=>figure();window.__fig=id=>FIG[id];window.__cam=()=>camera();window.__model=p=>modelPoint(p);window.__view=W=>viewWorld(W);window.__axes=()=>axesOf(figure());window.__nearest=()=>nearestAxis();window.__snap=()=>snapToAxis();window.__proj=q=>project(V(q));
   window.__studio={geometry,plotterPlan,stencilSheets,pageSize,ST,tilePlan,tiles,zip,printInner,crossings,updatePreview};
 
   // theme: System follows the OS (or the host page), Night and Paper pin a world
@@ -1069,6 +1531,14 @@
   function applyTheme(){const r=document.documentElement;if(theme==='system'){if(hostTheme)r.setAttribute('data-theme',hostTheme);else r.removeAttribute('data-theme')}else r.setAttribute('data-theme',theme==='night'?'dark':'light');$('#themeBtn span').textContent=THEMES[theme]}
   $('#themeBtn').addEventListener('click',()=>{theme=theme==='system'?'night':theme==='night'?'paper':'system';try{localStorage.setItem('locus-theme',theme)}catch{}applyTheme();render()});applyTheme();
   {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
+  $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
+  // in Perspective the planner takes the pointer first; the plan inset handles its own
+  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan'))return;e.stopPropagation();fn(e)};
+  els.wrap.addEventListener('pointerdown',pvOnly(e=>{els.wrap.classList.add('dragging');PV.down(e)}),true);
+  els.wrap.addEventListener('pointermove',pvOnly(PV.move),true);
+  ['pointerup','pointercancel'].forEach(t=>els.wrap.addEventListener(t,pvOnly(e=>{els.wrap.classList.remove('dragging');PV.up(e)}),true));
+  els.wrap.addEventListener('dblclick',pvOnly(PV.dblclick),true);
+  els.wrap.addEventListener('wheel',e=>{if(state.app==='perspective'&&!e.target.closest('#pvPlan'))PV.wheel(e)},{passive:false});
   syncAllControls();updateHistoryButtons();render();
 })();
 </script>
