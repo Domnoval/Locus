@@ -212,7 +212,7 @@
     .pv-plan-grid{stroke:var(--line);stroke-width:.6;fill:none}
     .pv-plan-box{fill:color-mix(in srgb,var(--geometry) 12%,transparent);stroke:var(--geometry);stroke-width:.8;fill-rule:nonzero}
     .pv-plan-box.on{stroke:var(--accent);fill:color-mix(in srgb,var(--accent) 22%,transparent)}
-    .pv-plan-view{fill:color-mix(in srgb,var(--perspective) 14%,transparent);stroke:var(--perspective);stroke-width:.8}
+    .pv-plan-view{fill:color-mix(in srgb,var(--perspective) 14%,transparent);stroke:var(--perspective);stroke-width:.8;pointer-events:none}
     #pvPlan text{font:500 8px "IBM Plex Mono",monospace;fill:var(--muted)}
     .pv-plan-eye{fill:var(--accent);stroke:var(--canvas);stroke-width:2;cursor:move}
     #geometry .pv-face{stroke:none}
@@ -244,6 +244,30 @@
     .pv-row.off b{color:var(--muted)}.pv-row.pv-arc span,.pv-row.pv-arc b{color:var(--lineage)}.pv-row.off span::after{content:" · off canvas";text-transform:none}
     .pv-dims{grid-template-columns:repeat(4,1fr)}
     @media(max-width:820px){#pvPlan{width:96px;height:96px;bottom:34px;right:8px}body.pv-app .workspace{position:static;height:auto;min-height:0}body.pv-app .canvas-wrap,body.pv-app .canvas-wrap #geometry{height:min(72vh,640px);min-height:min(72vh,640px)}}
+    /* round 3: shots, composition, reference view */
+    .pv-only{display:none}body.pv-app .pv-only,body.pv-app #pvRefBtn{display:inline-flex}
+    body:not(.pv-app) #pvShots{display:none}
+    body.pv-app .workspace{grid-template-rows:auto auto 1fr}
+    .pv-shots{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
+    .pv-shot{flex:none;display:grid;grid-template-rows:auto auto auto;justify-items:start;gap:2px;padding:6px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;text-align:left;border-radius:2px;transition:border-color .15s,transform .15s}
+    .pv-shot:hover{border-color:var(--strong);transform:translateY(-1px)}.pv-shot.active{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+    .pv-shot-pic{display:block;height:64px;min-width:48px}.pv-shot-pic svg{height:64px;width:auto;display:block}
+    .pv-shot b{font:500 11px "IBM Plex Sans",sans-serif}.pv-shot small{font:500 9px "IBM Plex Mono",monospace;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+    .pv-shot .th-bg{fill:var(--canvas);stroke:var(--line)}.pv-shot .th-hz{fill:none;stroke:var(--perspective);stroke-width:.7}
+    .pv-shot .th-light{fill:var(--pv-light)}.pv-shot .th-mid{fill:var(--pv-mid)}.pv-shot .th-dark{fill:var(--pv-dark)}.pv-shot .th-edge{fill:none;stroke:var(--geometry);stroke-width:.7;stroke-linejoin:round}
+    #geometry .pv-comp{fill:none;stroke:var(--z-axis);stroke-width:.8;opacity:.32;stroke-dasharray:2 5;pointer-events:none}
+    #overlayLayer .pv-hz-hit{stroke:transparent;stroke-width:14px;fill:none;pointer-events:stroke;cursor:ns-resize}
+    #overlayLayer .pv-snapnote{letter-spacing:.06em}
+    body.pv-app #overlayLayer .vp-label,body.pv-app #geometry .pv-rule,body.pv-app #geometry .pv-cone-label{font-size:calc(10px * var(--u,1));stroke-width:calc(3px * var(--u,1))}
+    #geometry .pv-dim.solid{opacity:1}
+    .pv-ref-exit{display:none;position:absolute;top:12px;right:12px;z-index:3;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;border:1px solid var(--line);background:color-mix(in srgb,var(--canvas) 85%,transparent);color:var(--muted);border-radius:2px;cursor:pointer;opacity:.5;transition:opacity .2s}
+    .pv-ref-exit:hover{opacity:1;color:var(--ink)}
+    body.pv-ref .pv-ref-exit{display:block}
+    body.pv-ref .app{grid-template-columns:minmax(0,1fr);padding:0;max-width:none}
+    body.pv-ref .sidebar,body.pv-ref .workspace-head,body.pv-ref #pvShots,body.pv-ref #pvPlan,body.pv-ref .canvas-badge,body.pv-ref .status-line{display:none!important}
+    body.pv-ref .workspace{position:static;height:100vh;grid-template-rows:1fr;padding:0}
+    body.pv-ref .canvas-wrap{border:0;border-radius:0;cursor:default}
+    @media(max-width:820px){.pv-shot-pic,.pv-shot-pic svg{height:48px}body.pv-app .pv-shots{order:1}body.pv-app .canvas-wrap{order:2}}
   </style>
 </head>
 <body>
@@ -314,9 +338,9 @@
     </section>
     <section class="panel">
       <span class="label">Canvas</span>
-      <div class="st-row"><label class="st-field">Size<select id="pvCanvas"></select></label><button class="chip" id="pvTurnCanvas" type="button" style="align-self:end" title="Swap width and height">⟲ Turn</button></div>
+      <div class="st-row"><label class="st-field">Size<select id="pvCanvas"></select></label><button class="chip" id="pvTurnCanvas" type="button" style="align-self:end" title="Swap width and height">⟲ Portrait / landscape</button></div>
       <div class="st-row" id="pvCustom" hidden><label class="st-field">Width in<input type="number" id="pvCw" min="4" step="1"></label><label class="st-field">Height in<input type="number" id="pvCh" min="4" step="1"></label></div>
-      <div class="control"><div class="control-head"><label for="pvDist">Stand back</label><span class="value" id="pvDistValue">40 in</span></div><input id="pvDist" type="range" min="6" max="240" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvDist" title="Wide is dramatic, long is calm. Your subject keeps its size on the canvas while you change it">Lens</label><span class="value" id="pvDistValue">40 in</span></div><input id="pvDist" type="range" min="6" max="240" step="1"></div>
       <div class="segmented two" id="pvProj" role="group" aria-label="Projection" style="margin-top:14px"><button data-v="linear">Linear</button><button data-v="curvi">Curvilinear</button></div>
       <p class="picker-note" id="pvProjNote"></p>
     </section>
@@ -324,13 +348,14 @@
       <span class="label">You</span>
       <div class="control"><div class="control-head"><label for="pvEye">Eye height</label><span class="value" id="pvEyeValue">62 in</span></div><input id="pvEye" type="range" min="6" max="240" step="1"></div>
       <div class="control"><div class="control-head"><label for="pvPitch">Look up / down</label><span class="value" id="pvPitchValue">0°</span></div><input id="pvPitch" type="range" min="-90" max="90" step="1"></div>
-      <div class="control"><div class="control-head"><label for="pvYaw">Turn</label><span class="value" id="pvYawValue">0°</span></div><input id="pvYaw" type="range" min="-180" max="180" step="1"></div>
-      <p class="picker-note">Drag the empty drawing to look around, drag a box to move it (Shift lifts it), wheel to zoom. In the plan, drag <b>YOU</b> to walk.</p>
+      <div class="control"><div class="control-head"><label for="pvYaw">Head turn</label><span class="value" id="pvYawValue">0°</span></div><input id="pvYaw" type="range" min="-180" max="180" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvRoll">Dutch tilt</label><span class="value" id="pvRollValue">0°</span></div><input id="pvRoll" type="range" min="-35" max="35" step="1"></div>
+      <p class="picker-note">Pick a <b>shot</b> above the canvas, then fine-tune: drag empty space to walk round the subject, scroll to move closer, Shift-drag to look around. Drag the horizon line to slide it to a third. Pinch or Ctrl-scroll zooms the view. Hold Ctrl/⌘ to switch snapping off.</p>
     </section>
     <section class="panel" id="pvBoxPanel" hidden>
       <span class="label">Selected box · inches</span>
       <div class="st-row pv-dims"><label class="st-field">Width<input type="number" id="pvW" min="0.5" step="1"></label><label class="st-field">Height<input type="number" id="pvH" min="0.5" step="1"></label><label class="st-field">Depth<input type="number" id="pvD" min="0.5" step="1"></label><label class="st-field">Off floor<input type="number" id="pvY" min="0" step="1"></label></div>
-      <div class="control"><div class="control-head"><label for="pvRy">Turn</label><span class="value" id="pvRyValue">0°</span></div><input id="pvRy" type="range" min="-180" max="180" step="1"></div>
+      <div class="control"><div class="control-head"><label for="pvRy">Rotation</label><span class="value" id="pvRyValue">0°</span></div><input id="pvRy" type="range" min="-180" max="180" step="1"></div>
       <div class="control"><div class="control-head"><label for="pvRx">Tip</label><span class="value" id="pvRxValue">0°</span></div><input id="pvRx" type="range" min="-90" max="90" step="1"></div>
       <label class="st-field" style="margin-top:14px">Repeat<select id="pvArr"><option value="none">None</option><option value="row">Row</option><option value="grid">Grid</option><option value="tower">Tower</option><option value="ring">Ring around you</option><option value="arch">Arch over you</option></select></label>
       <p class="picker-note" id="pvArrNote"></p>
@@ -345,7 +370,7 @@
       <div class="toggle-row" id="pvShow">
         <button class="chip" data-show="floor" type="button">Floor grid</button><button class="chip" data-show="horizon" type="button">Horizon</button><button class="chip" data-show="vps" type="button">Vanishing points</button>
         <button class="chip" data-show="guides" type="button" title="Carry the selected box’s edges on to their vanishing points">Lines to VPs</button><button class="chip" data-show="cone" type="button">Cone of vision</button><button class="chip" data-show="hidden" type="button">Hidden edges</button>
-        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap moves to 3 inches">Snap</button>
+        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap-tos: views click to 1- and 2-point, the horizon and boxes to the thirds, boxes flush to each other">Snap</button><button class="chip" data-show="thirds" type="button" title="Rule-of-thirds lines on the canvas">Thirds</button><button class="chip" data-show="golden" type="button" title="Golden-section lines (φ) on the canvas">Golden φ</button>
       </div>
     </section>
     <section class="panel">
@@ -364,17 +389,20 @@
           <button class="action" id="redoBtn" title="Redo" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 7 5 5-5 5"/><path d="M19 12h-8a6 6 0 0 0-6 6"/></svg></button>
         </div>
         <button class="action theme-btn" id="themeBtn" type="button" title="Theme: follow the system, Night instrument, or Geometer’s notebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg><span>System</span></button>
+        <button class="action pv-only" id="pvRefBtn" type="button" title="Reference view: just the picture, as big as it goes, for working from at the easel (Esc to leave)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14"/><path d="M8 21h8"/></svg>Reference</button>
         <button class="action" id="copyBtn" title="Copy SVG markup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>Copy SVG</button>
         <button class="action primary" id="studioBtn" title="Print, plotter and stencil outputs at real size"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 21V9"/></svg>Studio</button>
         <button class="action" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>Export</button>
       </div>
     </header>
 
+    <div class="pv-shots" id="pvShots" role="toolbar" aria-label="Shots: classic viewpoints, framed on your canvas"></div>
     <div class="canvas-wrap" id="canvasWrap">
       <svg id="geometry" viewBox="0 0 900 700" role="img" aria-labelledby="svgTitle svgDesc">
         <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
         <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="ghostLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
       </svg>
+      <button type="button" class="pv-ref-exit" id="pvRefExit">✕ Leave reference view</button>
       <svg id="pvPlan" viewBox="0 0 200 200" role="img" aria-label="Plan: where you stand and what the canvas takes in" hidden></svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
@@ -663,10 +691,10 @@
     /* ----- scenes ----- */
     const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across'};
     const box=(id,x,y,z,s,extra={})=>({id,x,y,z,w:s,h:s,d:s,ry:0,rx:0,...extra,arr:{...ARR,...(extra.arr||{})}});
-    const SHOW={floor:true,horizon:true,vps:true,guides:true,cone:true,hidden:false,values:true,depth:true,plan:true,snap:true};
+    const SHOW={floor:true,horizon:true,vps:true,guides:true,cone:false,hidden:false,values:true,depth:true,plan:true,snap:true,thirds:true,golden:false};
     const SCENES={
       overhead:{name:'Cubes overhead',note:'An arch of cubes rising from the floor in front of you, over your head and down behind. Linear perspective can’t hold it: switch to Linear and watch it tear.',
-        pv:{canvas:{w:48,h:48},dist:15,proj:'curvi',eye:{x:0,y:62,z:0},yaw:-32,pitch:42,boxes:[box(1,0,0,84,18,{arr:{type:'arch',n:15,span:250}}),box(2,0,0,132,14,{arr:{type:'ring',n:16,span:360}})]}},
+        pv:{canvas:{w:48,h:48},dist:15,proj:'curvi',eye:{x:0,y:62,z:0},yaw:-32,pitch:42,boxes:[box(1,0,0,84,18,{arr:{type:'arch',n:15,span:250,pivot:{x:0,y:62,z:0}}}),box(2,0,0,132,14,{arr:{type:'ring',n:16,span:360,pivot:{x:0,y:62,z:0}}})]}},
       street:{name:'A street of cubes',note:'Two rows of blocks running away from you, turned a little: classic two-point perspective. The horizon is your eye level.',
         pv:{canvas:{w:48,h:36},dist:44,proj:'linear',eye:{x:0,y:62,z:0},yaw:18,pitch:0,cv:{x:0,y:9},boxes:[box(1,-54,0,96,30,{h:42,arr:{type:'row',n:7,gap:30,axis:'away'}}),box(2,54,0,96,30,{h:54,arr:{type:'row',n:7,gap:30,axis:'away'}})]}},
       tower:{name:'Tower, looking up',note:'A stack of cubes over your head. Tilt your eyes up and the verticals lean in toward a third vanishing point.',
@@ -676,7 +704,7 @@
       blank:{name:'One cube',note:'A single cube on the floor in front of you. Add more, drag them around, and look at them from anywhere.',
         pv:{canvas:{w:36,h:48},dist:40,proj:'linear',eye:{x:0,y:62,z:0},yaw:0,pitch:-20,boxes:[box(1,0,0,96,24,{ry:28})]}}};
     const fromScene=id=>{const S=SCENES[id];return{scene:id,name:S.name,cv:{x:0,y:0},grid:12,show:{...SHOW},...structuredClone(S.pv)}};
-    function initial(){try{const v=JSON.parse(localStorage.getItem('locus-pv')||'null');if(v&&Array.isArray(v.boxes)&&v.canvas&&v.eye)return{...fromScene('overhead'),...v,show:{...SHOW,...(v.show||{})}}}catch{}return fromScene('overhead')}
+    function initial(){try{const v=JSON.parse(localStorage.getItem('locus-pv')||'null');if(v&&Array.isArray(v.boxes)&&v.canvas&&v.eye){v.boxes=v.boxes.map(b=>(b.arr?.type==='ring'||b.arr?.type==='arch')&&!b.arr.pivot?{...b,arr:{...b.arr,pivot:{...v.eye}}}:b);return{...fromScene('overhead'),...v,show:{...SHOW,...(v.show||{})}}}}catch{}return fromScene('overhead')}
     const st=()=>state.pv;
     function set(patch){state.pv={...state.pv,...patch}}
     function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
@@ -684,7 +712,8 @@
     let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
 
     /* ----- the camera ----- */
-    function camera(pv=st()){const C=mm(rotY(pv.yaw*D2R),rotX(pv.pitch*D2R));
+    const rotZ=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,-s,0],[s,c,0],[0,0,1]]};   // Dutch tilt: rolls the picture about the line of sight
+    function camera(pv=st()){const C=mm(mm(rotY(pv.yaw*D2R),rotX(pv.pitch*D2R)),rotZ((pv.roll||0)*D2R));
       return{C,CT:tr(C),E:[pv.eye.x,pv.eye.y,pv.eye.z],D:pv.dist,curvi:pv.proj==='curvi',cv:pv.cv,W:pv.canvas.w,H:pv.canvas.h}}
     const toCam=(K,P)=>mv(K.CT,sub(P,K.E));
     // camera space → picture-plane inches about the centre of vision (x right, y up), or null when it can't be drawn
@@ -701,7 +730,7 @@
 
     /* ----- view: picture-plane inches ↔ the 900 × 700 drawing ----- */
     const view={s:8,ox:450,oy:350,key:''};
-    function fit(force){const {w,h}=st().canvas,key=w+'x'+h;if(!force&&view.key===key)return;view.key=key;view.s=Math.min(900*.66/w,700*.74/h);view.ox=450;view.oy=350}
+    function fit(force){const {w,h}=st().canvas,ref=document.body.classList.contains('pv-ref'),key=w+'x'+h+(ref?'r':'');if(!force&&view.key===key)return;view.key=key;const V=visCache||{x0:0,y0:0,x1:900,y1:700},vw=V.x1-V.x0,vh=V.y1-V.y0;view.s=ref?Math.min(vw*.94/w,vh*.94/h):Math.min(vw*(vw<vh?.9:.7)/w,vh*.74/h);view.ox=(V.x0+V.x1)/2;view.oy=(V.y0+V.y1)/2}
     const toSvg=([X,Y])=>[view.ox+(X+st().cv.x)*view.s,view.oy-(Y+st().cv.y)*view.s];
     const fromSvg=(x,y)=>[(x-view.ox)/view.s-st().cv.x,(view.oy-y)/view.s-st().cv.y];
     const canvasRect=()=>{const {w,h}=st().canvas;return{x:view.ox-w/2*view.s,y:view.oy-h/2*view.s,w:w*view.s,h:h*view.s}};
@@ -741,7 +770,7 @@
       else if(a.type==='tower'){const up=mv(R0,[0,1,0]);for(let i=0;i<n;i++)put(R0,add(t0,scl(up,i*(b.h+gap))),i)}
       else if(a.type==='ring'||a.type==='arch'){
         // a ring turns about the vertical through your eye; an arch turns about the level line through your eye that is square to the box, so it rises over you
-        const E=[pv.eye.x,pv.eye.y,pv.eye.z],span=clamp(+a.span||0,-360,360)*D2R,full=Math.abs(Math.abs(span)-2*Math.PI)<1e-9,step=n>1?span/(full?n:n-1):0;
+        const E=a.pivot?[a.pivot.x,a.pivot.y,a.pivot.z]:[pv.eye.x,pv.eye.y,pv.eye.z],span=clamp(+a.span||0,-360,360)*D2R,full=Math.abs(Math.abs(span)-2*Math.PI)<1e-9,step=n>1?span/(full?n:n-1):0;
         let axis=[0,1,0];if(a.type==='arch'){const c=add(t0,mv(R0,[0,b.h/2,0])),hz=[c[0]-E[0],0,c[2]-E[2]];axis=len(hz)<1e-9?[-1,0,0]:unit(cross(hz,[0,1,0]))}
         for(let i=0;i<n;i++){const Q=turn(axis,i*step);put(mm(Q,R0),add(E,mv(Q,sub(t0,E))),i)}}
       else put(R0,t0,0);
@@ -767,9 +796,10 @@
     function vpName(K,c,v){if(Math.abs(Math.abs(v[1])-1)<1e-9)return v[1]>0?(K.curvi?'zenith':'VP up'):(K.curvi?'nadir':'VP down');
       if(c[2]>Math.abs(c[0]))return K.curvi||Math.abs(c[0])<.25*c[2]?(K.curvi?'ahead':'VP ahead'):(c[0]<0?'VP left':'VP right');if(-c[2]>Math.abs(c[0]))return'behind';return c[0]<0?'VP left':'VP right'}
     function vanishing(K,dirs){const out=[];dirs.forEach((v,i)=>[1,-1].forEach(sg=>{const w=scl(v,sg),c=mv(K.CT,w);const p=dirImg(K,c);if(!p||Math.hypot(p[0],p[1])>40*K.D)return;
-      if(i>2&&out.some(o=>Math.hypot(o.p[0]-p[0],o.p[1]-p[1])<.5))return;out.push({dir:w,c,p,name:(i>2?'box ':'')+vpName(K,c,w)})}));return out}
-    function directionsOf(pv,K){const dirs=[[1,0,0],[0,1,0],[0,0,1]],same=(a,b)=>Math.abs(Math.abs(dot(a,b))-1)<1e-9;
-      const s=sel&&byId(sel.id);if(s){const I=instances(pv,s)[sel.k]||instances(pv,s)[0];[0,1,2].forEach(j=>{const a=[I.R[0][j],I.R[1][j],I.R[2][j]];if(!dirs.some(d=>same(d,a)))dirs.push(a)})}return dirs}
+      if(i>2&&out.some(o=>Math.hypot(o.p[0]-p[0],o.p[1]-p[1])<.5))return;out.push({dir:w,c,p,name:(i>2?'box ':'')+vpName(K,c,w)})}));
+      const seen={};out.forEach(v=>{seen[v.name]=(seen[v.name]||0)+1;if(seen[v.name]>1)v.name+=' '+seen[v.name]});return out}
+    function directionsOf(pv,K){const dirs=[[1,0,0],[0,1,0],[0,0,1]],same=(a,b)=>Math.abs(Math.abs(dot(a,b))-1)<1e-9,addR=R=>[0,1,2].forEach(j=>{const a=[R[0][j],R[1][j],R[2][j]];if(!dirs.some(d=>same(d,a)))dirs.push(a)});
+      pv.boxes.forEach(b=>addR(boxR(b)));const s=sel&&byId(sel.id);if(s){const I=instances(pv,s)[sel.k]||instances(pv,s)[0];addR(I.R)}return dirs}
 
     /* ----- drawing ----- */
     let lastFrame=null;
@@ -785,22 +815,35 @@
       if(S.guides&&sel)drawGuides(K,list);
       drawMarks(K);
       if(!harvesting)drawOverlay(K,list);
-      if(!harvesting){drawPlan(K,list);readouts(K,list);heading(K);save()}}
+      if(!harvesting){drawPlan(K,list);if(!interacting){readouts(K,list);renderShots()}heading(K);save()}}
     function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
       const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
       // the floor only changes when you move, so it is kept between frames (sampled every 3°: it is a guide, not a line you paint)
       const key=JSON.stringify([pv.yaw,pv.pitch,pv.eye,pv.dist,pv.proj,pv.cv,view.s,view.ox,view.oy,R,g,RES]);
-      if(floorCache.key!==key){const ds=[];for(let i=-R;i<=R;i+=g){ds.push(dOf(segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R],0,1,3)),dOf(segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i],0,1,3)))}floorCache={key,ds:ds.filter(Boolean)}}
-      floorCache.ds.forEach(d=>{const el=svgEl('path',{d,'vector-effect':'non-scaling-stroke'});el.dataset.kind='floor';els.grid.appendChild(el)})}
+      if(floorCache.key!==key){const ds=[];for(let i=-R;i<=R;i+=g){ds.push(dOf(segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R],0,1,3)),dOf(segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i],0,1,3)))}floorCache={key,d:ds.join('')}}
+      if(floorCache.d){const el=svgEl('path',{d:floorCache.d,'vector-effect':'non-scaling-stroke'});el.dataset.kind='floor';els.grid.appendChild(el)}}
     let floorCache={key:''};
     const LIGHT=unit([-.45,.82,-.36]);
-    function drawBoxes(K,list){const S=st().show,fills=svgEl('g',{class:'pv-fills'});els.shapes.appendChild(fills);
-      const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1);
-      [...list].sort((a,b)=>b.dist-a.dist).forEach(I=>{FACES.forEach(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);if(dot(n,sub(K.E,fc))<=1e-9)return;
-        const polys=F.c.map((i,j)=>segPolys(K,I.P[i],I.P[F.c[(j+1)%4]]));if(polys.some(p=>p.length!==1))return;const pts=polys.flatMap(p=>p[0]);
-        const tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';fills.appendChild(svgEl('path',{d:'M'+pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L')+'Z',class:'pv-face '+tone}))})});
-      list.forEach(I=>{const t=(I.dist-near)/Math.max(1,far-near);EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;
-        const el=emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden');if(el&&S.depth&&v&&!harvesting){el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}}))})}
+    // which edge joins two corners (and whether it runs the other way), and which two faces meet at each edge
+    const EI={};EDGES.forEach(([a,b],e)=>{EI[a*8+b]={e,rev:false};EI[b*8+a]={e,rev:true}});
+    const EDGE_FACES=EDGES.map(([a,b])=>FACES.map((F,f)=>F.c.includes(a)&&F.c.includes(b)?f:-1).filter(f=>f>=0));
+    let interacting=false;
+    function drawBoxes(K,list){const S=st().show;
+      if(harvesting){list.forEach(I=>EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden')})));return}
+      // on screen: far to near, each box's lit faces then its edges, so nearer boxes cover farther ones; cheap enough to run every frame
+      const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1),f2=v=>v.toFixed(2);
+      [...list].sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>segPolys(K,I.P[a],I.P[b]));
+        const front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});const tones={};
+        FACES.forEach((F,fi)=>{if(!front[fi])return;let ring=[],ok=true;F.c.forEach((c,j)=>{const {e,rev}=EI[c*8+F.c[(j+1)%4]],p=polys[e];if(p.length!==1){ok=false;return}ring=ring.concat(rev?[...p[0]].reverse():p[0])});if(!ok)return;
+          const n=mv(I.R,F.n),tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';tones[tone]=(tones[tone]||'')+'M'+ring.map(q=>f2(q[0])+','+f2(q[1])).join('L')+'Z'});
+        Object.entries(tones).forEach(([t,d])=>els.shapes.appendChild(svgEl('path',{d,class:'pv-face '+t})));
+        const seen=polys.filter((p,e)=>EDGE_FACES[e].some(f=>front[f])).flat(),el=emit(els.shapes,seen,'main');
+        if(el&&S.depth){const t=(I.dist-near)/Math.max(1,far-near);el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}});
+      // hidden edges, dashed on top: exact when you let go, the backs of boxes while you are moving
+      if(S.hidden)list.forEach(I=>EDGES.forEach(([a,b],e)=>{if(interacting){if(!EDGE_FACES[e].some(f=>{const F=FACES[f],n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9}))emit(els.shapes,segPolys(K,I.P[a],I.P[b]),'hidden');return}
+        runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v)emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),'hidden')})}))}
+    // the edges of a box you can see from here (its lit faces), for outlines
+    function frontEdges(K,I){const front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});return EDGES.map(([a,b],e)=>EDGE_FACES[e].some(f=>front[f])?segPolys(K,I.P[a],I.P[b]):[]).flat()}
     function selInstance(list){if(!sel)return null;return list.find(I=>I.b.id===sel.id&&I.k===sel.k)||list.find(I=>I.b.id===sel.id)}
     // every edge of the chosen box, carried on to its vanishing points: straight in linear, the full circle in curvilinear
     function drawGuides(K,list){const I=selInstance(list);if(!I)return;EDGES.forEach(([a,b])=>{const ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);let n=cross(ca,cb);if(len(n)<1e-9)return;n=unit(n);
@@ -810,15 +853,20 @@
       vanishing(K,directionsOf(st(),K)).forEach(v=>emit(els.points,cross(v.p),'vp-mark'));emit(els.points,cross([0,0],.5),'vp-mark')}
     function heading(K){const pv=st();els.title.textContent=pv.name||'Perspective';els.phase.textContent=`Perspective planner · ${K.curvi?'curvilinear':'linear'}`;
       els.badge.textContent=`${K.curvi?'CURVILINEAR':'LINEAR'} · ${fmtIn(pv.canvas.w)} × ${fmtIn(pv.canvas.h)} CANVAS · STAND ${fmtIn(pv.dist)} BACK`;
-      const n=st().boxes.reduce((s,b)=>s+instances(pv,b).length,0),status=`<span>${n} box${n===1?'':'es'}</span><span>eye ${fmtIn(pv.eye.y)} up</span><span>looking ${Math.round(pv.pitch)>0?Math.round(pv.pitch)+'° up':Math.round(pv.pitch)<0?-Math.round(pv.pitch)+'° down':'level'}</span><span>${fov(K)}° across</span>`;
+      const n=st().boxes.reduce((s,b)=>s+instances(pv,b).length,0),status=`<span>${n} box${n===1?'':'es'}</span><span>eye ${fmtIn(pv.eye.y)} up</span><span>looking ${Math.round(pv.pitch)>0?Math.round(pv.pitch)+'° up':Math.round(pv.pitch)<0?-Math.round(pv.pitch)+'° down':'level'}</span><span>${fov(K)}° across</span>${sel?'<span>pull a handle to stretch · dial to turn · Delete removes</span>':`<span>${coarse?'drag: walk round · pinch: zoom':'drag: walk round · scroll: closer · shift-drag: look'}</span>`}`;
       if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}}
-    function visibleRect(){const r=els.svg.getBoundingClientRect(),m=els.svg.getScreenCTM();if(!m||!r.width)return{x0:0,y0:0,x1:900,y1:700};const i=m.inverse(),a=new DOMPoint(r.left,r.top).matrixTransform(i),b=new DOMPoint(r.right,r.bottom).matrixTransform(i);return{x0:a.x,y0:a.y,x1:b.x,y1:b.y}}
+    // when the drawing area changes size, measure it again and fit the canvas to what you can actually see
+    let visCache=null;new ResizeObserver(()=>{visCache=null;if(state.app==='perspective'&&els.svg.getBoundingClientRect().width){visCache=measureVisible();fit(true);paint()}}).observe(els.svg);
+    function visibleRect(){if(visCache)return visCache;return visCache=measureVisible()}
+    let U=1;const coarse=matchMedia('(pointer: coarse)').matches;
+    function measureVisible(){const r0=els.svg.getScreenCTM();if(r0&&r0.a){U=1/r0.a;els.svg.style.setProperty('--u',U.toFixed(4))}const r=els.svg.getBoundingClientRect(),m=els.svg.getScreenCTM();if(!m||!r.width)return{x0:0,y0:0,x1:900,y1:700};const i=m.inverse(),a=new DOMPoint(r.left,r.top).matrixTransform(i),b=new DOMPoint(r.right,r.bottom).matrixTransform(i);return{x0:a.x,y0:a.y,x1:b.x,y1:b.y}}
     const fmtIn=v=>`${r1(v)} in`.replace('.0 in',' in');
     const fov=K=>Math.round(K.curvi?4*Math.atan(K.W/(4*K.D))*R2D:2*Math.atan(K.W/(2*K.D))*R2D);
     const lbl=(x,y,text,cls='vp-label',anchor='start')=>{const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;return t};
-    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];
-      const tag=(x,y,text,anchor='start',cls='vp-label')=>{const w=text.length*6.1+4,x0=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;let yy=y;
-        for(let k=0;k<10;k++){if(!placed.some(r=>x0<r[0]+r[2]&&x0+w>r[0]&&yy-10<r[1]+r[3]&&yy+2>r[1]))break;yy=y+(k%2?-1:1)*13*Math.ceil((k+1)/2)}placed.push([x0,yy-10,w,12]);return lbl(x,yy,text,cls,anchor)};
+    const refMode=()=>document.body.classList.contains('pv-ref');
+    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];if(refMode()){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim solid','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));return}
+      visibleRect();const tag=(x,y,text,anchor='start',cls='vp-label')=>{const w=(text.length*6.1+4)*U,x0=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;let yy=y;
+        for(let k=0;k<10;k++){if(!placed.some(r=>x0<r[0]+r[2]&&x0+w>r[0]&&yy-10*U<r[1]+r[3]&&yy+2*U>r[1]))break;yy=y+(k%2?-1:1)*13*U*Math.ceil((k+1)/2)}placed.push([x0,yy-10*U,w,12*U]);return lbl(x,yy,text,cls,anchor)};
       // dim everything off the canvas, frame it and rule it in inches
       g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim','fill-rule':'evenodd'}));
       g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));
@@ -826,17 +874,21 @@
       for(let i=0;i<=pv.canvas.w+1e-9;i+=step){const x=R.x+i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${x.toFixed(1)},${R.y+R.h}v${l}`;if(i%major===0)g.appendChild(lbl(x,R.y+R.h+17,`${i}`,'pv-rule','middle'))}
       for(let i=0;i<=pv.canvas.h+1e-9;i+=step){const y=R.y+R.h-i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${R.x},${y.toFixed(1)}h${-l}`;if(i%major===0&&i)g.appendChild(lbl(R.x-10,y+3,`${i}`,'pv-rule','end'))}
       g.appendChild(svgEl('path',{d:ticks,class:'pv-ticks'}));g.appendChild(lbl(R.x-10,R.y+R.h+17,'in','pv-rule','end'));
+      // composition: thirds and golden-section lines across the canvas (the horizon and boxes snap to them)
+      if(!refMode()){let d='';const fr=compFractions().filter(f=>f!==.5);fr.forEach(f=>{d+=`M${R.x+f*R.w},${R.y}v${R.h}M${R.x},${R.y+f*R.h}h${R.w}`});if(d)g.appendChild(svgEl('path',{d,class:'pv-comp'}))}
       // the cone of comfortable vision, and where linear perspective gives up
       if(pv.show.cone){const ring=(r,cls,text,ang)=>{const [cx,cy]=toSvg([0,0]);g.appendChild(svgEl('circle',{cx,cy,r:r*view.s,class:cls}));const a=-ang*D2R;g.appendChild(lbl(cx+Math.cos(a)*r*view.s+4,cy+Math.sin(a)*r*view.s,text,'pv-cone-label'))};
         if(K.curvi){ring(2*K.D*Math.tan(30*D2R),'pv-cone','60° · as linear would show it',30);ring(2*K.D,'pv-cone wide','180° · level with your ears',40);ring(2*K.D*Math.tan(67.5*D2R),'pv-cone wide','270° · behind you',50)}
         else{ring(K.D*Math.tan(30*D2R),'pv-cone','60° · undistorted',30);ring(K.D,'pv-cone wide','90° · stretching',40)}}
       // horizon label
-      if(pv.show.horizon){const G=circleOf(K,mv(K.CT,[0,1,0]));if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y]=toSvg(G.p);if(y>R.y-40&&y<R.y+R.h+40)g.appendChild(tag(R.x+R.w+10,y+3,'HORIZON · EYE LEVEL'))}}
+      if(pv.show.horizon){const G=circleOf(K,mv(K.CT,[0,1,0]));if(G&&G.type==='line'&&Math.abs(G.d[1])<1e-9){const [,y]=toSvg(G.p);if(y>R.y-40&&y<R.y+R.h+40)g.appendChild(tag(R.x+6,y-6,'HORIZON · EYE LEVEL'));
+        // drag the horizon itself to slide it up or down the canvas (the lens shifts; nothing tilts)
+        if(!refMode()){const h=svgEl('path',{d:`M${R.x},${y}H${R.x+R.w}`,class:'pv-hz-hit','data-pv':'horizon'});g.appendChild(h)}}}
       // vanishing points, draggable in linear
       // vanishing points (draggable in linear: drag one and you turn your head); one off the view gets an arrow at the edge pointing to it
       if(pv.show.vps){const V=visibleRect(),[cx0,cy0]=toSvg([0,0]);vanishing(K,directionsOf(pv,K)).forEach((v,i)=>{let [x,y]=toSvg(v.p);const grp=svgEl('g',{'data-pv':K.curvi?'':'vp:'+i,class:'pv-vp'});grp.dataset.dir=v.dir.join(',');
         const pad=26,inside=x>V.x0+pad&&x<V.x1-pad&&y>V.y0+pad&&y<V.y1-pad;
-        if(inside){grp.appendChild(svgEl('circle',{cx:x,cy:y,r:7,class:'vp-handle'}));grp.appendChild(svgEl('circle',{cx:x,cy:y,r:2,class:'vp-dot'}));const flip=x>V.x1-140;grp.appendChild(tag(flip?x-11:x+11,y-9,v.name.toUpperCase(),flip?'end':'start'))}
+        if(inside){grp.appendChild(svgEl('circle',{cx:x,cy:y,r:7*U,class:'vp-handle'}));grp.appendChild(svgEl('circle',{cx:x,cy:y,r:2*U,class:'vp-dot'}));if(coarse)grp.appendChild(svgEl('circle',{cx:x,cy:y,r:22*U,class:'pv-vp-hit'}));const flip=x>V.x1-140;grp.appendChild(tag(flip?x-11:x+11,y-9,v.name.toUpperCase(),flip?'end':'start'))}
         else{const dx=x-cx0,dy=y-cy0;let t=1;if(dx>0)t=Math.min(t,(V.x1-pad-cx0)/dx);if(dx<0)t=Math.min(t,(V.x0+pad-cx0)/dx);if(dy>0)t=Math.min(t,(V.y1-pad-cy0)/dy);if(dy<0)t=Math.min(t,(V.y0+pad-cy0)/dy);
           const ax=cx0+dx*Math.max(0,t),ay=cy0+dy*Math.max(0,t),a=Math.atan2(dy,dx),tip=(r,o)=>`${(ax+Math.cos(a+o)*r).toFixed(1)},${(ay+Math.sin(a+o)*r).toFixed(1)}`,[ux,uy]=onCanvas(v.p);
           grp.appendChild(svgEl('path',{d:`M${tip(9,0)}L${tip(7,2.5)}L${tip(7,-2.5)}Z`,class:'vp-dot'}));grp.appendChild(svgEl('circle',{cx:ax,cy:ay,r:12,class:'pv-vp-hit'}));
@@ -845,17 +897,18 @@
       // centre of vision: drag it to slide the picture on the canvas
       {const [x,y]=toSvg([0,0]),grp=svgEl('g',{'data-pv':'cv',class:'pv-cv'});grp.appendChild(svgEl('circle',{cx:x,cy:y,r:9,class:'pv-cv-ring'}));grp.appendChild(svgEl('path',{d:`M${x-14},${y}h28M${x},${y-14}v28`,class:'pv-cv-cross'}));grp.appendChild(svgEl('rect',{x:x+9,y:y+7,width:112,height:13,class:'pv-cv-hit'}));grp.appendChild(lbl(x+12,y+16,'✥ CENTRE OF VISION','pv-cone-label'));g.appendChild(grp)}
       // selection and hover
-      const outline=(I,cls)=>EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(v)emit(g,segPolys(K,I.P[a],I.P[b],t0,t1),null,{class:cls})}));
+      const outline=(I,cls)=>emit(g,frontEdges(K,I),null,{class:cls});
       if(hover&&!(sel&&hover.id===sel.id))list.filter(I=>I.b.id===hover.id).forEach(I=>outline(I,'pv-hover'));
       if(sel)list.filter(I=>I.b.id===sel.id).forEach(I=>outline(I,I.k===sel.k?'pv-sel':'pv-sel twin'));
       if(sel&&!harvesting){const G=gizmo();if(G){const at=w=>{const q=img(K,toCam(K,w));return q&&toSvg(q)};
         G.faces.forEach(F=>{if(!F.front)return;const a=at(F.c),t=at(F.tip);if(!a||!t)return;g.appendChild(svgEl('path',{d:`M${a[0]},${a[1]}L${t[0]},${t[1]}`,class:'pv-stalk'}));
-          const h=svgEl('g',{'data-pv':'face:'+F.f,class:'pv-handle'});h.appendChild(svgEl('rect',{x:t[0]-4.5,y:t[1]-4.5,width:9,height:9}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:11,class:'pv-handle-hit'}));g.appendChild(h);
+          const h=svgEl('g',{'data-pv':'face:'+F.f,class:'pv-handle'}),hs=(coarse?14:10)*U;h.appendChild(svgEl('rect',{x:t[0]-hs/2,y:t[1]-hs/2,width:hs,height:hs}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:(coarse?24:12)*U,class:'pv-handle-hit'}));g.appendChild(h);
           if(liveDim&&liveDim.f===F.f)g.appendChild(tag(t[0]+12,t[1]-10,liveDim.text,'start','vp-label pv-live'))});
         if(G.dial){const a=at(G.base),t=at(G.dial);if(a&&t){g.appendChild(svgEl('path',{d:`M${a[0]},${a[1]}L${t[0]},${t[1]}`,class:'pv-stalk'}));const h=svgEl('g',{'data-pv':'turn',class:'pv-handle pv-dial'});
-          h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:6}));h.appendChild(svgEl('path',{d:`M${t[0]-10},${t[1]-3}A10.5,10.5 0 0 1 ${t[0]+10},${t[1]-3}`,class:'pv-dial-arc'}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:13,class:'pv-handle-hit'}));g.appendChild(h);
+          const u=U*(coarse?1.4:1);h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:6*u}));h.appendChild(svgEl('path',{d:`M${t[0]-10*u},${t[1]-3*u}A${10.5*u},${10.5*u} 0 0 1 ${t[0]+10*u},${t[1]-3*u}`,class:'pv-dial-arc'}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:(coarse?26:14)*U,class:'pv-handle-hit'}));g.appendChild(h);
           if(liveDim&&liveDim.f==='turn')g.appendChild(tag(t[0]+14,t[1]+4,liveDim.text,'start','vp-label pv-live'))}}}}
       if(snapCue)list.filter(I=>I.b.id===snapCue).forEach(I=>outline(I,'pv-snap'));
+      if(snapNote)g.appendChild(tag(snapNote.p[0]+16,snapNote.p[1]-14,snapNote.text,'start','vp-label pv-live pv-snapnote'));
       if(pin)drawArc(K,list,g,tag)}
     // the arc an edge sits on: its centre and radius in canvas inches, the thing you swing with a string
     function arcOf(K,list,e){const I=list.find(I=>I.b.id===e.id&&I.k===e.k);if(!I)return null;const [a,b]=EDGES[e.edge],ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);const n=unit(cross(ca,cb)),G=circleOf(K,n);return{I,a,b,G}}
@@ -902,15 +955,23 @@
       if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
       const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
       if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
-      if(ctl&&ctl.startsWith('vp:')){drag={type:'vp',dir:e.target.closest('[data-pv]').dataset.dir.split(',').map(Number)};return}
+      if(ctl&&ctl.startsWith('vp:')){const gEl=e.target.closest('[data-pv]'),c=gEl.querySelector('.vp-handle'),near=!c||Math.hypot(+c.getAttribute('cx')-p[0],+c.getAttribute('cy')-p[1])<5*U;if(near||!pick(p[0],p[1])){drag={type:'vp',dir:gEl.dataset.dir.split(',').map(Number)};return}}
       if(ctl&&ctl.startsWith('face:')&&sel){const G=gizmo();if(G){const F=G.faces[+ctl.slice(5)];drag={type:'face',f:+ctl.slice(5),axis:F.n,at:F.c,start:structuredClone(byId(sel.id)),s0:null};drag.s0=axisParam(drag,p)}return}
       if(ctl==='turn'&&sel){const G=gizmo();if(G&&G.dial){const b=byId(sel.id);drag={type:'turn',ry0:b.ry,base:G.base,up:G.up,a0:null};drag.a0=dialAngle(drag,p)}return}
+      if(ctl==='horizon'&&!pick(p[0],p[1])){drag={type:'horizon',p,cv:{...st().cv}};interacting=true;return}
       if(e.button===1||e.altKey&&!pick(p[0],p[1])){drag={type:'pan',p,ox:view.ox,oy:view.oy};return}
       const edge=K.curvi&&pickEdge(p[0],p[1]);
       const h=pick(p[0],p[1]);
-      if(h){let b=byId(h.id);if(e.altKey){const c=dupe(b);b=c;h.id=c.id;h.k=0}sel={id:h.id,k:h.k};const vert=e.shiftKey;
-        drag={type:'move',id:h.id,p,hit:h.hit,start:{x:b.x,y:b.y,z:b.z},vert,rest:Math.abs(b.y-supportUnder(st(),b))<1e-6,edge,moved:false};render();sync();return}
-      drag={type:'look',p,yaw:st().yaw,pitch:st().pitch,moved:false,edge}}
+      if(h){interacting=true;let b=byId(h.id);if(e.altKey){const c=dupe(b);b=c;h.id=c.id;h.k=0}sel={id:h.id,k:h.k};const vert=e.shiftKey;
+        const [X0,Y0]=fromSvg(p[0],p[1]),Ey=K.E[1];let ph=h.hit[1],g0=h.hit;if(Math.abs(rayDir(K,X0,Y0)[1])<.15)for(const y of [b.y,b.y+b.h].sort((u,v)=>Math.abs(v-Ey)-Math.abs(u-Ey))){const g=planeHit(K,X0,Y0,[0,y,0],[0,1,0]);if(g&&Math.abs(y-Ey)>Math.abs(ph-Ey)){ph=y;g0=g;break}}
+        // grabbed right at eye level: no level plane can follow the hand, so slide it sideways on an upright plane facing you
+        const fw=mv(K.C,[0,0,1]),side=Math.abs(rayDir(K,X0,Y0)[1])<.02&&Math.abs(ph-Ey)<1e-6&&len([fw[0],0,fw[2]])>1e-6?unit([fw[0],0,fw[2]]):null;
+        drag={type:'move',id:h.id,p,hit:h.hit,ph,g0,side,start:{x:b.x,y:b.y,z:b.z},vert,rest:Math.abs(b.y-supportUnder(st(),b))<1e-6,edge,moved:false};render();sync();return}
+      cancelAnimationFrame(glide);interacting=true;
+      // empty space: walk round what you're looking at (Shift or right-drag looks around from where you stand)
+      const F=focus(),E=K.E,r=len(sub(E,F));
+      if(e.shiftKey||e.button===2||r<24){drag={type:'look',p,yaw:st().yaw,pitch:st().pitch,moved:false,edge};return}
+      drag={type:'orbit',p,F,r,az:Math.atan2(E[0]-F[0],E[2]-F[2])*R2D,el:Math.asin(clamp((E[1]-F[1])/r,-1,1))*R2D,moved:false,edge}}
     function move(e){const p=ev(e);if(touches.has(e.pointerId))touches.set(e.pointerId,p);
       if(!drag){const h=pick(p[0],p[1]),id=h&&h.id;if((hover&&hover.id)!==id){hover=h;paint()}els.wrap.style.cursor=e.target.closest('.pv-handle')?'':h?'grab':'';return}
       const dx=p[0]-(drag.p?.[0]??0),dy=p[1]-(drag.p?.[1]??0);if(Math.hypot(dx,dy)>3)drag.moved=true;const K=camera(),pv=st();
@@ -918,20 +979,38 @@
         view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;paint();return}
       if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;paint();return}
       if(drag.type==='cv'){set({cv:{x:r1(drag.cv.x+dx/view.s),y:r1(drag.cv.y-dy/view.s)}});paint();return}
-      if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;set({yaw:wrap180(drag.yaw-dx*k),pitch:clamp(drag.pitch+dy*k,-lim,lim)});paint();return}
-      if(drag.type==='vp'){aimAt(drag.dir,fromSvg(p[0],p[1]));paint();return}
+      if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;let pitch=clamp(drag.pitch+dy*k,-lim,lim);const y=detentYaw(wrap180(drag.yaw-dx*k));snapNote=null;
+        if(st().show.snap&&!e.ctrlKey&&!e.metaKey){if(Math.abs(pitch)<2){pitch=0;snapNote={text:'LEVEL · VERTICALS PARALLEL',p}}if(y.name)snapNote={text:y.name+(pitch===0?' · LEVEL':''),p}}
+        set({yaw:st().show.snap&&!e.ctrlKey&&!e.metaKey?y.yaw:wrap180(drag.yaw-dx*k),pitch});paint();return}
+      if(drag.type==='orbit'){const k=.3,lim=88,F=drag.F,r=drag.r;let az=drag.az-dx*k,el=clamp(drag.el+dy*k,-lim,lim);snapNote=null;
+        let yaw=wrap180(az+180),pitch=-el;const free=!st().show.snap||e.ctrlKey||e.metaKey;
+        if(!free){const y=detentYaw(yaw);if(y.name){yaw=y.yaw;az=yaw-180;snapNote={text:y.name,p}}if(Math.abs(pitch)<2.5){pitch=0;snapNote={text:(snapNote?snapNote.text+' · ':'')+'LEVEL · VERTICALS PARALLEL',p}}
+          if(K.curvi&&Math.abs(pitch)>86){pitch=Math.sign(pitch)*90;snapNote={text:pitch>0?'STRAIGHT UP · 5-POINT':'STRAIGHT DOWN',p}}}
+        const ce=Math.cos(el*D2R);let E=[F[0]+r*Math.sin(az*D2R)*ce,F[1]+r*Math.sin(el*D2R),F[2]+r*Math.cos(az*D2R)*ce];if(E[1]<1)E[1]=1;
+        set({eye:{x:E[0],y:E[1],z:E[2]},yaw,pitch:clamp(pitch,K.curvi?-90:-80,K.curvi?90:80)});paint();return}
+      if(drag.type==='horizon'){const R=canvasRect(),G=circleOf(K,mv(K.CT,[0,1,0]));if(!G||G.type!=='line')return;const H=st().canvas.h,h0=G.p[1]+G.p[0]*0;   // horizon height above the centre of vision
+        let yc=(R.y+R.h-p[1])/view.s;snapNote=null;if(st().show.snap&&!e.ctrlKey&&!e.metaKey)for(const f of compFractions())if(Math.abs(yc-f*H)*view.s<9){yc=f*H;snapNote={text:'HORIZON '+compName(f),p};break}
+        set({cv:{x:st().cv.x,y:yc-H/2-h0}});paint();return}
+      if(drag.type==='vp'){let t=fromSvg(p[0],p[1]);snapNote=null;if(st().show.snap&&!e.ctrlKey&&!e.metaKey){const {w,h}=st().canvas,[u,v]=onCanvas(t);
+          for(const [x,name] of [[0,'VP ON THE LEFT EDGE'],[w,'VP ON THE RIGHT EDGE'],[w/2,'VP ON THE CENTRE LINE']])if(Math.abs(u-x)*view.s<9){t=[t[0]+x-u,t[1]];snapNote={text:name,p};break}
+          for(const [y,name] of [[0,'VP ON THE BOTTOM EDGE'],[h,'VP ON THE TOP EDGE']])if(Math.abs(v-y)*view.s<9){t=[t[0],t[1]+y-v];snapNote={text:name,p};break}}
+        aimAt(drag.dir,t);paint();return}
       if(drag.type==='face'){stretch(drag,p);paint();return}
-      if(drag.type==='turn'){turnBy(drag,p);paint();return}
+      if(drag.type==='turn'){turnBy(drag,p,e.shiftKey);paint();return}
       if(drag.type==='move'){if(!drag.moved)return;const [X,Y]=fromSvg(p[0],p[1]),b=byId(drag.id);let q;
         if(drag.vert){const f=mv(K.C,[0,0,1]),n=unit([f[0],0,f[2]]);q=planeHit(K,X,Y,drag.hit,len(n)?n:[0,0,1]);if(!q)return;setBox(drag.id,{y:Math.max(0,snap(drag.start.y+q[1]-drag.hit[1]))})}
-        else{q=planeHit(K,X,Y,drag.hit,[0,1,0]);if(!q||len(sub(q,K.E))>5000)return;let nb={...b,x:snap(drag.start.x+q[0]-drag.hit[0]),z:snap(drag.start.z+q[2]-drag.hit[2])};if(drag.rest)nb.y=supportUnder(st(),nb);
-          if(st().show.snap&&!e.ctrlKey&&!e.metaKey){const f=flush(st(),nb);nb={...nb,x:f.x,z:f.z};snapCue=f.cue;if(drag.rest)nb.y=supportUnder(st(),nb)}else snapCue=null;setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
+        else{q=drag.side?planeHit(K,X,Y,drag.g0,drag.side):planeHit(K,X,Y,[0,drag.ph,0],[0,1,0]);if(!q||len(sub(q,K.E))>20*len(sub(drag.g0,K.E))+60)return;let nb={...b,x:snap(drag.start.x+q[0]-drag.g0[0]),z:snap(drag.start.z+q[2]-drag.g0[2])};if(drag.rest)nb.y=supportUnder(st(),nb);
+          snapNote=null;if(st().show.snap&&!e.ctrlKey&&!e.metaKey){const f=flush(st(),nb);nb={...nb,x:f.x,z:f.z};snapCue=f.cue;if(f.cue)snapNote={text:'FLUSH',p};if(drag.rest)nb.y=supportUnder(st(),nb);
+            if(!f.cue){const c=compSnap(K,nb);if(c){nb={...nb,x:c.x,z:c.z};snapNote={text:c.name,p};if(drag.rest)nb.y=supportUnder(st(),nb)}}}else snapCue=null;setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
         paint()}}
-    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;if(snapCue||d.type==='face'||d.type==='turn'){snapCue=null;liveDim=null;render();sync()}
-      if(!d.moved&&(d.type==='look'||d.type==='move')){if(d.edge&&(d.type==='look'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'){sel=null;pin=null}render();sync()}
+    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;interacting=false;snapNote=null;snapCue=null;liveDim=null;render();sync();renderShots();
+      if(!d.moved&&(d.type==='look'||d.type==='orbit'||d.type==='move')){if(d.edge&&(d.type==='look'||d.type==='orbit'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'||d.type==='orbit'){sel=null;pin=null}render();sync()}
       commitChange()}
-    const wrap180=a=>((a+180)%360+360)%360-180;
-    function wheel(e){e.preventDefault();const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;paint()}
+    const wrap180=a=>((a+180)%360+360)%360-180;let wheelOpen=false,wheelTimer=0,wheelIdle=0;
+    function wheel(e){e.preventDefault();if(!e.ctrlKey&&!e.altKey&&!e.metaKey){cancelAnimationFrame(glide);const pv=st(),F=focus(),E=[pv.eye.x,pv.eye.y,pv.eye.z],v=sub(E,F),r=len(v);if(r<1e-6)return;
+        const r1=clamp(r*Math.exp(e.deltaY*.0012),6,6000),Q=add(F,scl(v,r1/r));if(!wheelOpen){beginChange();wheelOpen=true}clearTimeout(wheelTimer);wheelTimer=setTimeout(()=>{wheelOpen=false;commitChange();render();sync();renderShots()},260);
+        set({eye:{x:Q[0],y:Math.max(1,Q[1]),z:Q[2]}});interacting=true;paint();clearTimeout(wheelIdle);wheelIdle=setTimeout(()=>{interacting=false;paint()},200);return}
+      const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;paint()}
     // turn your head until world direction v lands under the pointer (Gauss–Newton on yaw and pitch)
     function aimAt(v,target){let y=st().yaw,p=st().pitch;const f=(yy,pp)=>{const K=camera({...st(),yaw:yy,pitch:pp}),c=mv(K.CT,v);return dirImg(K,c)};
       for(let it=0;it<8;it++){const q=f(y,p);if(!q)break;const r=[q[0]-target[0],q[1]-target[1]];if(Math.hypot(...r)<1e-3)break;const h=1e-3,qy=f(y+h,p),qp=f(y,p+h);if(!qy||!qp)break;
@@ -956,7 +1035,7 @@
       else{const o=mv(boxR(b0),[F[0]*grow/2,0,F[2]*grow/2]);patch.x=r1(b0.x+o[0]);patch.z=r1(b0.z+o[2])}
       setBox(b0.id,patch);liveDim={f:d.f,text:`${{w:'WIDTH',h:'HEIGHT',d:'DEPTH'}[dim]} ${fmtIn(patch[dim]).toUpperCase()}`}}
     function dialAngle(d,p){const K=camera(),[X,Y]=fromSvg(p[0],p[1]),q=planeHit(K,X,Y,d.base,d.up);if(!q)return null;const v=sub(q,d.base);return Math.atan2(v[0],v[2])*R2D}
-    function turnBy(d,p){const a=dialAngle(d,p);if(a==null||d.a0==null)return;let ry=wrap180(d.ry0+a-d.a0);if(st().show.snap)ry=Math.round(ry/5)*5;setBox(sel.id,{ry});liveDim={f:'turn',text:`TURN ${Math.round(ry)}°`}}
+    function turnBy(d,p,fine){const a=dialAngle(d,p);if(a==null||d.a0==null)return;let ry=wrap180(d.ry0+a-d.a0);if(st().show.snap)ry=Math.round(ry/(fine?1:15))*(fine?1:15);setBox(sel.id,{ry});liveDim={f:'turn',text:`TURN ${Math.round(ry)}°`}}
     // flush: a moved box clicks against its neighbours' faces (touching or lined up) when it comes within a few inches
     function flush(pv,nb){const th=(nb.ry||0)*D2R,toL=([x,z])=>[x*Math.cos(th)-z*Math.sin(th),x*Math.sin(th)+z*Math.cos(th)],toW=([x,z])=>[x*Math.cos(th)+z*Math.sin(th),-x*Math.sin(th)+z*Math.cos(th)];
       const [mx,mz]=toL([nb.x,nb.z]),hw=nb.w/2,hd=nb.d/2,TOLS=4;let best={x:null,z:null},cue=null;
@@ -968,13 +1047,90 @@
       const lx=best.x?best.x.t:mx,lz=best.z?best.z.t:mz,[x,z]=toW([lx,lz]);if(best.x||best.z)cue=(best.x||best.z).id;return{x:r1(x*1e4)/1e4,z:r1(z*1e4)/1e4,cue}}
     // turn to look straight at the selected copy, or at the middle of everything
     function aim(){const pv=st(),K=camera(pv),list=sceneOf(pv,K),I=selInstance(list),pts=I?[add(I.t,mv(I.R,[0,I.h/2,0]))]:list.map(I=>add(I.t,mv(I.R,[0,I.h/2,0])));if(!pts.length)return;
-      const c=scl(pts.reduce(add,[0,0,0]),1/pts.length),v=sub(c,K.E),lim=K.curvi?90:80;set({yaw:r1(Math.atan2(v[0],v[2])*R2D*100)/100,pitch:clamp(Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D,-lim,lim),cv:{x:0,y:0}})}
+      const c=scl(pts.reduce(add,[0,0,0]),1/pts.length),v=sub(c,K.E),lim=K.curvi?90:80,yaw=r1(Math.atan2(v[0],v[2])*R2D*100)/100;
+      if(pv.pitch===0&&!(pv.roll)){set({yaw,cv:{x:0,y:0}});const K2=camera(),q=img(K2,toCam(K2,c));set({cv:{x:0,y:q?r1(-q[1]*100)/100:0}});return}
+      set({yaw,pitch:clamp(Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D,-lim,lim),cv:{x:0,y:0}})}
+    // what you're looking at: the selected box, or the middle of everything
+    function focus(){const pv=st(),K=camera(pv),list=lastFrame?lastFrame.list:sceneOf(pv,K),I=selInstance(list),src=I?[I]:list;if(!src.length)return add(K.E,mv(K.C,[0,0,100]));
+      const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];src.forEach(J=>J.P.forEach(q=>{for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],q[k]);hi[k]=Math.max(hi[k],q[k])}}));return scl(add(lo,hi),.5)}
+    // the way the subject faces: the selected box, or the first one
+    const subjectYaw=()=>{const b=(sel&&byId(sel.id))||st().boxes[0];return b?b.ry||0:0};
+    // the view directions a painter reaches for click into place: square on (one point), 45° and 30/60 corners (two point)
+    function detentYaw(yaw){const rel=((yaw-subjectYaw())%90+90)%90;for(const [d,name] of [[0,'1-POINT · SQUARE ON'],[90,'1-POINT · SQUARE ON'],[45,'2-POINT · 45°'],[30,'2-POINT · 30/60'],[60,'2-POINT · 30/60']])if(Math.abs(rel-d)<2.5)return{yaw:wrap180(yaw-(rel-d)),name};return{yaw}}
+    // composition lines on the canvas, as fractions of its width and height
+    const compFractions=()=>{const S=st().show,f=[.5];if(S.thirds)f.push(1/3,2/3);if(S.golden)f.push(.382,.618);return f};
+    const compName=f=>Math.abs(f-.5)<1e-9?'CENTRED':Math.abs(f-1/3)<1e-9||Math.abs(f-2/3)<1e-9?'ON THE THIRDS':'GOLDEN SECTION';
+    let snapNote=null;
+    // glide the camera to a new view: eased, shortest way round, undoable as one step
+    let glide=0;
+    function glideTo(target,ms=560){cancelAnimationFrame(glide);const pv=st(),from={eye:{...pv.eye},yaw:pv.yaw,pitch:pv.pitch,roll:pv.roll||0,dist:pv.dist,cv:{...pv.cv}};beginChange();if(target.proj&&target.proj!==pv.proj)set({proj:target.proj});
+      const done=()=>{glide=0;set({eye:{...target.eye},yaw:target.yaw,pitch:target.pitch,roll:target.roll||0,dist:target.dist,cv:{...target.cv}});render();sync();commitChange();renderShots()};
+      if(ms<=0||matchMedia('(prefers-reduced-motion: reduce)').matches){done();return}
+      const t0=performance.now(),dy=wrap180(target.yaw-from.yaw),step=now=>{const u=Math.min(1,(now-t0)/ms),e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,L=(a,b)=>a+(b-a)*e;
+        if(u>=1){done();return}interacting=true;set({eye:{x:L(from.eye.x,target.eye.x),y:L(from.eye.y,target.eye.y),z:L(from.eye.z,target.eye.z)},yaw:wrap180(from.yaw+dy*e),pitch:L(from.pitch,target.pitch),roll:L(from.roll,target.roll||0),dist:from.dist*Math.pow(target.dist/from.dist,e),cv:{x:L(from.cv.x,target.cv.x),y:L(from.cv.y,target.cv.y)}});render();interacting=false;glide=requestAnimationFrame(step)};
+      glide=requestAnimationFrame(step)}
+    function compSnap(K,b){const pv=st(),c=[b.x,b.y+b.h/2,b.z],q=img(K,toCam(K,c));if(!q)return null;const [u,v]=onCanvas(q),fr=compFractions();let best=null;
+      fr.forEach(fx=>fr.forEach(fy=>{const d=Math.hypot(u-fx*pv.canvas.w,v-fy*pv.canvas.h)*view.s;if(d<11&&(!best||d<best.d))best={d,fx,fy}}));if(!best)return null;
+      const X=best.fx*pv.canvas.w-pv.canvas.w/2-pv.cv.x,Y=best.fy*pv.canvas.h-pv.canvas.h/2-pv.cv.y,w=planeHit(K,X,Y,c,[0,1,0]);if(!w)return null;
+      return{x:w[0],z:w[2],name:Math.abs(best.fx-.5)<1e-9&&Math.abs(best.fy-.5)<1e-9?'CENTRED':compName(best.fx===.5?best.fy:best.fx)}}
+    /* ----- shots ----- */
+    // fov is degrees across the canvas width; rel is how far round from square-on to the subject
+    const SHOTS=[
+      {id:'eye',name:'Eye level',sub:'1-point',spec:{rel:0,level:true,eyeY:'auto',fov:46,proj:'linear'}},
+      {id:'corner',name:'Corner',sub:'2-point',spec:{rel:35,level:true,eyeY:'auto',fov:50,proj:'linear'}},
+      {id:'worm',name:'Worm’s eye',sub:'3-point up',spec:{rel:35,eyeY:6,aim:true,fov:68,proj:'linear'}},
+      {id:'bird',name:'Bird’s eye',sub:'3-point down',spec:{rel:35,elev:52,aim:true,fov:46,proj:'linear'}},
+      {id:'dutch',name:'Dutch tilt',sub:'tension',spec:{rel:28,eyeY:30,aim:true,fov:58,roll:14,proj:'linear'}},
+      {id:'long',name:'Long lens',sub:'flat, calm',spec:{rel:30,level:true,eyeY:'auto',fov:16,proj:'linear'}},
+      {id:'fisheye',name:'Fisheye',sub:'4-point wrap',spec:{rel:20,level:true,eyeY:'auto',fov:170,proj:'curvi'}},
+      {id:'up',name:'Straight up',sub:'5-point',spec:{up:true,fov:180,proj:'curvi'}}];
+    const lensDist=(spec,W)=>spec.proj==='curvi'?W/(4*Math.tan(spec.fov/4*D2R)):W/(2*Math.tan(spec.fov/2*D2R));
+    // the camera for a shot: pointed the shot's way, then the nearest distance at which the whole scene fits 82% of the canvas,
+    // with the lens shifted (not tilted) to centre it, so level shots keep their verticals; level shots put the horizon on a third when the scene still fits
+    function frameShot(spec,pv=st()){const W=pv.canvas.w,H=pv.canvas.h,dist=lensDist(spec,W),list=sceneOf(pv,camera(pv)),pts=list.flatMap(I=>I.P);if(!pts.length)return null;
+      const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];pts.forEach(q=>{for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],q[k]);hi[k]=Math.max(hi[k],q[k])}});const F=scl(add(lo,hi),.5),R=len(sub(hi,lo))/2,psi=subjectYaw();
+      const eyeY=spec.eyeY==='auto'?clamp(hi[1]+.3*(hi[1]-lo[1]),8,62):spec.eyeY;
+      // straight up: lying on your back, at the middle of a ring or arch if there is one, otherwise just beside the subject
+      if(spec.up){const piv=pv.boxes.map(b=>b.arr&&b.arr.pivot).find(Boolean),K0=camera(pv),off=[K0.E[0]-F[0],0,K0.E[2]-F[2]],o=len(off)>1e-6?scl(off,1/len(off)):[0,0,-1],E=piv?[piv.x,6,piv.z]:add(F,scl(o,R*.9));
+        return{eye:{x:E[0],y:6,z:E[2]},yaw:wrap180(psi),pitch:90,roll:0,dist,proj:'curvi',cv:{x:0,y:0}}}
+      const make=r=>{let yaw=psi+spec.rel,pitch=0,E;const a=yaw*D2R;
+        if(spec.elev!=null){const el=spec.elev*D2R;E=[F[0]-r*Math.cos(el)*Math.sin(a),F[1]+r*Math.sin(el),F[2]-r*Math.cos(el)*Math.cos(a)]}else E=[F[0]-r*Math.sin(a),eyeY,F[2]-r*Math.cos(a)];
+        if(spec.aim||spec.elev!=null){const v=sub(F,E);yaw=Math.atan2(v[0],v[2])*R2D;pitch=Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D}
+        const cam={eye:{x:E[0],y:Math.max(1,E[1]),z:E[2]},yaw:wrap180(yaw),pitch,roll:spec.roll||0,dist,proj:spec.proj},K=camera({...pv,...cam,cv:{x:0,y:0}});let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,bad=false;
+        pts.forEach(q=>{const c=toCam(K,q),i=img(K,c);if(!i||(!K.curvi&&c[2]<NEAR)){bad=true;return}x0=Math.min(x0,i[0]);x1=Math.max(x1,i[0]);y0=Math.min(y0,i[1]);y1=Math.max(y1,i[1])});return{cam,bad,x0,x1,y0,y1}};
+      // level shots put the horizon on a third first (the upper one when the subject is below your eye), then find the distance that fits around it
+      let third=null;if(spec.level){const far=make(R*20+600);third=(far.y0+far.y1)/2<0?H/6:-H/6}const m6=H*.06;
+      const fits=f=>!f.bad&&f.x1-f.x0<=W*.82&&(third==null?f.y1-f.y0<=H*.82:f.y0+third>=-H/2+m6&&f.y1+third<=H/2-m6);
+      let a=Math.max(1,R*.3),b=R*80+600,best=null;for(let i=0;i<48;i++){const m=Math.sqrt(a*b),f=make(m);if(fits(f)){best=f;b=m}else a=m}if(!best)best=make(b);
+      let cvx=-(best.x0+best.x1)/2,cvy=third==null?-(best.y0+best.y1)/2:third;
+      return{...best.cam,cv:{x:r1(cvx*100)/100,y:r1(cvy*100)/100}}}
+    // a small picture of a shot: lit faces and edges, painter's order, and the horizon
+    function thumbSvg(cam,pv=st()){const P={...pv,...cam},K=camera(P),W=P.canvas.w,H=P.canvas.h,k=104/Math.max(W,H),tw=W*k,th=H*k,f=v=>v.toFixed(1);
+      const at=q=>[(q[0]+P.cv.x+W/2)*k,(H/2-q[1]-P.cv.y)*k],seg=(A,B)=>{const n=K.curvi?10:2,out=[];for(let i=0;i<n;i++){const q=img(K,toCam(K,lerp(A,B,i/(n-1))));if(!q||Math.hypot(...q)>40*K.D)return null;out.push(at(q))}return out};
+      let body='';const G=circleOf(K,mv(K.CT,[0,1,0]));if(G){if(G.type==='line'){const [px,py]=G.p,[dx,dy]=G.d,l=Math.hypot(dx,dy),A=at([px-dx/l*1e3,py-dy/l*1e3]),B=at([px+dx/l*1e3,py+dy/l*1e3]);body+=`<path class="th-hz" d="M${f(A[0])},${f(A[1])}L${f(B[0])},${f(B[1])}"/>`}
+        else{const c=at(G.c);body+=`<circle class="th-hz" cx="${f(c[0])}" cy="${f(c[1])}" r="${f(G.r*k)}"/>`}}
+      sceneOf(P,K).sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>seg(I.P[a],I.P[b])),front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});
+        FACES.forEach((F,fi)=>{if(!front[fi])return;let ring=[];for(let j=0;j<4;j++){const {e,rev}=EI[F.c[j]*8+F.c[(j+1)%4]],q=polys[e];if(!q)return;ring=ring.concat(rev?[...q].reverse():q)}
+          const n=mv(I.R,F.n),t=dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';body+=`<path class="th-${t}" d="M${ring.map(q=>f(q[0])+','+f(q[1])).join('L')}Z"/>`});
+        body+=`<path class="th-edge" d="${polys.map((q,e)=>q&&EDGE_FACES[e].some(x=>front[x])?'M'+q.map(v=>f(v[0])+','+f(v[1])).join('L'):'').join('')}"/>`});
+      return`<svg viewBox="0 0 ${f(tw)} ${f(th)}" width="${f(tw)}" height="${f(th)}" aria-hidden="true"><rect class="th-bg" width="${f(tw)}" height="${f(th)}"/>${body}</svg>`}
+    let shotKey='',shotTimer=0,shotCams={},activeShot=null;const shotBar=$('#pvShots');
+    shotBar.innerHTML=SHOTS.map(S=>`<button type="button" class="pv-shot" data-shot="${S.id}" title="${S.name}: ${S.sub}"><span class="pv-shot-pic"></span><b>${S.name}</b><small>${S.sub}</small></button>`).join('');
+    // thumbnails only change with the scene and the canvas, not with where you're standing
+    function renderShots(){clearTimeout(shotTimer);shotTimer=setTimeout(()=>{if(state.app!=='perspective'||drag)return;const pv=st(),key=JSON.stringify([pv.boxes,pv.canvas,sel&&sel.id]);if(key===shotKey)return;shotKey=key;
+      SHOTS.forEach(S=>{const cam=frameShot(S.spec);shotCams[S.id]=cam;const b=shotBar.querySelector(`[data-shot="${S.id}"] .pv-shot-pic`);if(b)b.innerHTML=cam?thumbSvg(cam):''})},120)}
+    shotBar.addEventListener('click',e=>{const b=e.target.closest('[data-shot]');if(!b)return;const S=SHOTS.find(S=>S.id===b.dataset.shot),cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;glideTo(cam);
+      shotBar.querySelectorAll('.pv-shot').forEach(x=>x.classList.toggle('active',x===b))});
     function nextId(){return Math.max(0,...st().boxes.map(b=>b.id))+1}
-    function addBox(at){const K=camera(),f=mv(K.C,[0,0,1]),hz=len([f[0],0,f[2]])>1e-6?unit([f[0],0,f[2]]):[0,0,1],s=18,p=at||{x:snap(K.E[0]+hz[0]*72),z:snap(K.E[2]+hz[2]*72)};
-      const b=box(nextId(),p.x,0,p.z,s,{ry:r1(Math.atan2(hz[0],hz[2])*R2D)});b.y=supportUnder({...st(),boxes:[...st().boxes,b]},b);set({boxes:[...st().boxes,b]});sel={id:b.id,k:0};pin=null;render();sync();return b}
+    function addBox(at){const K=camera(),f=mv(K.C,[0,0,1]),hz=len([f[0],0,f[2]])>1e-6?unit([f[0],0,f[2]]):[0,0,1],s=18,src=!at&&sel&&byId(sel.id);let b;
+      if(src){const o=mv(boxR(src),[src.w,0,0]);b={...structuredClone(src),id:nextId(),x:r1(src.x+o[0]),z:r1(src.z+o[2]),arr:{...ARR}}}
+      else{const rt=[hz[2],0,-hz[0]],clear=(x,z)=>supportUnder({...st(),boxes:[...st().boxes,{...box(-1,x,0,z,s),ry:0}]},{...box(-1,x,0,z,s),ry:0})===0;let p=at;
+        if(!p)for(const k of [0,1.4,-1.4,2.8,-2.8,4.2,-4.2,5.6]){const x=snap(K.E[0]+hz[0]*72+rt[0]*k*s),z=snap(K.E[2]+hz[2]*72+rt[2]*k*s);if(clear(x,z)){p={x,z};break}}
+        p=p||{x:snap(K.E[0]+hz[0]*72),z:snap(K.E[2]+hz[2]*72)};b=box(nextId(),p.x,0,p.z,s,{ry:r1(Math.atan2(hz[0],hz[2])*R2D)})}b.y=src?src.y:supportUnder({...st(),boxes:[...st().boxes,b]},b);set({boxes:[...st().boxes,b]});sel={id:b.id,k:0};pin=null;render();sync();return b}
     function dupe(b){const R=boxR(b),o=mv(R,[b.w+6,0,0]),c={...structuredClone(b),id:nextId(),x:r1(b.x+o[0]),z:r1(b.z+o[2])};set({boxes:[...st().boxes,c]});sel={id:c.id,k:0};return c}
     function remove(){if(!sel)return;beginChange();set({boxes:st().boxes.filter(b=>b.id!==sel.id)});sel=null;pin=null;render();sync();commitChange()}
     function key(e){const k=e.key,b=sel&&byId(sel.id);
+      if(k==='Escape'&&refMode()){setRef(false);return}
       if(k==='Escape'){sel=null;pin=null;render();sync();return}
       if(k==='f'||k==='F'){fit(true);render();return}
       if(k==='a'||k==='A'){beginChange();aim();render();sync();commitChange();return}
@@ -1004,14 +1160,16 @@
     const CANVASES=[[16,20],[18,24],[24,30],[24,36],[30,40],[36,48],[48,48],[48,60],[48,72],[48,96]];
     const sizeOptions=wide=>CANVASES.map(([w,h])=>{const [a,b]=wide?[h,w]:[w,h];return`<option value="${w}x${h}">${a} × ${b} in${w===48&&h===96?' · 4 × 8 ft':''}</option>`}).join('')+'<option value="custom">Custom…</option>';let sizesWide=null;
     q('pvScene').innerHTML=Object.entries(SCENES).map(([k,S])=>`<option value="${k}">${S.name}</option>`).join('');
-    const ranges={pvDist:['dist',v=>v],pvEye:['eye',v=>({...st().eye,y:v})],pvPitch:['pitch',v=>v],pvYaw:['yaw',v=>v]};
-    Object.entries(ranges).forEach(([id,[k,f]])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{set({[k]:f(+el.value)});render();sync(id)})});
+    const ranges={pvEye:['eye',v=>({...st().eye,y:v})],pvPitch:['pitch',v=>v],pvYaw:['yaw',v=>v],pvRoll:['roll',v=>v]};
+    Object.entries(ranges).forEach(([id,[k,f]])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{set({[k]:f(+el.value)});paint();sync(id)})});
+    {const el=q('pvDist');rangeHistory(el);el.addEventListener('input',()=>{const pv=st(),D1=+el.value,F=focus(),E=[pv.eye.x,pv.eye.y,pv.eye.z],v=sub(E,F),r=len(v),Q=r>1e-6?add(F,scl(v,D1/pv.dist)):E;
+      set({dist:D1,eye:{x:Q[0],y:Math.max(1,Q[1]),z:Q[2]}});paint();sync('pvDist')})}
     const boxRanges={pvRy:'ry',pvRx:'rx'},arrRanges={pvCount:'n',pvGap:'gap',pvRows:'n2',pvSpan:'span'};
     Object.entries(boxRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{[k]:+el.value});render();sync(id)})});
     Object.entries(arrRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{arr:{[k]:+el.value}});render();sync(id)})});
     const nums={pvW:'w',pvH:'h',pvD:'d',pvY:'y'};
     Object.entries(nums).forEach(([id,k])=>q(id).addEventListener('change',e=>{if(!sel)return;const v=Math.max(k==='y'?0:.5,+e.target.value||0);beginChange();setBox(sel.id,{[k]:v});render();sync();commitChange()}));
-    q('pvArr').addEventListener('change',e=>{if(!sel)return;beginChange();const t=e.target.value,b=byId(sel.id),patch={type:t};if((t==='ring'||t==='arch')&&b.arr.type!==t)patch.span=t==='ring'?360:180;if(t!=='none'&&b.arr.n<2)patch.n=6;setBox(sel.id,{arr:patch});sel.k=0;render();sync();commitChange()});
+    q('pvArr').addEventListener('change',e=>{if(!sel)return;beginChange();const t=e.target.value,b=byId(sel.id),patch={type:t};if((t==='ring'||t==='arch')&&b.arr.type!==t){patch.span=t==='ring'?360:180;patch.pivot={...st().eye}}if(t!=='none'&&b.arr.n<2)patch.n=6;setBox(sel.id,{arr:patch});sel.k=0;render();sync();commitChange()});
     $$('#pvAxis button').forEach(b=>b.addEventListener('click',()=>{if(!sel)return;beginChange();setBox(sel.id,{arr:{axis:b.dataset.v}});render();sync();commitChange()}));
     $$('#pvProj button').forEach(b=>b.addEventListener('click',()=>{if(st().proj===b.dataset.v)return;beginChange();set({proj:b.dataset.v,pitch:clamp(st().pitch,-80,80)});pin=null;render();sync();commitChange()}));
     q('pvScene').addEventListener('change',e=>{beginChange();state.pv=fromScene(e.target.value);sel=null;pin=null;hover=null;fit(true);render();sync();commitChange()});
@@ -1022,25 +1180,31 @@
     q('pvDup').addEventListener('click',()=>{const b=sel&&byId(sel.id);if(!b)return;beginChange();dupe(b);render();sync();commitChange()});
     q('pvDel').addEventListener('click',remove);
     q('pvFit').addEventListener('click',()=>{fit(true);render()});
+    let wake=null;
+    function setRef(on){document.body.classList.toggle('pv-ref',on);try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
+      try{if(on&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen?.().catch(()=>{})}catch{}}
+    $('#pvRefBtn').addEventListener('click',()=>setRef(!refMode()));$('#pvRefExit').addEventListener('click',()=>setRef(false));
+    els.wrap.addEventListener('contextmenu',e=>{if(state.app==='perspective')e.preventDefault()});
     q('pvAim').addEventListener('click',()=>{beginChange();aim();render();sync();commitChange()});
     $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));
     function sync(skip){const pv=st(),K=camera(pv),val=(id,v)=>{if(id!==skip)q(id).value=v};
       val('pvScene',pv.scene in SCENES?pv.scene:'blank');const wide=pv.canvas.w>pv.canvas.h;if(sizesWide!==wide){q('pvCanvas').innerHTML=sizeOptions(wide);sizesWide=wide}const ck=Math.min(pv.canvas.w,pv.canvas.h)+'x'+Math.max(pv.canvas.w,pv.canvas.h),known=CANVASES.some(([w,h])=>w+'x'+h===ck);q('pvCanvas').value=known?ck:'custom';q('pvCustom').hidden=known;val('pvCw',pv.canvas.w);val('pvCh',pv.canvas.h);
-      val('pvDist',pv.dist);q('pvDistValue').textContent=`${fmtIn(pv.dist)} · ${fov(K)}° across`;
+      val('pvDist',pv.dist);q('pvDistValue').textContent=`${fov(K)}° across · reads true ${fmtIn(pv.dist)} back`;
       $$('#pvProj button').forEach(b=>b.classList.toggle('active',b.dataset.v===pv.proj));
       q('pvProjNote').textContent=K.curvi?'Every straight edge becomes an exact circular arc. Wraps all the way round: over your head, beside you, behind.':'Straight edges stay straight. Honest inside the 60° circle; past 90° it stretches, and it can’t show anything beside or behind you.';
-      val('pvEye',pv.eye.y);q('pvEyeValue').textContent=fmtIn(pv.eye.y);q('pvPitch').min=K.curvi?-90:-80;q('pvPitch').max=K.curvi?90:80;val('pvPitch',pv.pitch);q('pvPitchValue').textContent=`${Math.round(pv.pitch)}°`;val('pvYaw',pv.yaw);q('pvYawValue').textContent=`${Math.round(pv.yaw)}°`;
+      val('pvEye',pv.eye.y);q('pvEyeValue').textContent=fmtIn(pv.eye.y);q('pvPitch').min=K.curvi?-90:-80;q('pvPitch').max=K.curvi?90:80;val('pvPitch',pv.pitch);q('pvPitchValue').textContent=`${Math.round(pv.pitch)}°`;val('pvYaw',pv.yaw);q('pvYawValue').textContent=`${Math.round(pv.yaw)}°`;val('pvRoll',pv.roll||0);q('pvRollValue').textContent=`${Math.round(pv.roll||0)}°`;
       const b=sel&&byId(sel.id);q('pvBoxPanel').hidden=!b;q('pvDup').disabled=q('pvDel').disabled=!b;
       if(b){val('pvW',b.w);val('pvH',b.h);val('pvD',b.d);val('pvY',r1(b.y));val('pvRy',b.ry);q('pvRyValue').textContent=`${Math.round(b.ry)}°`;val('pvRx',b.rx||0);q('pvRxValue').textContent=`${Math.round(b.rx||0)}°`;
         const a=b.arr;val('pvArr',a.type);val('pvCount',a.n);q('pvCountValue').textContent=a.type==='grid'?`${a.n} × ${a.n2}`:a.n;val('pvGap',a.gap);q('pvGapValue').textContent=fmtIn(a.gap);val('pvRows',a.n2);q('pvRowsValue').textContent=a.n2;val('pvSpan',a.span);q('pvSpanValue').textContent=`${Math.round(a.span)}°`;
         const t=a.type,showIf=(id,on)=>q(id).hidden=!on;showIf('pvCountRow',t!=='none');showIf('pvGapRow',['row','grid','tower'].includes(t));showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvAxisRow',t==='row');
         $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
+        if(t!=='none'){const n=instances(st(),b).length;q('pvArrNote').textContent+=` Copy ${Math.min(sel.k,n-1)+1} of ${n} selected: moving or resizing it changes them all.`}
         q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
       $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',!!pv.show[x.dataset.show]));q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{get frames(){return frames},gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -1317,7 +1481,7 @@
     // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
     // and inline the class rules the live page gets from CSS.
     const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
-    const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height','1400');
+    const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();const pvFrame=state.app==='perspective'?PV.frame():null;if(pvFrame){clone.querySelector('#overlayLayer')?.remove();clone.setAttribute('viewBox',`${pvFrame.x} ${pvFrame.y} ${pvFrame.w} ${pvFrame.h}`)}clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height',pvFrame?String(Math.round(1800*pvFrame.h/pvFrame.w)):'1400');
     clone.querySelectorAll('[style*="--dzw"]').forEach(n=>{const k=KIND[n.dataset.kind];if(!k)return;const dw=+n.style.getPropertyValue('--dzw'),dop=+n.style.getPropertyValue('--dzo'),w=Array.isArray(k[2])?Math.max(k[2][1],state.weight*k[2][0]*dw):k[2]*dw;n.setAttribute('style',`stroke-width:${w.toFixed(3)}px;opacity:${(k[1]*dop).toFixed(3)}`)});
     clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
     const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
@@ -1328,7 +1492,7 @@
       `.study-frame{fill:${T('canvas')};fill-opacity:.92;stroke:${T('strong')};stroke-width:1;stroke-dasharray:5 6}`,
       `.study-label,.draft-label{${label};fill:${T('muted')};paint-order:stroke;stroke:${T('canvas')};stroke-width:3px;stroke-linejoin:round}`,
       `.study-rule{stroke:${T('strong')};stroke-width:.8;stroke-dasharray:3 5}`,kindCss('',c=>T(c==='ink'?(state.darkline?'accent':'geometry'):c),state.weight)].join('\n');
-    const bg=svgEl('rect',{width:'900',height:'700',fill:T('canvas')});clone.insertBefore(bg,clone.firstChild);clone.insertBefore(style,clone.firstChild);
+    const bg=pvFrame?svgEl('rect',{x:pvFrame.x,y:pvFrame.y,width:pvFrame.w,height:pvFrame.h,fill:T('canvas')}):svgEl('rect',{width:'900',height:'700',fill:T('canvas')});clone.insertBefore(bg,clone.firstChild);clone.insertBefore(style,clone.firstChild);
     return new XMLSerializer().serializeToString(clone)}
   const saver=window.claude?.use?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);
   async function download(name,blob){const dl=await saver;if(dl){try{await dl.save({filename:name,data:blob});showToast(`Saved ${name}`)}catch(e){if(e?.code!=='declined')showToast('Save unavailable here — use Copy SVG')}return}
