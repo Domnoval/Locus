@@ -204,6 +204,236 @@ const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
   const svg = require('fs').readFileSync(await dl.path(), 'utf8');
   check('Export: no unresolved tokens, kind rules inlined, depth resolved, no lineage overlay', !svg.includes('var(--') && !svg.includes('--dz') && svg.includes('[data-kind="main"]') && !svg.includes('lineageLayer'), { tokens: (svg.match(/var\(--/g) || []).length });
 
+  // three-point (Geometry): dropping the horizon keeps a real camera; looking up swings VP 3 overhead
+  await go('cube', 'perspective'); if (await page.$eval('#autoRotateBtn', b => b.classList.contains('active'))) await page.click('#autoRotateBtn');
+  await page.click('#perspectiveMode button[data-points="3"]');
+  const drop = []; for (const h of [150, 500, 630]) { await page.$eval('#horizon', (e, h) => { e.value = h; e.dispatchEvent(new Event('input', { bubbles: true })); }, h); drop.push(await page.evaluate(() => { const c = window.__cam(), s = window.__state, x = c.vps.find(v => v.axis === 1); return { f: c.f, ab: (x.x - s.vpLeft) * (s.vpRight - x.x), vp3: x.y, h: s.horizon }; })); }
+  check('3-point: dropping the horizon never collapses the camera (f ≥ 0.6·√ab) and VP 3 flips above when you look up', drop.every(d => d.f >= 0.6 * Math.sqrt(d.ab) - 1e-6) && drop[0].vp3 > drop[0].h && drop[2].vp3 < drop[2].h, drop);
+
+  /* ---------- Perspective planner ---------- */
+  await page.click('#appMode [data-app="perspective"]');
+  {
+  const scene=id=>page.evaluate(id=>{const s=document.querySelector('#pvScene');s.value=id;s.dispatchEvent(new Event('change'))},id);
+  // 1 linear: every family of parallel edges meets exactly at its vanishing point
+  await scene('blank');
+  const lin=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,boxes:S.pv.boxes.map(b=>({...b,ry:30,rx:12})),pitch:-14,yaw:9};P.render();const K=P.camera(),I=P.sceneOf(S.pv,K)[0];
+    const im=p=>P.img(K,P.toCam(K,p)),meet=([a,b],[c,d])=>{const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]);const t=((a[0]-c[0])*(c[1]-d[1])-(a[1]-c[1])*(c[0]-d[0]))/den;return[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])]};
+    let worst=0;[1,2,4].forEach(bit=>{const fam=P.EDGES.filter(([a,b])=>(a^b)===bit).map(([a,b])=>[im(I.P[a]),im(I.P[b])]),j=bit===1?0:bit===2?1:2,v=[I.R[0][j],I.R[1][j],I.R[2][j]],c=K.CT.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]),vp=P.dirImg(K,c[2]>0?c:c.map(x=>-x));
+      fam.slice(1).forEach(f=>{const m=meet(fam[0],f);worst=Math.max(worst,Math.hypot(m[0]-vp[0],m[1]-vp[1])/Math.max(1,Math.hypot(vp[0],vp[1])))})});return worst});
+  check('Linear: every family of parallel edges meets at its vanishing point (relative miss < 1e-9)',lin<1e-9,lin);
+  // 2 curvilinear: every edge lies on its circle, in the maths and in the drawing
+  await scene('overhead');
+  const cur=await page.evaluate(()=>{const P=window.__pv,S=window.__state,K=P.camera(),list=P.sceneOf(S.pv,K);let worst=0,worstPx=0,n=0;
+    list.forEach(I=>P.EDGES.forEach(([a,b])=>{const ca=P.toCam(K,I.P[a]),cb=P.toCam(K,I.P[b]),cr=[ca[1]*cb[2]-ca[2]*cb[1],ca[2]*cb[0]-ca[0]*cb[2],ca[0]*cb[1]-ca[1]*cb[0]],l=Math.hypot(...cr),G=P.circleOf(K,cr.map(x=>x/l));if(G.type!=='circle')return;
+      for(let i=0;i<=20;i++){const t=i/20,p=I.P[a].map((v,k)=>v+(I.P[b][k]-v)*t),q=P.img(K,P.toCam(K,p));if(!q)continue;n++;worst=Math.max(worst,Math.abs(Math.hypot(q[0]-G.c[0],q[1]-G.c[1])-G.r)/G.r)}
+      const [cx,cy]=P.toSvg(G.c),rs=G.r*P.view.s;P.segPolys(K,I.P[a],I.P[b]).forEach(poly=>poly.forEach(([x,y])=>{if(x<=-1799.999||x>=2699.999||y<=-1399.999||y>=2099.999)return;worstPx=Math.max(worstPx,Math.abs(Math.hypot(x-cx,y-cy)-rs))}))}));return{worst,worstPx,n}});
+  check('Curvilinear: every edge is an exact circle (relative miss < 1e-9), and the drawn arc sits on it (< 1e-6 px)',cur.worst<1e-9&&cur.worstPx<1e-6&&cur.n>1000,cur);
+  // 3 the two projections agree near the centre
+  const agree=await page.evaluate(()=>{const P=window.__pv,S=window.__state,K1=P.camera({...S.pv,proj:'linear'}),K2=P.camera({...S.pv,proj:'curvi'}),a=1*Math.PI/180,c=[Math.sin(a),0,Math.cos(a)].map(x=>x*100),p=P.img(K1,c),q=P.img(K2,c);return Math.abs(p[0]-q[0])/p[0]});
+  check('Linear and curvilinear agree at the centre of vision (1° off: < 0.01%)',agree<1e-4,agree);
+  // 4 hidden lines: a lone cube seen from above and turned shows 9 edges and hides 3
+  await scene('blank');
+  const hl=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,boxes:S.pv.boxes.map(b=>({...b,ry:30,rx:0})),pitch:-20,yaw:0};const K=P.camera(),list=P.sceneOf(S.pv,K),I=list[0];let vis=0,hid=0;
+    P.EDGES.forEach(([a,b])=>{const r=P.runsOf(I.P[a],I.P[b],list,K);if(r.length===1&&r[0][2])vis++;else if(r.length===1&&!r[0][2])hid++});return{vis,hid}});
+  check('Hidden lines: a turned cube seen from above shows 9 edges, hides 3',hl.vis===9&&hl.hid===3,hl);
+  const occ=await page.evaluate(()=>{const P=window.__pv,S=window.__state,base=S.pv.boxes[0];S.pv={...S.pv,pitch:0,yaw:0,eye:{x:0,y:20,z:0},boxes:[{...base,id:1,x:0,y:0,z:60,w:40,h:40,d:40,ry:0,arr:{...base.arr,type:'none'}},{...base,id:2,x:0,y:10,z:160,w:10,h:10,d:10,ry:0,arr:{...base.arr,type:'none'}}]};
+    const K=P.camera(),list=P.sceneOf(S.pv,K),I=list.find(I=>I.b.id===2);return P.EDGES.every(([a,b])=>P.runsOf(I.P[a],I.P[b],list,K).every(r=>!r[2]))});
+  check('Hidden lines: a small box straight behind a big one is hidden completely',occ);
+  // 5 arrays
+  await scene('overhead');
+  const arr=await page.evaluate(()=>{const P=window.__pv,S=window.__state,E=[S.pv.eye.x,S.pv.eye.y,S.pv.eye.z],arch=P.instances(S.pv,S.pv.boxes[0]),ring=P.instances(S.pv,S.pv.boxes[1]);
+    const dist=I=>{const c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2);return Math.hypot(c[0]-E[0],c[1]-E[1],c[2]-E[2])},hd=I=>Math.hypot(I.t[0]-E[0],I.t[2]-E[2]);
+    const ad=arch.map(dist),rd=ring.map(hd),spread=a=>Math.max(...a)-Math.min(...a);
+    const ang=(A,B)=>{const u=[0,1,2].map(k=>A.t[k]-E[k]),v=[0,1,2].map(k=>B.t[k]-E[k]);return Math.acos(Math.min(1,(u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/Math.hypot(...u)/Math.hypot(...v)))};const steps=arch.slice(1).map((I,i)=>ang(arch[i],I));
+    const top=Math.max(...arch.map(I=>I.t[1]));return{n:arch.length,ns:S.pv.boxes[0].arr.n,ad:spread(ad),rd:spread(rd),step:spread(steps),top,eye:E[1]}});
+  check('Arch: the right count, all the same distance from your eye, evenly spaced, and over your head',arr.n===arr.ns&&arr.ad<1e-9&&arr.step<1e-9&&arr.top>arr.eye+40,arr);
+  check('Ring: every copy the same distance from where you stand',arr.rd<1e-9,arr.rd);
+  // 6 horizon
+  const hz=await page.evaluate(()=>{const P=window.__pv,S=window.__state,out={};for(const proj of ['linear','curvi'])for(const pitch of [0,25]){const K=P.camera({...S.pv,proj,pitch}),n=K.CT.map(r=>r[1]),G=P.circleOf(K,n);
+    out[proj+pitch]=G.type==='line'?G.p[1]-(G.d[0]?0:0):G.c[1]-G.r}out.D=S.pv.dist;return out});
+  const D=hz.D;check('Horizon: through the centre when level; drops by D·tan φ (linear) and 2D·tan(φ/2) (curvilinear) when you look up',Math.abs(hz.linear0)<1e-9&&Math.abs(hz.curvi0)<1e-9&&Math.abs(hz.linear25+D*Math.tan(25*Math.PI/180))<1e-9&&Math.abs(hz.curvi25+2*D*Math.tan(12.5*Math.PI/180))<1e-9,hz);
+  // 7 hands: drag a box, look around, undo
+  await scene('blank');await page.waitForTimeout(100);
+  const at=async (w)=>page.evaluate(w=>{const P=window.__pv,K=P.camera(),[x,y]=P.toSvg(P.img(K,P.toCam(K,w))),m=document.querySelector('#geometry').getScreenCTM(),p=new DOMPoint(x,y).matrixTransform(m);return[p.x,p.y]},w);
+  const b0=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));let [sx,sy]=await at([b0.x,b0.h,b0.z]);
+  await page.mouse.move(sx,sy);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(sx+i*12,sy);await page.mouse.up();
+  const b1=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));
+  check('Dragging a box slides it along the floor (it stays on the floor, snapped to 3 in)',Math.abs(b1.x-b0.x)>6&&b1.y===0&&b1.x%3===0,{b0:[b0.x,b0.y,b0.z],b1:[b1.x,b1.y,b1.z]});
+  await page.click('#undoBtn');const b2=await page.evaluate(()=>({...window.__state.pv.boxes[0]}));check('Undo puts the box back',b2.x===b0.x&&b2.z===b0.z,[b2.x,b2.z]);
+  const y0=await page.evaluate(()=>window.__state.pv.yaw);const box=await (await page.$('#canvasWrap')).boundingBox();await page.mouse.move(box.x+120,box.y+140);await page.mouse.down();for(let i=1;i<=8;i++)await page.mouse.move(box.x+120+i*15,box.y+140);await page.mouse.up();
+  const y1=await page.evaluate(()=>window.__state.pv.yaw);check('Dragging empty space turns your head',y1<y0-3,{y0,y1});
+  // 8 stacking: drop one box onto another
+  await scene('blank');await page.evaluate(()=>{const S=window.__state,b={...S.pv.boxes[0],ry:0};S.pv={...S.pv,boxes:[b,{...structuredClone(b),id:2,x:b.x+40}]};window.__pv.sel=null;window.__pv.render()});
+  const c2=await page.evaluate(()=>({...window.__state.pv.boxes[1]}));[sx,sy]=await at([c2.x,c2.h,c2.z]);const [tx,ty]=await at([b0.x,b0.h,b0.z]);
+  await page.mouse.move(sx,sy);await page.mouse.down();for(let i=1;i<=16;i++)await page.mouse.move(sx+(tx-sx)*i/16,sy+(ty-sy)*i/16);await page.mouse.up();
+  const c3=await page.evaluate(()=>({...window.__state.pv.boxes[1]}));check('Drop a box onto another and it sits on top',c3.y===b0.h,[c3.x,c3.y,c3.z]);
+  // 9 VP drag turns you so the point follows the hand
+  await scene('street');await page.waitForTimeout(100);
+  const vp=await page.evaluate(()=>{const g=[...document.querySelectorAll('#overlayLayer .pv-vp')].find(g=>g.querySelector('.vp-handle'));const c=g.querySelector('.vp-handle'),r=c.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2,dir:g.dataset.dir}});
+  await page.mouse.move(vp.x,vp.y);await page.mouse.down();await page.mouse.move(vp.x-30,vp.y,{steps:5});await page.mouse.move(vp.x-60,vp.y+20,{steps:5});await page.mouse.up();
+  const vp2=await page.evaluate(d=>{const P=window.__pv,K=P.camera(),v=d.split(',').map(Number),c=K.CT.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]),[x,y]=P.toSvg(P.dirImg(K,c)),m=document.querySelector('#geometry').getScreenCTM(),p=new DOMPoint(x,y).matrixTransform(m);return[p.x,p.y]},vp.dir);
+  check('Dragging a vanishing point turns your head so the point follows the hand (< 1.5 px)',Math.hypot(vp2[0]-(vp.x-60),vp2[1]-(vp.y+20))<1.5,{want:[vp.x-60,vp.y+20],got:vp2});
+  // 10 an edge in curvilinear gives its pin and string
+  await scene('overhead');await page.waitForTimeout(100);
+  await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:4};P.pin={id:1,k:4,edge:3};P.render()});
+  const pinTxt=await page.evaluate(()=>[...document.querySelectorAll('#overlayLayer text')].map(t=>t.textContent).find(t=>t.startsWith('PIN')));
+  const arc=await page.evaluate(()=>{const P=window.__pv,A=P.arcOf({id:1,k:4,edge:3});return A&&A.G});
+  check('Click an arc edge and it gives the pin position and string length on your canvas',pinTxt&&arc&&arc.type==='circle'&&pinTxt.includes('STRING'),pinTxt);
+  // 11 Studio: the canvas is the page at full size
+  await scene('street');
+  await page.click('#studioBtn');await page.waitForTimeout(300);await page.click('#stModes [data-v="print"]');
+  const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#stDownload')]);const svg=require('fs').readFileSync(await dl.path(),'utf8');
+  const wmm=+(svg.match(/width="([\d.]+)mm"/)||[])[1],hmm=+(svg.match(/height="([\d.]+)mm"/)||[])[1];
+  const nums=[...svg.matchAll(/ d="([^"]+)"/g)].flatMap(m=>m[1].match(/-?\d*\.?\d+/g).map(Number));let okIn=true;for(let i=0;i+1<nums.length;i+=2){if(nums[i]<-0.01||nums[i]>wmm+0.01||nums[i+1]<-0.01||nums[i+1]>hmm+0.01){okIn=false;break}}
+  check('Studio print: the page is your canvas at full size (48 × 36 in → 1219.2 × 914.4 mm) and nothing runs off it',Math.abs(wmm-1219.2)<.05&&Math.abs(hmm-914.4)<.05&&okIn&&nums.length>100,{wmm,hmm,okIn,n:nums.length});
+  await page.click('#stClose');
+  // screen export from the planner resolves every token
+  const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('#exportBtn')]);const psvg = require('fs').readFileSync(await dl2.path(), 'utf8');
+  check('Planner export: a standalone SVG with no unresolved tokens', psvg.startsWith('<svg') && !psvg.includes('var(--') && psvg.includes('pv-face'), { tokens: (psvg.match(/var\(--/g) || []).length });
+  // 12 back to geometry and forward again
+  await page.click('#appMode [data-app="geometry"]');const gt=await page.textContent('#patternTitle');const steps=await page.isVisible('.steps');
+  await page.click('#undoBtn');const back=await page.evaluate(()=>window.__state.app);
+  check('Switching back to Geometry restores it, and undo steps back across the switch',gt&&gt!=='A street of cubes'&&steps&&back==='perspective',{gt,steps,back});
+  }
+  {
+  // hands on: handles, flush snapping, aim, one draw per frame
+  await page.click('#appMode [data-app="perspective"]');
+  const scene=id=>page.evaluate(id=>{const s=document.querySelector('#pvScene');s.value=id;s.dispatchEvent(new Event('change'))},id);
+  const T = {
+  // 1 stretch a side face: it grows, the opposite face stays put
+  async side(){await scene('blank');await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const P=window.__pv,G=P.gizmo(),F=G.faces.find(F=>F.front&&(F.dim==='w'||F.dim==='d')),el=document.querySelector(`[data-pv="face:${F.f}"] rect`),r=el.getBoundingClientRect(),K=P.camera(),a=P.toSvg(P.img(K,P.toCam(K,F.c))),t=P.toSvg(P.img(K,P.toCam(K,F.tip))),m=document.querySelector('#geometry').getScreenCTM();
+      const A=new DOMPoint(...a).matrixTransform(m),B=new DOMPoint(...t).matrixTransform(m),opp=G.faces.find(o=>o.dim===F.dim&&o.f!==F.f);return{f:F.f,dim:F.dim,x:r.x+r.width/2,y:r.y+r.height/2,dx:B.x-A.x,dy:B.y-A.y,opp:opp.c,size:window.__state.pv.boxes[0][F.dim]}});
+    const L=Math.hypot(h.dx,h.dy);await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x+h.dx/L*4*i,h.y+h.dy/L*4*i);await page.mouse.up();
+    const after=await page.evaluate(f=>{const G=window.__pv.gizmo(),F=G.faces[f],opp=G.faces.find(o=>o.dim===F.dim&&o.f!==F.f);return{opp:opp.c,b:window.__state.pv.boxes[0]}},h.f);
+    const moved=Math.hypot(...after.opp.map((v,i)=>v-h.opp[i]));
+    check('Pull a side handle: the box grows that way and the opposite face stays put (< 0.06 in)',after.b[h.dim]>h.size+3&&moved<0.06,{dim:h.dim,from:h.size,to:after.b[h.dim],moved})},
+  // 2 the top handle makes it taller without lifting it
+  async top(){await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const el=document.querySelector('[data-pv="face:2"] rect');if(!el)return null;const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,at=document.elementFromPoint(x,y);return{x,y,h:window.__state.pv.boxes[0].h,y0:window.__state.pv.boxes[0].y,at:at&&(at.getAttribute('class')+' '+at.closest('[data-pv]')?.dataset.pv),pv:{yaw:window.__state.pv.yaw,pitch:window.__state.pv.pitch,proj:window.__state.pv.proj}}});
+    if(!h){check('Pull the top handle: taller, base stays on the floor',false,'no top handle');return}
+    await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x,h.y-5*i);await page.mouse.up();
+    const b1=await page.evaluate(()=>window.__state.pv.boxes[0]);check('Pull the top handle: taller, base stays on the floor',b1.h>h.h+3&&b1.y===h.y0,{h0:h.h,h1:b1.h,y:b1.y,at:h.at,pv:h.pv,xy:[h.x,h.y]})},
+  // 3 the dial turns it about its own foot
+  async dial(){await page.evaluate(()=>{const P=window.__pv;P.sel={id:1,k:0};P.render()});
+    const h=await page.evaluate(()=>{const el=document.querySelector('[data-pv="turn"] circle');const r=el.getBoundingClientRect();const b=window.__state.pv.boxes[0];return{x:r.x+r.width/2,y:r.y+r.height/2,ry:b.ry,bx:b.x,bz:b.z}});
+    await page.mouse.move(h.x,h.y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(h.x+8*i,h.y);await page.mouse.up();
+    const b1=await page.evaluate(()=>window.__state.pv.boxes[0]);check('Swing the dial: the box turns (in 5° steps) about its own foot',b1.ry!==h.ry&&b1.ry%5===0&&b1.x===h.bx&&b1.z===h.bz,{ry0:h.ry,ry1:b1.ry})},
+  // 4 flush snapping
+  async flush(){const r=await page.evaluate(()=>{const P=window.__pv,S=window.__state,b={...S.pv.boxes[0],ry:0,w:24,h:24,d:24,x:0,y:0,z:96,arr:{...S.pv.boxes[0].arr,type:'none'}};S.pv={...S.pv,boxes:[b,{...structuredClone(b),id:2,x:40}]};
+      const touch=P.flush(S.pv,{...S.pv.boxes[1],x:26.5,z:97.5}),far=P.flush(S.pv,{...S.pv.boxes[1],x:33}),turned=P.flush({...S.pv,boxes:S.pv.boxes.map(o=>({...o,ry:30}))},{...S.pv.boxes[1],ry:30,x:26.5});return{touch,far,turned}});
+    check('Flush: a box within 4 in of a neighbour clicks against its face and lines up with it',r.touch.x===24&&r.touch.z===96&&r.touch.cue===1,r.touch);
+    check('Flush: farther than 4 in it stays where you put it',r.far.x===33&&r.far.cue==null,r.far);
+    const th=30*Math.PI/180,lx=r.turned.x*Math.cos(th)-(r.turned.z-96)*Math.sin(th);check('Flush works for boxes turned the same way (touching along their own axes)',r.turned.cue===1&&Math.abs(lx-24)<1e-3,{...r.turned,lx})},
+  // 5 aim
+  async aim(){await scene('room');const c=await page.evaluate(()=>{const P=window.__pv,S=window.__state;P.sel={id:1,k:5};P.aim();P.render();const K=P.camera(),I=P.sceneOf(S.pv,K).find(I=>I.b.id===1&&I.k===5),c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2);return P.img(K,P.toCam(K,c))});
+    check('Aim: the selected box lands dead centre (< 0.01 in)',Math.hypot(...c)<.01,c)},
+  // 6 one draw per frame however fast the pointer moves
+  async frames(){await scene('overhead');const r=await page.evaluate(async()=>{const P=window.__pv,w=document.querySelector('#canvasWrap'),g=document.querySelector('#geometry'),R=w.getBoundingClientRect(),x=R.x+60,y=R.y+60,f0=P.frames;
+      const fire=(t,dx)=>g.dispatchEvent(new PointerEvent(t,{bubbles:true,clientX:x+dx,clientY:y,pointerId:7,pointerType:'mouse',button:0}));fire('pointerdown',0);for(let i=1;i<=30;i++)fire('pointermove',i*3);const sync=P.frames-f0;
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const later=P.frames-f0;fire('pointerup',90);return{sync,later,yaw:window.__state.pv.yaw}});
+    check('Thirty pointer moves in one frame cost one redraw',r.sync===0&&r.later===1,r)}};
+for(const k of Object.keys(T))await T[k]();
+  }
+  {
+  // double-click the floor to put a box there
+  await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});
+  const [x,y]=await page.evaluate(()=>{const P=window.__pv,K=P.camera(),[sx,sy]=P.toSvg(P.img(K,P.toCam(K,[-40,0,110]))),m=document.querySelector('#geometry').getScreenCTM(),q=new DOMPoint(sx,sy).matrixTransform(m);return[q.x,q.y]});
+  await page.mouse.dblclick(x,y);const nb=await page.evaluate(()=>window.__state.pv.boxes.slice(-1)[0]);
+  check('Double-click the floor: a new box lands there, on the floor, snapped to 3 in',nb.id===2&&nb.y===0&&Math.abs(nb.x+40)<=1.5&&Math.abs(nb.z-110)<=1.5&&nb.x%3===0,[nb.x,nb.y,nb.z]);
+  }
+  {
+  // round 3: walk round, shots, snap-tos, reference view, and the audit's fixes
+  await page.click('#appMode [data-app="perspective"]');
+  const T = {
+  async orbit(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});
+    const st=()=>page.evaluate(()=>{const P=window.__pv,S=window.__state,F=P.focus(),E=[S.pv.eye.x,S.pv.eye.y,S.pv.eye.z],K=P.camera(),q=P.img(K,P.toCam(K,F));return{F,E,r:Math.hypot(E[0]-F[0],E[1]-F[1],E[2]-F[2]),q,yaw:S.pv.yaw,pitch:S.pv.pitch}});
+    const a=await st();const box=await (await page.$('#canvasWrap')).boundingBox();const x=box.x+120,y=box.y+box.height-90;
+    await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(x+i*13,y-i*6);await page.mouse.up();const c=await st();
+    check('Orbit: dragging empty space walks you round the subject at the same distance, keeping it dead centre',Math.abs(c.r-a.r)<1e-6&&Math.hypot(c.E[0]-a.E[0],c.E[2]-a.E[2])>5&&Math.hypot(...c.q)<1e-6,{r0:a.r,r1:c.r,q:c.q});
+    // Shift-drag looks around from where you stand
+    await page.keyboard.down('Shift');await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=6;i++)await page.mouse.move(x+i*10,y);await page.mouse.up();await page.keyboard.up('Shift');const d=await st();
+    check('Shift-drag looks around without moving you',d.E.every((v,i)=>v===c.E[i])&&d.yaw!==c.yaw,{E0:c.E,E1:d.E})},
+  async detents(){const r=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,boxes:S.pv.boxes.map(b=>({...b,ry:20}))};P.sel=null;P.render();return{one:P.detentYaw(21.7),corner:P.detentYaw(20+44),cl:P.detentYaw(20+31.5),free:P.detentYaw(20+12)}});
+    check('View detents: square-on (1-point), 45° and 30/60 corners click into place relative to the box',r.one.yaw===20&&r.corner.yaw===65&&Math.abs(r.cl.yaw-50)<1e-9&&r.free.name==null,r)},
+  async level(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));const S=window.__state,P=window.__pv,F=P.focus();S.pv={...S.pv,eye:{x:F[0],y:F[1]+3,z:F[2]-120},yaw:0,pitch:-1.43};P.render()});
+    const box=await (await page.$('#canvasWrap')).boundingBox();const x=box.x+120,y=box.y+box.height-90;await page.mouse.move(x,y);await page.mouse.down();for(let i=1;i<=3;i++)await page.mouse.move(x+1,y+i);await page.mouse.up();
+    const p=await page.evaluate(()=>window.__state.pv.pitch);check('Level detent: orbiting near level snaps the pitch to exactly 0, so verticals stay parallel',p===0,p)},
+  async dolly(){const a=await page.evaluate(()=>{const P=window.__pv,S=window.__state,F=P.focus();return{F,E:{...S.pv.eye},yaw:S.pv.yaw,pitch:S.pv.pitch}});
+    const box=await (await page.$('#canvasWrap')).boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,-240);await page.waitForTimeout(400);
+    const c=await page.evaluate(()=>{const S=window.__state;return{E:{...S.pv.eye},yaw:S.pv.yaw,pitch:S.pv.pitch}});const r=E=>Math.hypot(E.x-a.F[0],E.y-a.F[1],E.z-a.F[2]);
+    const dir=E=>[E.x-a.F[0],E.y-a.F[1],E.z-a.F[2]].map(v=>v/r(E));const cos=dir(a.E).reduce((s,v,i)=>s+v*dir(c.E)[i],0);
+    check('Scroll moves you closer along the line to the subject (same direction, same aim)',r(c.E)<r(a.E)-1&&cos>1-1e-9&&c.yaw===a.yaw&&c.pitch===a.pitch,{r0:r(a.E),r1:r(c.E),cos})},
+  async lens(){// the size of the subject where you're looking: a 12 in upright through the focus
+    const size=()=>page.evaluate(()=>{const P=window.__pv,K=P.camera(),F=P.focus(),a=P.img(K,P.toCam(K,[F[0],F[1]-6,F[2]])),b=P.img(K,P.toCam(K,[F[0],F[1]+6,F[2]]));return Math.hypot(a[0]-b[0],a[1]-b[1])});
+    await page.evaluate(()=>{const S=window.__state,P=window.__pv,F=P.focus();S.pv={...S.pv,eye:{x:F[0],y:F[1],z:F[2]-140},yaw:0,pitch:0};P.render()});const s0=await size();
+    await page.$eval('#pvDist',e=>{e.value=18;e.dispatchEvent(new Event('input',{bubbles:true}))});const s1=await size();await page.$eval('#pvDist',e=>{e.value=110;e.dispatchEvent(new Event('input',{bubbles:true}))});const s2=await size();
+    check('Lens is a dolly zoom: wide or long, the subject keeps its size on the canvas (< 0.1%)',Math.abs(s1/s0-1)<1e-3&&Math.abs(s2/s0-1)<1e-3,{s0,s1,s2})},
+  async shots(){for(const sc of ['blank','overhead','street','room']){const r=await page.evaluate(sc=>{const s=document.querySelector('#pvScene');s.value=sc;s.dispatchEvent(new Event('change'));const P=window.__pv,S=window.__state,out={};
+      P.SHOTS.forEach(sh=>{const cam=P.frameShot(sh.spec),pv={...S.pv,...cam},K=P.camera(pv),pts=P.sceneOf(pv,K).flatMap(I=>I.P);let inside=0;
+        pts.forEach(p=>{const c=P.toCam(K,p),q=P.img(K,c);if(!q)return;const u=q[0]+cam.cv.x+pv.canvas.w/2,v=q[1]+cam.cv.y+pv.canvas.h/2;if(u>=-1e-6&&u<=pv.canvas.w+1e-6&&v>=-1e-6&&v<=pv.canvas.h+1e-6)inside++});
+        out[sh.id]={frac:inside/pts.length,pitch:cam.pitch,roll:cam.roll,proj:cam.proj,eyeY:cam.eye.y,hz:cam.cv.y+pv.canvas.h/2,H:pv.canvas.h}});return out},sc);
+      const levelOk=['eye','corner','long'].every(k=>r[k].pitch===0&&[1/3,2/3].some(f=>Math.abs(r[k].hz-f*r[k].H)<1e-6));
+      const framed=['eye','corner','worm','bird','dutch','long'].every(k=>r[k].frac===1);
+      check(`Shots (${sc}): the classic views each fit the whole scene on the canvas; level ones keep verticals and put the horizon on a third`,framed&&levelOk&&r.worm.eyeY===6&&r.bird.pitch<-30&&r.dutch.roll===14&&r.up.pitch===90&&r.up.proj==='curvi'&&r.fisheye.proj==='curvi',r)}},
+  async glide(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});await page.waitForTimeout(300);
+    const want=await page.evaluate(()=>window.__pv.frameShot(window.__pv.SHOTS.find(s=>s.id==='corner').spec));await page.click('[data-shot="corner"]');await page.waitForTimeout(900);
+    const got=await page.evaluate(()=>{const v=window.__state.pv;return{eye:v.eye,yaw:v.yaw,pitch:v.pitch,cv:v.cv,dist:v.dist}});
+    const thumbs=await page.$$eval('.pv-shot svg',x=>x.length);
+    check('Click a shot: the camera glides there (one undo step) and every shot has a thumbnail',Math.hypot(got.eye.x-want.eye.x,got.eye.y-want.eye.y,got.eye.z-want.eye.z)<1e-6&&got.yaw===want.yaw&&got.pitch===want.pitch&&got.cv.y===want.cv.y&&thumbs===8,{want,got,thumbs});
+    await page.click('#undoBtn');const back=await page.evaluate(()=>window.__state.pv.yaw);check('Undo takes the whole glide back in one step',back!==want.yaw,back)},
+  async horizon(){await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,pitch:0,roll:0,cv:{x:0,y:2}};P.render()});
+    const h=await page.evaluate(()=>{const el=document.querySelector('.pv-hz-hit'),r=el.getBoundingClientRect(),P=window.__pv,S=window.__state,R=document.querySelector('.pv-frame').getBoundingClientRect();return{x:R.x+R.width*.2,y:r.y+r.height/2,third:R.y+R.height*(1-1/3)}});
+    await page.mouse.move(h.x,h.y);await page.mouse.down();await page.mouse.move(h.x,h.third+3,{steps:6});await page.mouse.up();
+    const v=await page.evaluate(()=>{const S=window.__state;return S.pv.cv.y+S.pv.canvas.h/2});const H=await page.evaluate(()=>window.__state.pv.canvas.h);
+    check('Drag the horizon near a third and it lands exactly on it',Math.abs(v-H/3)<1e-9,{v,H3:H/3})},
+  async comp(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));const S=window.__state;S.pv={...S.pv,pitch:0,roll:0,cv:{x:0,y:2}};window.__pv.render()});
+    const r=await page.evaluate(()=>{const P=window.__pv,S=window.__state,K=P.camera(),b=S.pv.boxes[0],c=[b.x,b.y+b.h/2,b.z],q=P.img(K,P.toCam(K,c)),W=S.pv.canvas.w,H=S.pv.canvas.h;
+      // nudge the box so its middle sits a hair off the lower-left thirds point, then ask where it snaps
+      const tx=W/3-W/2-S.pv.cv.x+.15,ty=H/3-H/2-S.pv.cv.y+.1,d=P.rayDir(K,tx,ty),t=(c[1]-K.E[1])/d[1],w=[K.E[0]+d[0]*t,K.E[2]+d[2]*t],s=P.compSnap(K,{...b,x:w[0],z:w[1]});if(!s)return{none:true};
+      const q2=P.img(K,P.toCam(K,[s.x,c[1],s.z]));return{name:s.name,u:q2[0]+S.pv.cv.x+W/2,v:q2[1]+S.pv.cv.y+H/2,W,H}});
+    check('Move a box near a thirds point and its middle lands exactly on it',!r.none&&Math.abs(r.u-r.W/3)<1e-6&&Math.abs(r.v-r.H/3)<1e-6&&r.name==='ON THE THIRDS',r)},
+  async vpEdge(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='street';s.dispatchEvent(new Event('change'))});await page.waitForTimeout(100);
+    const vp=await page.evaluate(()=>{const g=[...document.querySelectorAll('#overlayLayer .pv-vp')].find(g=>g.querySelector('.vp-handle'));const c=g.querySelector('.vp-handle').getBoundingClientRect(),R=document.querySelector('.pv-frame').getBoundingClientRect();return{x:c.x+c.width/2,y:c.y+c.height/2,dir:g.dataset.dir,edge:R.x}});
+    await page.mouse.move(vp.x,vp.y);await page.mouse.down();await page.mouse.move(vp.edge+4,vp.y,{steps:8});await page.mouse.up();
+    const u=await page.evaluate(d=>{const P=window.__pv,K=P.camera(),v=d.split(',').map(Number),c=K.CT.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]);return P.onCanvas(P.dirImg(K,c))[0]},vp.dir);
+    check('Drag a vanishing point near the canvas edge and it sits exactly on the edge',Math.abs(u)<1e-3,u)},
+  async pivot(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='overhead';s.dispatchEvent(new Event('change'))});
+    const pos=()=>page.evaluate(()=>{const P=window.__pv,S=window.__state;return P.instances(S.pv,S.pv.boxes[0]).map(I=>I.t.map(v=>+v.toFixed(9)))});const a=await pos();
+    await page.evaluate(()=>{const S=window.__state,P=window.__pv;S.pv={...S.pv,eye:{x:140,y:30,z:-60}};P.render()});const c=await pos();
+    check('Rings and arches stay put in the room when you walk away from where you made them',JSON.stringify(a)===JSON.stringify(c))},
+  async roll(){const s=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,proj:'linear',pitch:0,roll:14};const K=P.camera(),G=P.circleOf(K,K.CT.map(r=>r[1]));return Math.atan2(G.d[1],G.d[0])*180/Math.PI});
+    check('Dutch tilt rolls the horizon by exactly its angle',Math.abs(Math.abs(s)-14)<1e-9||Math.abs(Math.abs(s)-166)<1e-9,s)},
+  async reference(){await page.evaluate(()=>{const S=window.__state,P=window.__pv;S.pv={...S.pv,roll:0};P.render()});await page.click('#pvRefBtn');await page.waitForTimeout(250);
+    const r=await page.evaluate(()=>({side:getComputedStyle(document.querySelector('.sidebar')).display,shots:getComputedStyle(document.querySelector('#pvShots')).display,ticks:document.querySelectorAll('#overlayLayer .pv-ticks,#overlayLayer .pv-vp,#overlayLayer .pv-cv').length,frame:document.querySelector('#overlayLayer .pv-frame').getBoundingClientRect().width,vw:innerWidth}));
+    await page.keyboard.press('Escape');await page.waitForTimeout(200);const back=await page.evaluate(()=>getComputedStyle(document.querySelector('.sidebar')).display);
+    check('Reference view: just the picture, big (no sidebar, shots, rulers or markers), and Esc brings the tools back',r.side==='none'&&r.shots==='none'&&r.ticks===0&&back!=='none',{...r,back})},
+  async flyaway(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));const S=window.__state,P=window.__pv,b=S.pv.boxes[0];S.pv={...S.pv,eye:{x:0,y:12,z:0},pitch:0,yaw:0,cv:{x:0,y:0}};P.sel=null;P.render()});
+    const at=await page.evaluate(()=>{const P=window.__pv,S=window.__state,b=S.pv.boxes[0],K=P.camera(),[x,y]=P.toSvg(P.img(K,P.toCam(K,[b.x+6,12,b.z-12]))),m=document.querySelector('#geometry').getScreenCTM(),q=new DOMPoint(x,y).matrixTransform(m);return[q.x,q.y]});
+    await page.mouse.move(at[0],at[1]);await page.mouse.down();for(let i=1;i<=10;i++)await page.mouse.move(at[0]+20*i,at[1]);await page.mouse.up();
+    const b=await page.evaluate(()=>window.__state.pv.boxes[0]);check('Grab a box right at eye level and drag: it moves a sane distance instead of flying to the horizon',Math.hypot(b.x,b.z-96)<120&&Math.abs(b.x)>3,[b.x,b.z])},
+  async addBeside(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));window.__pv.sel={id:1,k:0};window.__pv.render()});await page.click('#pvAdd');
+    const r=await page.evaluate(()=>{const [a,b]=window.__state.pv.boxes,th=a.ry*Math.PI/180,lx=(b.x-a.x)*Math.cos(th)-(b.z-a.z)*Math.sin(th),lz=(b.x-a.x)*Math.sin(th)+(b.z-a.z)*Math.cos(th);return{lx,lz,same:a.w===b.w&&a.h===b.h&&a.ry===b.ry&&a.y===b.y}});
+    check('+ Box with a box selected: a twin lands flush beside it, same size and turn',Math.abs(Math.abs(r.lx)-24)<.06&&Math.abs(r.lz)<.06&&r.same,r);
+    await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));window.__pv.sel=null;window.__pv.render()});await page.click('#pvAdd');await page.keyboard.press('Escape');await page.click('#pvAdd');
+    const ys=await page.evaluate(()=>window.__state.pv.boxes.map(b=>b.y));check('+ Box with nothing selected finds clear floor (no towers by accident)',ys.length===3&&ys.every(y=>y===0),ys)},
+  async vpsAll(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'));window.__pv.sel=null;window.__pv.render();window.__pv.sync()});await page.waitForTimeout(50);
+    const rows=await page.$$eval('#pvReadout .pv-row span',x=>x.map(e=>e.textContent));check('Every box’s own vanishing points are listed, selected or not',rows.some(t=>/^box /i.test(t)),rows);
+    const names=await page.evaluate(()=>{const P=window.__pv,S=window.__state;S.pv={...S.pv,proj:'curvi',yaw:-57,pitch:80};const K=P.camera();return P.vanishing(K,[[1,0,0],[0,1,0],[0,0,1],[Math.cos(.5),0,Math.sin(.5)],[Math.cos(1),0,Math.sin(1)]]).map(v=>v.name)});
+    check('Vanishing point names never repeat',new Set(names).size===names.length,names)},
+  async aimLevel(){const r=await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='street';s.dispatchEvent(new Event('change'));const P=window.__pv,S=window.__state;P.sel={id:2,k:3};P.aim();P.render();const K=P.camera(),I=P.sceneOf(S.pv,K).find(I=>I.b.id===2&&I.k===3),c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2),q=P.img(K,P.toCam(K,c));return{pitch:S.pv.pitch,q:[q[0]+S.pv.cv.x,q[1]+S.pv.cv.y]}});
+    check('Aim from a level view stays level (it shifts the lens rather than tilting) and centres the box',r.pitch===0&&Math.hypot(...r.q)<.02,r)},
+  async exportClean(){await page.evaluate(()=>{window.__pv.sel={id:1,k:0};window.__pv.render()});const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#exportBtn')]);const svg=require('fs').readFileSync(await dl.path(),'utf8');
+    const vb=(svg.match(/viewBox="([^"]+)"/)||[])[1].split(' ').map(Number),fr=await page.evaluate(()=>window.__pv.frame());
+    check('Export in Perspective is just the canvas: cropped to it, no rulers, markers or selection',!svg.includes('id="overlayLayer"')&&!svg.includes('class="pv-sel')&&Math.abs(vb[2]-fr.w)<1e-6&&Math.abs(vb[3]-fr.h)<1e-6,{vb,fr:[fr.w,fr.h]})},
+  async planDrag(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});await page.waitForTimeout(100);
+    const r=await page.evaluate(()=>{const e=document.querySelector('#pvPlan [data-box]').getBoundingClientRect();return{x:e.x+e.width/2,y:e.y+e.height/2,b:{...window.__state.pv.boxes[0]}}});
+    await page.mouse.move(r.x,r.y);await page.mouse.down();await page.mouse.move(r.x-25,r.y,{steps:5});await page.mouse.up();const b=await page.evaluate(()=>window.__state.pv.boxes[0]);
+    check('Drag a box in the plan and it moves (the view wedge no longer gets in the way)',b.x<r.b.x-3,{from:r.b.x,to:b.x})},
+  async speed(){const ms=await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='overhead';s.dispatchEvent(new Event('change'));const P=window.__pv;for(let i=0;i<3;i++)P.render();const xs=[];for(let i=0;i<15;i++){const t=performance.now();P.render();xs.push(performance.now()-t)}xs.sort((a,b)=>a-b);return xs[7]});
+    check('Drawing the busiest scene takes under 20 ms (median)',ms<20,+ms.toFixed(1))}};
+for(const k of Object.keys(T))await T[k]();
+  }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
   const failed = results.filter(r => !r.ok);
