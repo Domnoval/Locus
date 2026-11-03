@@ -318,6 +318,7 @@
     .pv-tabs button{flex:1 0 auto;min-height:40px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:3px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
     .pv-tabs button.active{color:var(--paper);background:var(--ink);border-color:var(--ink)}
     @media(max-width:600px){.pv-tabs{gap:3px}.pv-tabs button{flex:1 1 0;min-width:0;padding:0 2px;font-size:10px;letter-spacing:.02em}}
+    body.pv-side .pv-tabs{gap:3px}body.pv-side .pv-tabs button{flex:1 1 0;min-width:0;padding:0 2px;font-size:10px;letter-spacing:.02em}
     body.pv-touch .sidebar [data-tab]{display:none}
     body.pv-touch .sidebar[data-tab="scene"] [data-tab="scene"],body.pv-touch .sidebar[data-tab="canvas"] [data-tab="canvas"],body.pv-touch .sidebar[data-tab="camera"] [data-tab="camera"],body.pv-touch .sidebar[data-tab="box"] [data-tab="box"],body.pv-touch .sidebar[data-tab="guides"] [data-tab="guides"],body.pv-touch .sidebar[data-tab="measure"] [data-tab="measure"]{display:block}
     body.pv-touch .sidebar[data-tab="scene"] #appMode[data-tab="scene"]{display:grid}
@@ -333,6 +334,37 @@
     body.pv-touch.pv-ref .sidebar{display:none}
     body.pv-touch.pv-ref .workspace{height:100dvh}
     body.pv-touch.pv-ref .app{padding:0}
+    /* a tablet on its side: the controls become a panel on the right and the drawing gets the full height */
+    body.pv-touch.pv-side .app{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"shots head" "canvas side";column-gap:10px;row-gap:6px;height:100dvh;padding:8px 0 8px 10px;box-sizing:border-box}
+    body.pv-touch.pv-side .workspace{display:contents}
+    body.pv-touch.pv-side .workspace-head{grid-area:head;min-width:0;gap:8px;padding:0 10px 0 0}
+    body.pv-touch.pv-side .workspace-head>div:first-child{min-width:0}
+    body.pv-touch.pv-side .workspace-head h1{font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    body.pv-touch.pv-side .head-actions .action{font-size:0;gap:0;padding:0;width:42px;min-height:40px;justify-content:center}
+    body.pv-touch.pv-side .head-actions .action svg{width:18px;height:18px}
+    body.pv-touch.pv-side .history-actions .action{width:38px;min-width:38px}
+    body.pv-touch.pv-side #exportBtn{display:none}
+    body.pv-touch.pv-side #pvShots{grid-area:shots;min-width:0;gap:4px;padding:0 0 2px}
+    body.pv-touch.pv-side .pv-shot{padding:3px 5px 4px;gap:1px}
+    body.pv-touch.pv-side .pv-shot-pic,body.pv-touch.pv-side .pv-shot-pic svg{height:34px;min-width:34px}
+    body.pv-touch.pv-side .pv-shot b{font-size:10px}body.pv-touch.pv-side .pv-shot small{display:none}
+    body.pv-touch.pv-side .canvas-wrap{grid-area:canvas;height:auto;min-height:0}
+    body.pv-touch.pv-side .status-line{display:none}
+    body.pv-touch.pv-side .sidebar,body.pv-touch.pv-side .sidebar[data-sheet]{grid-area:side;position:static;transform:none!important;height:auto;min-height:0;border-radius:0;border:0;border-left:1px solid var(--line);box-shadow:none;padding:0 12px 16px;transition:none}
+    body.pv-touch.pv-side .pv-grip{display:none}
+    body.pv-touch.pv-side .pv-sheet-bar{cursor:default;margin:0 -12px;padding-top:4px}
+    body.pv-touch.pv-side .sidebar .panel{column-count:auto}
+    body.pv-touch.pv-side.pv-ref .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"canvas";padding:0}
+    body.pv-touch .sidebar input{scroll-margin-top:96px}
+    /* on its side at the easel the controls become a rail in the empty margin, so they never sit on the drawing */
+    @media(orientation:landscape){
+      body.pv-touch.pv-ref .pv-refbar{display:grid;grid-template-columns:repeat(2,60px);gap:6px;left:auto;right:12px;top:50%;bottom:auto;transform:translateY(-50%);max-width:none;max-height:calc(100% - 16px);overflow:visible}
+      body.pv-touch.pv-ref .pv-refbar.idle{transform:translate(12px,-50%)}
+      body.pv-touch.pv-ref .pv-refbar i{display:none}
+      body.pv-touch.pv-ref .pv-refbar button{min-width:0;padding:0 2px;font-size:11px;letter-spacing:0}
+      body.pv-touch.pv-ref .pv-refbar [data-r="prev"]{grid-area:1/1}body.pv-touch.pv-ref .pv-refbar [data-r="next"]{grid-area:1/2}
+      body.pv-touch.pv-ref .pv-ref-shot{grid-area:2/1/3/3;min-width:0;white-space:normal;font-size:10px;line-height:1.3;padding:2px 0}
+    }
     body.pv-app button{touch-action:manipulation}
     body.pv-touch #copyBtn{display:none}
     body.pv-touch .head-actions{flex-wrap:nowrap}
@@ -803,6 +835,9 @@
     function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
     const byId=id=>st().boxes.find(b=>b.id===id);
     let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
+    let lastPtr='mouse',lastSnap='';
+    // a tick under the finger when something clicks into place (Android vibrates; elsewhere it's a no-op)
+    const buzz=(ms=8)=>{if(lastPtr==='touch')try{navigator.vibrate?.(ms)}catch{}};
 
     /* ----- the camera ----- */
     const rotZ=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,-s,0],[s,c,0],[0,0,1]]};   // Dutch tilt: rolls the picture about the line of sight
@@ -823,7 +858,8 @@
 
     /* ----- view: picture-plane inches ↔ the 900 × 700 drawing ----- */
     const view={s:8,ox:450,oy:350,key:''};
-    function fit(force){const {w,h}=st().canvas,ref=document.body.classList.contains('pv-ref'),key=w+'x'+h+(ref?'r':'');if(!force&&view.key===key)return;view.key=key;const V=visCache||{x0:0,y0:0,x1:900,y1:700},vw=V.x1-V.x0,vh=V.y1-V.y0;view.s=ref?Math.min(vw*.94/w,vh*.94/h):Math.min(vw*(vw<vh?.9:.7)/w,vh*(document.body.classList.contains('pv-touch')?.8:.74)/h);view.ox=(V.x0+V.x1)/2;view.oy=(V.y0+V.y1)/2}
+    // in Reference view on a sideways touch screen the canvas centres left of the rail of controls
+    function fit(force){const {w,h}=st().canvas,ref=document.body.classList.contains('pv-ref'),key=w+'x'+h+(ref?'r':'');if(!force&&view.key===key)return;view.key=key;const V0=visCache||{x0:0,y0:0,x1:900,y1:700},rail=ref&&document.body.classList.contains('pv-touch')&&innerWidth>innerHeight?152*U:0,V={...V0,x1:V0.x1-rail},vw=V.x1-V.x0,vh=V.y1-V.y0;view.s=ref?Math.min(vw*.94/w,vh*.94/h):Math.min(vw*(vw<vh?.9:.7)/w,vh*(document.body.classList.contains('pv-touch')?.8:.74)/h);view.ox=(V.x0+V.x1)/2;view.oy=(V.y0+V.y1)/2}
     const toSvg=([X,Y])=>[view.ox+(X+st().cv.x)*view.s,view.oy-(Y+st().cv.y)*view.s];
     const fromSvg=(x,y)=>[(x-view.ox)/view.s-st().cv.x,(view.oy-y)/view.s-st().cv.y];
     const canvasRect=()=>{const {w,h}=st().canvas;return{x:view.ox-w/2*view.s,y:view.oy-h/2*view.s,w:w*view.s,h:h*view.s}};
@@ -909,7 +945,7 @@
       if(S.guides&&sel)drawGuides(K,list);
       drawMarks(K);
       drawSquares();
-      if(!harvesting)drawOverlay(K,list);
+      if(!harvesting){drawOverlay(K,list);const t=snapNote?snapNote.text:'';if(t&&t!==lastSnap&&drag)buzz();lastSnap=t}
       if(!harvesting){placeBoxBar(K,list);drawPlan(K,list);if(!interacting){readouts(K,list);renderShots()}heading(K);save()}}
     function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
       const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
@@ -1048,7 +1084,7 @@
     function planeHit(K,X,Y,P0,n){const d=rayDir(K,X,Y),den=dot(d,n);if(Math.abs(den)<1e-9)return null;const t=dot(sub(P0,K.E),n)/den;return t>0?add(K.E,scl(d,t)):null}
     const snap=v=>st().show.snap?Math.round(v/3)*3:r1(v);
     let drag=null;const touches=new Map();
-    function down(e){const p=ev(e);if(refMode()&&refLock){drag={type:'swipe',p,x:e.clientX,y:e.clientY};return}touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
+    function down(e){lastPtr=e.pointerType;const p=ev(e);if(refMode()&&refLock){drag={type:'swipe',p,x:e.clientX,y:e.clientY};return}touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
       if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
       const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
       if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
@@ -1285,7 +1321,7 @@
     q('pvDel').addEventListener('click',remove);
     q('pvFit').addEventListener('click',()=>{fit(true);render()});
     let wake=null;
-    function setRef(on){document.body.classList.toggle('pv-ref',on);if(on){refLock=true;shotIndex=-1;$('#pvRefShot').textContent=activeShot?SHOTS.find(S=>S.id===activeShot).name:'Your view';syncRefBar();wakeRefBar()}try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
+    function setRef(on){document.body.classList.toggle('pv-ref',on);if(on)armBack();else disarmBack();if(on){refLock=true;shotIndex=-1;$('#pvRefShot').textContent=activeShot?SHOTS.find(S=>S.id===activeShot).name:'Your view';syncRefBar();wakeRefBar()}try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
       try{if(on&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen?.().catch(()=>{})}catch{}}
     $('#pvRefBtn').addEventListener('click',()=>setRef(!refMode()));
 
@@ -1299,6 +1335,12 @@
     q('pvSqChip').addEventListener('click',()=>{beginChange();set({sq:st().sq?0:autoSq()});render();sync();commitChange()});
 
     /* ----- the selected box's bar: copy, stack, turn, edit, delete, right next to it ----- */
+    // a tap is a finger down and up on the same control: act on the up. Right after a flick Chrome swallows the next click
+    // (it reads the tap as stopping the fling), so the click only stands in for the keyboard
+    function onTap(root,selector,fn){let down=null,ate=0;
+      root.addEventListener('pointerdown',e=>{down=e.target.closest(selector)},true);
+      root.addEventListener('pointerup',e=>{const t=e.target.closest(selector);if(t&&t===down&&!t.disabled){ate=performance.now();fn(t)}down=null},true);
+      root.addEventListener('click',e=>{const t=e.target.closest(selector);if(!t)return;if(performance.now()-ate<800){ate=0;return}fn(t)})}
     const boxBar=$('#pvBoxBar');
     function placeBoxBar(K,list){const I=sel&&selInstance(list);if(!I||interacting||refMode()||drag){boxBar.hidden=true;return}let x0=1e9,x1=-1e9,y1=-1e9,y0=1e9;
       I.P.forEach(p=>{const q=img(K,toCam(K,p));if(!q)return;const [x,y]=toSvg(q);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});if(x0>x1){boxBar.hidden=true;return}
@@ -1306,25 +1348,34 @@
       const bw=boxBar.offsetWidth||260,bh=boxBar.offsetHeight||48;let left=clamp(px((x0+x1)/2)-bw/2,8,W-bw-8),top=py(y1)+14;if(top+bh>H-8)top=py(y0)-bh-14;top=clamp(top,8,H-bh-8);
       boxBar.style.transform=`translate(${Math.round(left)}px,${Math.round(top)}px)`}
     boxBar.addEventListener('pointerdown',e=>e.stopPropagation());
-    boxBar.addEventListener('click',e=>{const a=e.target.closest('[data-act]')?.dataset.act,b=sel&&byId(sel.id);if(!a||!b)return;
+    onTap(boxBar,'[data-act]',el=>{const a=el.dataset.act,b=sel&&byId(sel.id);if(!a||!b)return;
       if(a==='edit'){openTab('box');if(!touchMQ.matches)q('pvBoxPanel').scrollIntoView({behavior:'smooth',block:'start'});return}
       beginChange();if(a==='dup')addBox();else if(a==='stack'){const c={...structuredClone(b),id:nextId(),y:b.y+b.h,arr:{...ARR}};set({boxes:[...st().boxes,c]});sel={id:c.id,k:0}}
       else if(a==='rot')setBox(b.id,{ry:wrap180((b.ry||0)+90)});else if(a==='del'){set({boxes:st().boxes.filter(x=>x.id!==b.id)});sel=null;pin=null}
       render();sync();commitChange()});
 
     /* ----- touch layout: the controls live in a sheet you pull up from the bottom ----- */
-    const touchMQ=matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1366px)'),side=$('.sidebar');
+    const touchMQ=matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1366px)'),sideMQ=matchMedia('(orientation: landscape) and (min-width: 860px)'),side=$('.sidebar');
     side.querySelector('.brand').dataset.tab='scene';$('#appMode').dataset.tab='scene';
     ['scene','canvas','camera','box','box','guides','measure'].forEach((t,i)=>{const el=[...$('#pvSide').children][i];if(el)el.dataset.tab=t});
-    function syncTouch(){const on=state.app==='perspective'&&touchMQ.matches;if(on!==document.body.classList.contains('pv-touch')){document.body.classList.toggle('pv-touch',on);visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render()})}
+    function syncTouch(){const on=state.app==='perspective'&&touchMQ.matches,beside=on&&sideMQ.matches,B=document.body.classList;if(on!==B.contains('pv-touch')||beside!==B.contains('pv-side')){B.toggle('pv-touch',on);B.toggle('pv-side',beside);visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render()})}disarmBack();
       $$('#pvSheetBar [data-t]').forEach(b=>{const a=b.dataset.t===side.dataset.tab;b.classList.toggle('active',a);b.setAttribute('aria-selected',a)})}
-    touchMQ.addEventListener('change',syncTouch);
+    touchMQ.addEventListener('change',syncTouch);sideMQ.addEventListener('change',syncTouch);
+    const sheetMode=()=>document.body.classList.contains('pv-touch')&&!document.body.classList.contains('pv-side');
+    // Android's back gesture closes the sheet, or leaves Reference view, before it leaves the page: one history entry, held only while something is open
+    // (the step back waits for the gesture to finish: stepping back mid-touch makes Chrome drop the next tap's click)
+    let backArmed=false,skipPop=false,pendingBack=0;const overlayUp=()=>refMode()||(sheetMode()&&side.dataset.sheet!=='peek');
+    function armBack(){if(backArmed||!overlayUp())return;if(pendingBack){clearTimeout(pendingBack);pendingBack=0;skipPop=false;backArmed=true;return}try{history.pushState({locus:'open'},'');backArmed=true}catch{}}
+    function disarmBack(){if(backArmed&&!overlayUp()){backArmed=false;skipPop=true;pendingBack=setTimeout(()=>{pendingBack=0;try{history.back()}catch{skipPop=false}},60)}}
+    addEventListener('popstate',()=>{if(skipPop){skipPop=false;return}if(!backArmed)return;backArmed=false;if(refMode())setRef(false);else setSheet('peek');armBack()});
+    // type into a size and the sheet lifts, with the field clear of the keyboard
+    side.addEventListener('focusin',e=>{const t=e.target;if(!document.body.classList.contains('pv-touch')||!t.matches('input[type=number],input[type=text]'))return;if(sheetMode()&&side.dataset.sheet!=='full')setSheet('full');setTimeout(()=>t.scrollIntoView({block:'start'}),340)});
     function openTab(t){side.dataset.tab=t;if(side.dataset.sheet==='peek')setSheet('half');syncTouch()}
-    function setSheet(v){side.dataset.sheet=v;side.style.transform='';side.scrollTop=0}
-    $('#pvSheetBar').addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t){if(side.dataset.tab===t.dataset.t&&side.dataset.sheet!=='peek')setSheet('peek');else openTab(t.dataset.t);syncTouch()}});
+    function setSheet(v){side.dataset.sheet=v;side.style.transform='';side.scrollTop=0;if(v==='peek')disarmBack();else armBack()}
+    onTap($('#pvSheetBar'),'[data-t]',t=>{{if(side.dataset.tab===t.dataset.t&&side.dataset.sheet!=='peek')setSheet('peek');else openTab(t.dataset.t);syncTouch()}});
     // drag the sheet by its bar: it follows the finger, then settles on peek, half or full
     {let sd=null;const bar=$('#pvSheetBar'),stops=()=>{const H=innerHeight,h=side.offsetHeight;return{peek:h-72,half:Math.max(0,h-H*.48),full:0}};
-      bar.addEventListener('pointerdown',e=>{if(!document.body.classList.contains('pv-touch')||e.target.closest('[data-t]'))return;const S=stops();sd={y:e.clientY,base:S[side.dataset.sheet]??S.peek,moved:false};bar.setPointerCapture(e.pointerId);side.classList.add('dragging')});
+      bar.addEventListener('pointerdown',e=>{if(!sheetMode()||e.target.closest('[data-t]'))return;const S=stops();sd={y:e.clientY,base:S[side.dataset.sheet]??S.peek,moved:false};bar.setPointerCapture(e.pointerId);side.classList.add('dragging')});
       bar.addEventListener('pointermove',e=>{if(!sd)return;const dy=e.clientY-sd.y;if(Math.abs(dy)>4)sd.moved=true;side.style.transform=`translateY(${clamp(sd.base+dy,0,stops().peek)}px)`});
       const end=e=>{if(!sd)return;side.classList.remove('dragging');const S=stops(),y=sd.moved?clamp(sd.base+e.clientY-sd.y,0,S.peek):null;
         if(y==null)setSheet(side.dataset.sheet==='peek'?'half':'peek');else setSheet(Object.entries(S).sort((a,b)=>Math.abs(a[1]-y)-Math.abs(b[1]-y))[0][0]);sd=null};
@@ -1333,7 +1384,7 @@
     /* ----- easel mode: big controls over the reference, swipe between shots, locked against stray touches ----- */
     const refBar=$('#pvRefBar');let refLock=true,refIdle=0,shotIndex=-1;
     function wakeRefBar(){refBar.classList.remove('idle');clearTimeout(refIdle);refIdle=setTimeout(()=>refBar.classList.add('idle'),3500)}
-    function cycleShot(dir){const n=SHOTS.length;shotIndex=((shotIndex<0?(activeShot?SHOTS.findIndex(S=>S.id===activeShot):-1):shotIndex)+dir+n)%n;const S=SHOTS[shotIndex],cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;
+    function cycleShot(dir){const n=SHOTS.length;shotIndex=((shotIndex<0?(activeShot?SHOTS.findIndex(S=>S.id===activeShot):-1):shotIndex)+dir+n)%n;const S=SHOTS[shotIndex],cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;buzz(6);
       shotBar.querySelectorAll('.pv-shot').forEach(x=>x.classList.toggle('active',x.dataset.shot===S.id));$('#pvRefShot').textContent=`${S.name} · ${S.sub}`;glideTo(cam);wakeRefBar()}
     function refAction(r){const pv=st();if(r==='prev')cycleShot(-1);else if(r==='next')cycleShot(1);else if(r==='exit'){setRef(false);return}
       else if(r==='grid'){const seq=[0,6,3,12,2],i=seq.indexOf(pv.sq||0);beginChange();set({sq:seq[(i+1)%seq.length]});commitChange();render()}
@@ -1342,7 +1393,7 @@
       else if(r==='theme')$('#themeBtn').click();else if(r==='lock'){refLock=!refLock}syncRefBar();wakeRefBar()}
     function syncRefBar(){const pv=st(),b=k=>refBar.querySelector(`[data-r="${k}"]`);b('grid').textContent=pv.sq?`Grid ${pv.sq}″`:'Grid';b('grid').classList.toggle('on',!!pv.sq);
       b('lines').classList.toggle('on',!!(pv.show.floor||pv.show.horizon));b('values').classList.toggle('on',!!pv.show.values);b('lock').textContent=refLock?'Locked':'Unlocked';b('lock').classList.toggle('on',refLock);b('lock').setAttribute('aria-pressed',refLock)}
-    refBar.addEventListener('pointerdown',e=>e.stopPropagation());refBar.addEventListener('click',e=>{const r=e.target.closest('[data-r]')?.dataset.r;if(r)refAction(r)});
+    refBar.addEventListener('pointerdown',e=>e.stopPropagation());onTap(refBar,'[data-r]',el=>refAction(el.dataset.r));
     els.wrap.addEventListener('contextmenu',e=>{if(state.app==='perspective')e.preventDefault()});
     q('pvAim').addEventListener('click',()=>{beginChange();aim();render();sync();commitChange()});
     $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));

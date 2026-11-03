@@ -434,9 +434,10 @@ for(const k of Object.keys(T))await T[k]();
     check('Drawing the busiest scene takes under 20 ms (median)',ms<20,+ms.toFixed(1))}};
 for(const k of Object.keys(T))await T[k]();
   }
-  // ── at the easel: phone and tablet, driven with real touch events (CDP), so pointerType is 'touch'
-  for (const [dn, dev] of [['iPhone', devices['iPhone 13']], ['iPad', devices['iPad Pro 11']]]) {
-    const tctx = await browser.newContext({ ...dev, colorScheme: 'dark' }), tp = await tctx.newPage();
+  // ── at the easel: Android phone and tablet, driven with real touch events (CDP), so pointerType is 'touch'
+  const touchCtx = async dev => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); return c; };
+  for (const [dn, dev] of [['Galaxy S24', devices['Galaxy S24']], ['Galaxy Tab S9', devices['Galaxy Tab S9']]]) {
+    const tctx = await touchCtx(dev), tp = await tctx.newPage();
     tp.on('pageerror', e => errors.push(dn + ': ' + e.message));
     await tp.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
     await tp.goto('file://' + file);
@@ -462,6 +463,17 @@ for(const k of Object.keys(T))await T[k]();
     check(`${dn}: drag the grip up and the sheet opens full`, (await sheet()).sheet === 'full', await sheet());
     const g2 = await mid('.pv-grip'); await swipe(g2[0], g2[1], g2[0], lay.vh - 10, 12); await tp.waitForTimeout(450);
     check(`${dn}: drag it down and it tucks away`, (await sheet()).sheet === 'peek', await sheet());
+    await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(350);
+    check(`${dn}: a tap straight after flicking the sheet shut still lands (Chrome's fling tap-suppression)`, (await sheet()).sheet === 'half', await sheet());
+    await tp.goBack({ waitUntil: 'commit' }).catch(() => {}); await tp.waitForTimeout(400);
+    check(`${dn}: Android back closes the sheet and stays on the page`, (await sheet()).sheet === 'peek' && await tp.evaluate(() => document.body.classList.contains('pv-app')), await sheet());
+    await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(300); await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(500);
+    check(`${dn}: closing the sheet by hand leaves no dead back entry`, (await sheet()).sheet === 'peek' && !(await tp.evaluate(() => history.state && history.state.locus)));
+    await tp.evaluate(() => { window.__pv.sel = { id: 1, k: 0 }; window.__pv.render(); window.__pv.sync(); window.__pv.openTab('box'); }); await tp.waitForTimeout(400);
+    await tp.evaluate(() => document.querySelector('#pvH').focus()); await tp.waitForTimeout(700);
+    const kb = await tp.evaluate(() => ({ sheet: document.querySelector('.sidebar').dataset.sheet, y: Math.round(document.querySelector('#pvH').getBoundingClientRect().top), vh: innerHeight }));
+    check(`${dn}: tap a size field and the sheet lifts it clear of the keyboard (top half)`, kb.sheet === 'full' && kb.y < kb.vh * .5, kb);
+    await tp.evaluate(() => { document.activeElement.blur(); window.__pv.sel = null; window.__pv.render(); window.__pv.sync(); window.__pv.setSheet('peek'); }); await tp.waitForTimeout(400);
     const face = await tp.evaluate(() => { const W = document.querySelector('#canvasWrap').getBoundingClientRect(), sb = document.querySelector('.sidebar').getBoundingClientRect().top; let best = null;
       document.querySelectorAll('#geometry .pv-face').forEach(f => { const r = f.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2; if (cx < W.x + 20 || cx > W.right - 20 || cy < W.y + 20 || cy > Math.min(W.bottom, sb) - 20) return; const a = r.width * r.height; if (!best || a > best.a) best = { a, cx, cy }; }); return best; });
     await tap(face.cx, face.cy); await tp.waitForTimeout(250);
@@ -490,8 +502,8 @@ for(const k of Object.keys(T))await T[k]();
     check(`${dn}: Reference: every button on screen and ≥ 48px`, rbtn.every(b => b.in && b.h >= 48), rbtn);
     const W = await tp.evaluate(() => { const r = document.querySelector('#canvasWrap').getBoundingClientRect(); return { cx: r.x + r.width / 2, cy: r.y + r.height / 2, w: r.width }; });
     const y0 = await tp.evaluate(() => window.__state.pv.yaw), s0 = await tp.textContent('#pvRefShot');
-    await swipe(W.cx + W.w * .3, W.cy, W.cx - W.w * .3, W.cy, 8); await tp.waitForTimeout(900); const s1 = await tp.textContent('#pvRefShot');
-    check(`${dn}: Reference: swipe to the next shot, the view locked against stray touches`, s1 !== s0 && s1.includes('·'), [s0, s1]);
+    await tp.evaluate(() => window.__buzz.length = 0); await swipe(W.cx + W.w * .3, W.cy, W.cx - W.w * .3, W.cy, 8); await tp.waitForTimeout(900); const s1 = await tp.textContent('#pvRefShot');
+    check(`${dn}: Reference: swipe to the next shot (with a tick), the view locked against stray touches`, s1 !== s0 && s1.includes('·') && await tp.evaluate(() => window.__buzz.length) > 0, [s0, s1]);
     await swipe(W.cx - W.w * .3, W.cy, W.cx + W.w * .3, W.cy, 8); await tp.waitForTimeout(900);
     check(`${dn}: Reference: swipe back`, await tp.textContent('#pvRefShot') !== s1);
     const rb = async r => { await tap(...await mid(`#pvRefBar [data-r="${r}"]`)); await tp.waitForTimeout(150); };
@@ -503,7 +515,25 @@ for(const k of Object.keys(T))await T[k]();
     check(`${dn}: Reference: the bar fades when left alone, a tap brings it back`, await tp.evaluate(() => document.querySelector('#pvRefBar').classList.contains('idle')) && (await tap(W.cx, W.cy), await tp.waitForTimeout(200), await tp.evaluate(() => !document.querySelector('#pvRefBar').classList.contains('idle'))));
     await rb('exit'); await tp.waitForTimeout(400);
     check(`${dn}: Reference: ✕ leaves and the sheet returns`, !(await tp.evaluate(() => document.body.classList.contains('pv-ref'))) && await shown('.sidebar'));
+    await tap(...await mid('#pvRefBtn')); await tp.waitForTimeout(400); await tp.goBack({ waitUntil: 'commit' }).catch(() => {}); await tp.waitForTimeout(400);
+    check(`${dn}: Android back leaves Reference view, not the page`, !(await tp.evaluate(() => document.body.classList.contains('pv-ref'))) && await tp.evaluate(() => document.body.classList.contains('pv-app')));
     await tctx.close();
+  }
+  // ── an Android tablet on its side: the controls become a side panel and the drawing gets the height
+  {
+    const lctx = await touchCtx(devices['Galaxy Tab S9 landscape']), lp = await lctx.newPage(); lp.on('pageerror', e => errors.push('Tab landscape: ' + e.message));
+    await lp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await lp.goto('file://' + file);
+    await lp.evaluate(() => document.querySelector('#appMode [data-app="perspective"]').click()); await lp.waitForTimeout(400);
+    const L = await lp.evaluate(() => { const f = document.querySelector('.pv-frame').getBoundingClientRect(), s = document.querySelector('.sidebar'), t = document.querySelector('.pv-tabs'), sr = s.getBoundingClientRect();
+      return { side: document.body.classList.contains('pv-side'), frame: Math.round(f.height), vh: innerHeight, panel: [Math.round(sr.left), Math.round(sr.width), Math.round(sr.height)], tabsFit: t.scrollWidth <= t.clientWidth + 1, scroll: document.documentElement.scrollHeight - innerHeight }; });
+    check('Tab landscape: controls move to a side panel and the drawing gets ⅔ of the height', L.side && L.frame >= L.vh * .66 && L.panel[0] > 600 && L.tabsFit && L.scroll <= 0, L);
+    await lp.evaluate(() => window.__pv.openTab('box')); await lp.waitForTimeout(300);
+    check('Tab landscape: the panel never slides and leaves no back entry', await lp.evaluate(() => getComputedStyle(document.querySelector('.sidebar')).transform === 'none' && !(history.state && history.state.locus)));
+    await lp.evaluate(() => window.__pv.setRef(true)); await lp.waitForTimeout(400);
+    check('Tab landscape: Reference view takes the whole screen', await lp.evaluate(() => Math.round(document.querySelector('#canvasWrap').getBoundingClientRect().width) === innerWidth));
+    const rail = await lp.evaluate(() => { const f = document.querySelector('.pv-frame').getBoundingClientRect(), r = document.querySelector('#pvRefBar').getBoundingClientRect(); return { clear: r.left >= f.right || r.right <= f.left || r.top >= f.bottom || r.bottom <= f.top, onScreen: r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth, f: [f.left, f.right].map(Math.round), r: [r.left, r.top, r.height].map(Math.round) }; });
+    check('Tab landscape: Reference controls stand in a rail beside the drawing, never on it', rail.clear && rail.onScreen, rail);
+    await lctx.close();
   }
   // the squaring grid goes out with the drawing
   await page.setViewportSize({ width: 1400, height: 900 });

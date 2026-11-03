@@ -91,23 +91,26 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
   - **A** aims at the selection, keeping you level if you were. **F** fits the view, and **Esc** deselects or leaves Reference view.
   - Ctrl/⌘-Z undoes, and a whole glide is one undo.
 
-### At the easel (phone and tablet)
+### At the easel (Android phone and tablet)
 
-On a phone or tablet the planner rearranges itself around the drawing:
+Built and tested for Chrome on Android: emulated Galaxy S24, Pixel 8 and Galaxy Tab S9, upright and on its side, driven with real touch events. Other touch screens get the same layout.
 
-- **The canvas gets the screen.** The controls live in a **sheet** that peeks from the bottom with six tabs: Scene, Canvas, Camera, Box, Guides and Measure. Tap a tab to open the sheet half way on just that tab, drag the grip up for the whole sheet, and drag it down to tuck it away. On a tablet a long panel flows into two columns.
-- **Tap a box** and a bar floats under it, with finger-sized buttons for Copy, Stack (a copy on top), 90°, Edit (opens the Box tab) and Delete.
-- **Double-tap the floor** to put a cube there.
-- **One finger** walks round the subject, and **two fingers** pinch-zoom the view.
+- **Phone, or a tablet held upright:**
+  - The canvas gets the screen, and the controls live in a **sheet** that peeks from the bottom with six tabs: Scene, Canvas, Camera, Box, Guides and Measure.
+  - Tap a tab to open the sheet half way on just that tab. Drag the grip up for the whole sheet, and drag it down to tuck it away.
+  - Tap a size field and the sheet lifts it clear of the keyboard.
+- **A tablet on its side:** the controls become a **side panel** on the right, and the drawing gets the full height. On a Galaxy Tab S9 that's 446 px of drawing, up from 315.
+- **Android's back gesture** closes the sheet, or leaves Reference view, before it ever leaves the page.
+- **Tap a box** and a bar floats under it with finger-sized buttons: Copy, Stack (a copy on top), 90°, Edit (opens the Box tab) and Delete.
+- **Double-tap the floor** to put a cube there. **One finger** walks round the subject, and **two fingers** pinch-zoom the view.
+- **A small vibration** when something snaps into place, or a swipe changes shot. Android vibrates; elsewhere it's silent. Controls respond when your finger lifts, so the first tap after a quick flick isn't lost (Chrome would otherwise drop that tap).
 - **Reference view** is for working from at the easel:
   - **‹ ›** and a **swipe** step through the Shots, with the view locked so a brushed screen doesn't knock it.
-  - **Grid** cycles the squaring grid.
-  - **Lines** turns the floor and horizon on or off, and **Values** the light and shade.
-  - **◐** swaps paper and night.
-  - **Locked / Unlocked** lets one finger turn the view again.
-  - **✕** leaves.
-  - The bar fades after a few seconds; tap the picture to bring it back. On a phone it folds into two rows.
-- The screen stays awake while you paint, where the browser allows it.
+  - **Grid** cycles the squaring grid. **Lines** turns the floor and horizon on or off, **Values** the light and shade, and **◐** swaps paper and night.
+  - **Locked / Unlocked** lets one finger turn the view again, and **✕** leaves.
+  - The bar fades after a few seconds; tap the picture to bring it back.
+  - Upright, the bar sits below the drawing, and on a phone it folds into two rows. On its side, the bar becomes a rail in the margin beside the drawing. Either way it never covers the drawing.
+- Reference view goes full screen and keeps the screen awake, where the browser allows. Chrome on Android allows both, but a page embedded in another site may not get them.
 
 ## Perspective (Geometry mode)
 
@@ -141,7 +144,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 176 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated iPhone and iPad driven by real touch events …
+node tools/verify.js              # 190 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 ```
@@ -153,7 +156,19 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v2, Studio**: the physical outputs above.
 - **v8, Perspective planner**: the Perspective mode above (scene, canvas, you, boxes and repeats, linear and curvilinear, hidden lines, plan, readouts, real-size Studio output) and the Geometry-mode 3-point horizon fix. 18 new checks: vanishing points meet to 1e-9, arcs are circles to 1e-9, both projections agree at the centre, hidden lines, arches, rings, horizon, dragging, stacking, VP dragging, pin and string, export size, undo across modes. Then the hands-on round: face handles, the turn dial, flush snapping, aim, one draw per frame, double-click to add. 101 checks.
 - **v9, Painter's round**: Shots with live thumbnails and auto-framing, walking round the subject by default, scroll to come closer, a dolly-zoom Lens, Dutch tilt and gliding transitions. Snap-tos for views, the horizon, composition points, boxes, the dial and vanishing points. Reference view; painter's-algorithm screen drawing (about 5 to 10 ms a frame, where it was up to 35). The usability audit's fixes: no fly-away drags, + Box beside the selection, every box's vanishing points, clear names, finger-sized handles, a clean cropped Export, plan dragging, unique VP names. 128 checks.
-- **v10, At the easel**: the phone and tablet layout. That's the sheet with tabs, the floating box bar, double-tap to add, and an easel-ready Reference view: swipe between shots, a view lock, an auto-hiding bar with large buttons, and the squaring grid (it prints on Construction). Tower Twist; the Totem scene; a vanishing-point budget for crowded scenes; a phone header that gives the canvas back its height (331 px of drawing on an iPhone 13, up from 287). 48 new checks run on an emulated iPhone 13 and iPad Pro 11 with CDP touch events. They caught taps on the floating bars being swallowed by the canvas's pointer capture, a phone reference bar that ran off the screen, and a squaring grid that never reached the paper. 176 checks.
+- **v10, At the easel**: the planner for an Android phone or tablet propped beside the canvas.
+  - The sheet with tabs on phones and upright tablets; a side panel on a tablet on its side (Galaxy Tab S9: 446 px of drawing, up from 315); a phone header that gives the canvas back its height.
+  - The floating box bar and double-tap to add.
+  - An easel-ready Reference view: swipe between shots, a view lock, an auto-hiding bar with large buttons that never covers the drawing, and the squaring grid, which prints on Construction.
+  - Android's back gesture, haptic ticks, and size fields kept clear of the keyboard.
+  - Tower Twist, the Totem scene, and a vanishing-point budget for crowded scenes.
+  - 62 new checks run on emulated Android devices with CDP touch events. They caught:
+    - taps on the floating bars being swallowed by the canvas's pointer capture;
+    - the first tap after a flick being dropped (Chrome's fling tap-suppression);
+    - a phone reference bar that ran off the screen;
+    - a sheet clipped by its own tab strip;
+    - a squaring grid that never reached the paper.
+  - 190 checks.
 - **v7, Sri Yantra**: the solved nine triangles with 24 exact triple points, the bindu, the lotus rings, girdles and bhupura, and four checks for it in place of the old placement check. 74 checks.
 - **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
