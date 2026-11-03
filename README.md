@@ -77,17 +77,37 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
   - Double-click the floor or press **+ Box**. With a box selected, the new one lands flush beside it at the same size and turn; otherwise it finds clear floor in front of you.
   - Drag a box along the floor (Shift lifts it, Alt-drags a copy), and drop it onto another to stack it.
   - The selected box grows a handle out of each face you can see: pull one to stretch the box with the opposite face held still.
-  - **Repeat** makes rows, grids, towers, a ring around a point, or an arch over it. Rings and arches stay put when you walk away from where you made them.
+  - **Repeat** makes rows, grids, towers, a ring around a point, or an arch over it. Rings and arches stay put when you walk away from where you made them. A tower can **Twist**: each cube turns that much more than the one below.
 - **Linear** projection keeps edges straight, and every family of parallel edges meets at one vanishing point. That's 1-, 2- or 3-point depending only on how you're turned and tilted. Drag a vanishing point to turn your head so it follows your hand. Past 90° linear stretches, and it can't show anything beside or behind you.
 - **Curvilinear** projection is stereographic. A straight edge and your eye span a plane, which meets the sphere of directions around your eye in a great circle, and stereographic projection maps every circle to a circle. So each edge is an exact circular arc. Click an edge of the selected box to get its pin position and string length on your canvas.
 - **Reference view** (the button in the heading) shows just the picture, as big as the screen allows, with no instruments. It goes full screen and keeps the screen awake where the browser allows. Esc brings the tools back.
 - **Drawing:** the screen draws boxes far to near, lit faces then edges (a painter's algorithm), which keeps dragging smooth. The exact ray-cast hidden lines are used for Studio output and the Hidden edges guide.
-- **On your canvas** lists the horizon, every box's vanishing points and the centre of vision, measured from the canvas's bottom-left corner. Rows marked *off canvas* go on the wall beside it.
-- **Studio and Export** use your canvas as the page at full size. Box edges go on the Figure layer, hidden edges and the horizon on Construction, and vanishing-point marks on Centre marks.
+- **On your canvas** lists the horizon, every box's vanishing points and the centre of vision, measured from the canvas's bottom-left corner. Rows marked *off canvas* go on the wall beside it. When more than two differently turned families of boxes share a scene, the picture shows only the world's vanishing points and the selected box's. Otherwise a crowd of labels buries the drawing.
+- **Studio and Export** use your canvas as the page at full size. Box edges go on the Figure layer; hidden edges, the horizon and the squaring grid on Construction; and vanishing-point marks on Centre marks.
+- **Squaring grid** (Guides, or *Grid* in Reference view) lays squares in real inches on the canvas: 6, 3, 12 or 2 in. Columns are lettered A, B, C… and rows numbered from the top, so you can carry the drawing across square by square. It prints with the drawing.
+- **Scenes** include *Totem · 36 × 48*, built after a canvas on the easel: a column of cubes twisting up the middle, blocks turned in from both sides, two arches overhead, and a ring at your feet that bends into a bowl. It's all curvilinear.
 - Keys:
   - **Delete** removes the selected box, **D** duplicates it and **R** turns it. The arrow keys nudge it (Shift for 1 in), and PageUp and PageDown lift it.
   - **A** aims at the selection, keeping you level if you were. **F** fits the view, and **Esc** deselects or leaves Reference view.
   - Ctrl/⌘-Z undoes, and a whole glide is one undo.
+
+### At the easel (phone and tablet)
+
+On a phone or tablet the planner rearranges itself around the drawing:
+
+- **The canvas gets the screen.** The controls live in a **sheet** that peeks from the bottom with six tabs: Scene, Canvas, Camera, Box, Guides and Measure. Tap a tab to open the sheet half way on just that tab, drag the grip up for the whole sheet, and drag it down to tuck it away. On a tablet a long panel flows into two columns.
+- **Tap a box** and a bar floats under it, with finger-sized buttons for Copy, Stack (a copy on top), 90°, Edit (opens the Box tab) and Delete.
+- **Double-tap the floor** to put a cube there.
+- **One finger** walks round the subject, and **two fingers** pinch-zoom the view.
+- **Reference view** is for working from at the easel:
+  - **‹ ›** and a **swipe** step through the Shots, with the view locked so a brushed screen doesn't knock it.
+  - **Grid** cycles the squaring grid.
+  - **Lines** turns the floor and horizon on or off, and **Values** the light and shade.
+  - **◐** swaps paper and night.
+  - **Locked / Unlocked** lets one finger turn the view again.
+  - **✕** leaves.
+  - The bar fades after a few seconds; tap the picture to bring it back. On a phone it folds into two rows.
+- The screen stays awake while you paint, where the browser allows it.
 
 ## Perspective (Geometry mode)
 
@@ -112,7 +132,7 @@ Incidence structure (which three lines meet at each point) follows the open-sour
 index.html              the app
 archive/v0-original.html    the file as first received (52,169 bytes)
 archive/v1-pass0.html       after the Pass 0 geometry and export fixes
-docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes
+docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes; perspective-planner/ and easel/ for the planner
 docs/samples/           a 48×48 in Flower of Life: print SVG, plotter SVG, stencil zip
 tools/                  Playwright checks (see below)
 ```
@@ -121,7 +141,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 128 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export …
+node tools/verify.js              # 176 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated iPhone and iPad driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 ```
@@ -133,6 +153,7 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
 - **v2, Studio**: the physical outputs above.
 - **v8, Perspective planner**: the Perspective mode above (scene, canvas, you, boxes and repeats, linear and curvilinear, hidden lines, plan, readouts, real-size Studio output) and the Geometry-mode 3-point horizon fix. 18 new checks: vanishing points meet to 1e-9, arcs are circles to 1e-9, both projections agree at the centre, hidden lines, arches, rings, horizon, dragging, stacking, VP dragging, pin and string, export size, undo across modes. Then the hands-on round: face handles, the turn dial, flush snapping, aim, one draw per frame, double-click to add. 101 checks.
 - **v9, Painter's round**: Shots with live thumbnails and auto-framing, walking round the subject by default, scroll to come closer, a dolly-zoom Lens, Dutch tilt and gliding transitions. Snap-tos for views, the horizon, composition points, boxes, the dial and vanishing points. Reference view; painter's-algorithm screen drawing (about 5 to 10 ms a frame, where it was up to 35). The usability audit's fixes: no fly-away drags, + Box beside the selection, every box's vanishing points, clear names, finger-sized handles, a clean cropped Export, plan dragging, unique VP names. 128 checks.
+- **v10, At the easel**: the phone and tablet layout. That's the sheet with tabs, the floating box bar, double-tap to add, and an easel-ready Reference view: swipe between shots, a view lock, an auto-hiding bar with large buttons, and the squaring grid (it prints on Construction). Tower Twist; the Totem scene; a vanishing-point budget for crowded scenes; a phone header that gives the canvas back its height (331 px of drawing on an iPhone 13, up from 287). 48 new checks run on an emulated iPhone 13 and iPad Pro 11 with CDP touch events. They caught taps on the floating bars being swallowed by the canvas's pointer capture, a phone reference bar that ran off the screen, and a squaring grid that never reached the paper. 176 checks.
 - **v7, Sri Yantra**: the solved nine triangles with 24 exact triple points, the bindu, the lotus rings, girdles and bhupura, and four checks for it in place of the old placement check. 74 checks.
 - **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
