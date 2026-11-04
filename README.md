@@ -9,7 +9,21 @@ Either way, the Studio panel sends the result off the screen at real size: print
 
 Started September 2026. One HTML file, no dependencies, no build step.
 
-**Live:** https://claude.ai/artifact/Dd9YXEXD7ixMpePpwSpnHo  ·  **Local:** open `index.html` in any browser.
+**Live:** https://claude.ai/artifact/Dd9YXEXD7ixMpePpwSpnHo  ·  **App:** https://domnoval.github.io/Locus/ (once GitHub Pages is on, see below)  ·  **Local:** open `index.html` in any browser.
+
+## Install on Android
+
+Locus installs as an app: an icon on your home screen that opens full screen, straight into Perspective, and works with no connection at the easel.
+
+1. On the phone or tablet, open **https://domnoval.github.io/Locus/** in Chrome.
+2. Tap **Install** on the banner. If you dismissed the banner, use the **⤓ Install Locus** button in the Scene tab, or Chrome's ⋮ menu → **Install app**.
+3. Open it from the home screen. Long-press the icon for its shortcuts:
+   - **At the easel** opens straight into Reference view.
+   - **Perspective** and **Geometry** open in those modes.
+
+Once installed, Locus keeps the screen awake in Reference view, and snaps give a small vibration under your finger. It updates itself when you're online: the newest version loads when the network answers within 3 seconds, and otherwise the saved copy opens.
+
+*Hosting:* the app is served by GitHub Pages from `main`, so every merge updates it. Pages is switched on once in the repository's **Settings → Pages**: *Deploy from a branch*, `main`, `/ (root)`.
 
 ## What's in it
 
@@ -133,6 +147,9 @@ Incidence structure (which three lines meet at each point) follows the open-sour
 
 ```
 index.html              the app
+manifest.webmanifest    what Android needs to install it: name, icons, full screen, shortcuts, screenshots
+sw.js                   offline: the page network-first (3 s, then the saved copy), icons and fonts cache-first
+app/                    the icon (vesica, horizon and vanishing point; SVG, PNG and maskable) and the install screenshots
 archive/v0-original.html    the file as first received (52,169 bytes)
 archive/v1-pass0.html       after the Pass 0 geometry and export fixes
 docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes; perspective-planner/ and easel/ for the planner
@@ -147,6 +164,7 @@ npm i -D playwright       # or set PLAYWRIGHT to an existing install
 node tools/verify.js              # 190 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
+node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
 ```
 
 ## History
@@ -169,6 +187,10 @@ node tools/studio-sweep.js        # print / plotter / stencil for every figure �
     - a sheet clipped by its own tab strip;
     - a squaring grid that never reached the paper.
   - 190 checks.
+- **v11, The app**: Locus installs on Android as a full-screen app that works offline.
+  - A manifest with the new icon, shortcuts (At the easel, Perspective, Geometry), and install screenshots.
+  - A service worker; a one-time install banner and a lasting Install button; the address bar colour follows the theme.
+  - `tools/pwa-check.js`, 15 checks, including Chrome's own installability verdict and an offline launch.
 - **v7, Sri Yantra**: the solved nine triangles with 24 exact triple points, the bindu, the lotus rings, girdles and bhupura, and four checks for it in place of the old placement check. 74 checks.
 - **v6, True perspective**: the camera model above, the perspective box, the off-page VP 3 knob, near-plane clipping, and four new checks for convergence, horizon and grid. 71 checks.
 - **v5, Look**: Night instrument and Geometer's notebook themes with a toggle, the hairline interface, an accent on the newest construction, compass pinholes, and the two Codex review fixes from PR #2. 66 checks.
