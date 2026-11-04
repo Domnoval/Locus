@@ -268,11 +268,128 @@
     body.pv-ref .workspace{position:static;height:100vh;grid-template-rows:1fr;padding:0}
     body.pv-ref .canvas-wrap{border:0;border-radius:0;cursor:default}
     @media(max-width:820px){.pv-shot-pic,.pv-shot-pic svg{height:48px}body.pv-app .pv-shots{order:1}body.pv-app .canvas-wrap{order:2}}
+    /* easel round: sheet, box bar, reference controls, squaring grid */
+    .pv-sheet-bar{display:none}
+    body:not(.pv-touch) .pv-box-empty{display:none}
+    #geometry .pv-sq-label{font:600 calc(11px * var(--u,1)) "IBM Plex Mono",monospace;fill:var(--focus);paint-order:stroke;stroke:var(--canvas);stroke-width:calc(3px * var(--u,1))}
+    .pv-boxbar{position:absolute;left:0;top:0;z-index:4;display:flex;gap:2px;padding:3px;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--strong);border-radius:3px;box-shadow:0 8px 24px rgba(0,0,0,.28);transition:opacity .12s}
+    .pv-boxbar[hidden]{display:none}
+    .pv-boxbar button{display:grid;justify-items:center;gap:1px;min-width:44px;padding:5px 7px;background:transparent;border:0;border-radius:2px;color:var(--ink);font-size:15px;line-height:1;cursor:pointer}
+    .pv-boxbar button span{font:500 8.5px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .pv-boxbar button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}.pv-boxbar button[data-act="del"]:hover{color:var(--accent)}
+    .pv-refbar{display:none;position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;align-items:center;gap:4px;padding:6px;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--strong);border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .35s,transform .35s;max-width:calc(100% - 24px);overflow-x:auto}
+    body.pv-ref .pv-refbar{display:flex}
+    .pv-refbar.idle{opacity:0;transform:translate(-50%,12px);pointer-events:none}
+    .pv-refbar button{min-width:52px;min-height:52px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;font:500 12px "IBM Plex Mono",monospace;letter-spacing:.04em;cursor:pointer}
+    .pv-refbar button[data-r="prev"],.pv-refbar button[data-r="next"]{font-size:26px;line-height:1}
+    .pv-refbar button.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+    .pv-refbar i{width:1px;align-self:stretch;background:var(--line);margin:4px}
+    .pv-ref-shot{min-width:9em;text-align:center;font:500 12px "IBM Plex Mono",monospace;letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+    @media(max-width:640px){
+      body.pv-ref .pv-refbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));left:10px;right:10px;transform:none;max-width:none;overflow:visible;gap:5px}
+      .pv-refbar.idle{transform:translateY(12px)}
+      .pv-refbar button{min-width:0;padding:0 2px;font-size:11px;letter-spacing:0}
+      .pv-refbar [data-r="prev"]{grid-area:1/1}.pv-ref-shot{grid-area:1/2/2/6;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px}.pv-refbar [data-r="next"]{grid-area:1/6}
+      .pv-refbar i{display:none}
+    }
+    /* touch: the canvas gets the screen, the controls live in a sheet that pulls up from the bottom */
+    body.pv-touch .app{display:block;padding:max(8px,env(safe-area-inset-top)) 10px 0;max-width:none}
+    body.pv-touch .workspace{position:static;display:flex;flex-direction:column;gap:6px;height:calc(100dvh - 78px - env(safe-area-inset-bottom));min-height:0;grid-template-rows:none}
+    body.pv-touch .workspace-head{align-items:center;padding:0 2px}
+    body.pv-touch .workspace-head h1{font-size:clamp(22px,5.5vw,34px)}
+    body.pv-touch .construction-label{display:none}
+    body.pv-touch .head-actions{gap:4px}body.pv-touch .head-actions .action{min-height:42px}
+    body.pv-touch #pvShots{flex:none}
+    body.pv-touch .canvas-wrap{flex:1;min-height:0;height:auto}
+    body.pv-touch .canvas-wrap #geometry{min-height:0;height:100%}
+    body.pv-touch .canvas-badge{display:none}
+    body.pv-touch .status-line{bottom:8px;font-size:9px}
+    body.pv-touch .sidebar{position:fixed;left:0;right:0;bottom:0;z-index:30;height:88dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--paper);border-top:1px solid var(--strong);border-radius:14px 14px 0 0;box-shadow:0 -14px 40px rgba(0,0,0,.35);padding:0 14px calc(18px + env(safe-area-inset-bottom));transition:transform .32s cubic-bezier(.2,.8,.2,1);transform:translateY(calc(88dvh - 72px))}
+    body.pv-touch .sidebar.dragging{transition:none}
+    body.pv-touch .sidebar{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-content:start;overflow-x:hidden}
+    @media(min-width:700px){body.pv-touch .sidebar .panel{column-count:2;column-gap:32px}
+      body.pv-touch .sidebar .panel>*{break-inside:avoid}body.pv-touch .sidebar .panel>.label,body.pv-touch .sidebar .panel>.pv-dims,body.pv-touch .sidebar .panel>.pv-readout{column-span:all}}
+    body.pv-touch .pv-sheet-bar,body.pv-touch .sidebar>.brand,body.pv-touch #appMode{grid-column:1/-1}
+    body.pv-touch .sidebar[data-sheet="half"]{transform:translateY(40dvh)}
+    body.pv-touch .sidebar[data-sheet="full"]{transform:translateY(0)}
+    body.pv-touch .pv-sheet-bar{display:block;position:sticky;top:0;z-index:2;background:var(--paper);padding:8px 0 6px;margin:0 -14px;padding-left:10px;padding-right:10px;touch-action:none;cursor:grab}
+    .pv-grip{width:44px;height:5px;border-radius:3px;background:var(--strong);margin:0 auto 8px}
+    .pv-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+    .pv-tabs button{flex:1 0 auto;min-height:40px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:3px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+    .pv-tabs button.active{color:var(--paper);background:var(--ink);border-color:var(--ink)}
+    @media(max-width:600px){.pv-tabs{gap:3px}.pv-tabs button{flex:1 1 0;min-width:0;padding:0 2px;font-size:10px;letter-spacing:.02em}}
+    body.pv-side .pv-tabs{gap:3px}body.pv-side .pv-tabs button{flex:1 1 0;min-width:0;padding:0 2px;font-size:10px;letter-spacing:.02em}
+    body.pv-touch .sidebar [data-tab]{display:none}
+    body.pv-touch .sidebar[data-tab="scene"] [data-tab="scene"],body.pv-touch .sidebar[data-tab="canvas"] [data-tab="canvas"],body.pv-touch .sidebar[data-tab="camera"] [data-tab="camera"],body.pv-touch .sidebar[data-tab="box"] [data-tab="box"],body.pv-touch .sidebar[data-tab="guides"] [data-tab="guides"],body.pv-touch .sidebar[data-tab="measure"] [data-tab="measure"]{display:block}
+    body.pv-touch .sidebar[data-tab="scene"] #appMode[data-tab="scene"]{display:grid}
+    body.pv-touch .sidebar [data-tab][hidden]{display:none!important}
+    body.pv-touch #pvPlan{width:92px;height:92px;bottom:30px}
+    body.pv-touch .chip{min-height:40px;padding:8px 12px;font-size:11px}
+    body.pv-touch .segmented button{min-height:44px}
+    body.pv-touch input,body.pv-touch select{font-size:16px}
+    body.pv-touch input[type=range]{height:34px}
+    body.pv-touch input[type=range]::-webkit-slider-thumb{width:24px;height:24px;margin-top:-12px}
+    body.pv-touch input[type=range]::-moz-range-thumb{width:22px;height:22px}
+    body.pv-touch .pv-boxbar button{min-width:52px;min-height:48px;font-size:18px}
+    body.pv-touch.pv-ref .sidebar{display:none}
+    body.pv-touch.pv-ref .workspace{height:100dvh}
+    body.pv-touch.pv-ref .app{padding:0}
+    /* a tablet on its side: the controls become a panel on the right and the drawing gets the full height */
+    body.pv-touch.pv-side .app{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"shots head" "canvas side";column-gap:10px;row-gap:6px;height:100dvh;padding:8px 0 8px 10px;box-sizing:border-box}
+    body.pv-touch.pv-side .workspace{display:contents}
+    body.pv-touch.pv-side .workspace-head{grid-area:head;min-width:0;gap:8px;padding:0 10px 0 0}
+    body.pv-touch.pv-side .workspace-head>div:first-child{min-width:0}
+    body.pv-touch.pv-side .workspace-head h1{font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    body.pv-touch.pv-side .head-actions .action{font-size:0;gap:0;padding:0;width:42px;min-height:40px;justify-content:center}
+    body.pv-touch.pv-side .head-actions .action svg{width:18px;height:18px}
+    body.pv-touch.pv-side .history-actions .action{width:38px;min-width:38px}
+    body.pv-touch.pv-side #exportBtn{display:none}
+    body.pv-touch.pv-side #pvShots{grid-area:shots;min-width:0;gap:4px;padding:0 0 2px}
+    body.pv-touch.pv-side .pv-shot{padding:3px 5px 4px;gap:1px}
+    body.pv-touch.pv-side .pv-shot-pic,body.pv-touch.pv-side .pv-shot-pic svg{height:34px;min-width:34px}
+    body.pv-touch.pv-side .pv-shot b{font-size:10px}body.pv-touch.pv-side .pv-shot small{display:none}
+    body.pv-touch.pv-side .canvas-wrap{grid-area:canvas;height:auto;min-height:0}
+    body.pv-touch.pv-side .status-line{display:none}
+    body.pv-touch.pv-side .sidebar,body.pv-touch.pv-side .sidebar[data-sheet]{grid-area:side;position:static;transform:none!important;height:auto;min-height:0;border-radius:0;border:0;border-left:1px solid var(--line);box-shadow:none;padding:0 12px 16px;transition:none}
+    body.pv-touch.pv-side .pv-grip{display:none}
+    body.pv-touch.pv-side .pv-sheet-bar{cursor:default;margin:0 -12px;padding-top:4px}
+    body.pv-touch.pv-side .sidebar .panel{column-count:auto}
+    body.pv-touch.pv-side.pv-ref .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"canvas";padding:0}
+    body.pv-touch .sidebar input{scroll-margin-top:96px}
+    /* on its side at the easel the controls become a rail in the empty margin, so they never sit on the drawing */
+    @media(orientation:landscape){
+      body.pv-touch.pv-ref .pv-refbar{display:grid;grid-template-columns:repeat(2,60px);gap:6px;left:auto;right:12px;top:50%;bottom:auto;transform:translateY(-50%);max-width:none;max-height:calc(100% - 16px);overflow:visible}
+      body.pv-touch.pv-ref .pv-refbar.idle{transform:translate(12px,-50%)}
+      body.pv-touch.pv-ref .pv-refbar i{display:none}
+      body.pv-touch.pv-ref .pv-refbar button{min-width:0;padding:0 2px;font-size:11px;letter-spacing:0}
+      body.pv-touch.pv-ref .pv-refbar [data-r="prev"]{grid-area:1/1}body.pv-touch.pv-ref .pv-refbar [data-r="next"]{grid-area:1/2}
+      body.pv-touch.pv-ref .pv-ref-shot{grid-area:2/1/3/3;min-width:0;white-space:normal;font-size:10px;line-height:1.3;padding:2px 0}
+    }
+    body.pv-app button{touch-action:manipulation}
+    body.pv-touch #copyBtn{display:none}
+    body.pv-touch .head-actions{flex-wrap:nowrap}
+    body.pv-touch #themeBtn span{display:none}
+    @media(max-width:600px){
+      body.pv-touch .workspace{gap:4px}
+      body.pv-touch .workspace-head{gap:8px;padding:0}
+      body.pv-touch .workspace-head>div:first-child{min-width:0}
+      body.pv-touch .workspace-head h1{font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      body.pv-touch .head-actions .action{font-size:0;gap:0;padding:0;width:42px;min-height:40px;justify-content:center}
+      body.pv-touch .head-actions .action svg{width:18px;height:18px}
+      body.pv-touch .history-actions .action{width:38px;min-width:38px}
+      body.pv-touch .pv-shots{gap:4px;padding:0 0 2px}
+      body.pv-touch .pv-shot{padding:3px 5px 4px;gap:1px}
+      body.pv-touch .pv-shot-pic,body.pv-touch .pv-shot-pic svg{height:34px;min-width:34px}
+      body.pv-touch .pv-shot b{font-size:10px}body.pv-touch .pv-shot small{display:none}
+      body.pv-touch .status-line{display:none}
+      body.pv-touch #pvPlan{width:76px;height:76px;bottom:8px;right:8px}
+    }
   </style>
 </head>
 <body>
 <main class="app">
-  <aside class="sidebar" aria-label="Drawing controls">
+  <aside class="sidebar" aria-label="Drawing controls" data-sheet="peek" data-tab="scene">
+    <div class="pv-sheet-bar" id="pvSheetBar"><div class="pv-grip" aria-hidden="true"></div><div class="pv-tabs" role="tablist" aria-label="Controls"><button type="button" role="tab" data-t="scene">Scene</button><button type="button" role="tab" data-t="canvas">Canvas</button><button type="button" role="tab" data-t="camera">Camera</button><button type="button" role="tab" data-t="box">Box</button><button type="button" role="tab" data-t="guides">Guides</button><button type="button" role="tab" data-t="measure">Measure</button></div></div>
     <div class="brand"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="11" cy="10" r="8.5"/><circle cx="19" cy="10" r="8.5"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg><div><b>LOCUS</b><small>geometry, constructed</small></div></div>
     <div class="segmented two app-switch" id="appMode" role="group" aria-label="Mode"><button data-app="geometry" type="button">Geometry</button><button data-app="perspective" type="button">Perspective</button></div>
     <div class="side-group" id="geoSide">
@@ -352,6 +469,7 @@
       <div class="control"><div class="control-head"><label for="pvRoll">Dutch tilt</label><span class="value" id="pvRollValue">0°</span></div><input id="pvRoll" type="range" min="-35" max="35" step="1"></div>
       <p class="picker-note">Pick a <b>shot</b> above the canvas, then fine-tune: drag empty space to walk round the subject, scroll to move closer, Shift-drag to look around. Drag the horizon line to slide it to a third. Pinch or Ctrl-scroll zooms the view. Hold Ctrl/⌘ to switch snapping off.</p>
     </section>
+    <section class="panel pv-box-empty" id="pvBoxEmpty"><span class="label">Box</span><p class="picker-note">Tap a box on the canvas to edit it, or double-tap the floor to add one.</p></section>
     <section class="panel" id="pvBoxPanel" hidden>
       <span class="label">Selected box · inches</span>
       <div class="st-row pv-dims"><label class="st-field">Width<input type="number" id="pvW" min="0.5" step="1"></label><label class="st-field">Height<input type="number" id="pvH" min="0.5" step="1"></label><label class="st-field">Depth<input type="number" id="pvD" min="0.5" step="1"></label><label class="st-field">Off floor<input type="number" id="pvY" min="0" step="1"></label></div>
@@ -364,13 +482,14 @@
       <div class="control" id="pvRowsRow"><div class="control-head"><label for="pvRows">Rows</label><span class="value" id="pvRowsValue">3</span></div><input id="pvRows" type="range" min="1" max="24" step="1"></div>
       <div class="control" id="pvGapRow"><div class="control-head"><label for="pvGap">Gap</label><span class="value" id="pvGapValue">6 in</span></div><input id="pvGap" type="range" min="0" max="120" step="1"></div>
       <div class="control" id="pvSpanRow"><div class="control-head"><label for="pvSpan">Sweep</label><span class="value" id="pvSpanValue">180°</span></div><input id="pvSpan" type="range" min="10" max="360" step="5"></div>
+      <div class="control" id="pvTwistRow"><div class="control-head"><label for="pvTwist" title="Each cube in the tower turns this much more than the one below">Twist</label><span class="value" id="pvTwistValue">0°</span></div><input id="pvTwist" type="range" min="-45" max="45" step="1"></div>
     </section>
     <section class="panel">
       <span class="label">Guides</span>
       <div class="toggle-row" id="pvShow">
         <button class="chip" data-show="floor" type="button">Floor grid</button><button class="chip" data-show="horizon" type="button">Horizon</button><button class="chip" data-show="vps" type="button">Vanishing points</button>
         <button class="chip" data-show="guides" type="button" title="Carry the selected box’s edges on to their vanishing points">Lines to VPs</button><button class="chip" data-show="cone" type="button">Cone of vision</button><button class="chip" data-show="hidden" type="button">Hidden edges</button>
-        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap-tos: views click to 1- and 2-point, the horizon and boxes to the thirds, boxes flush to each other">Snap</button><button class="chip" data-show="thirds" type="button" title="Rule-of-thirds lines on the canvas">Thirds</button><button class="chip" data-show="golden" type="button" title="Golden-section lines (φ) on the canvas">Golden φ</button>
+        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap-tos: views click to 1- and 2-point, the horizon and boxes to the thirds, boxes flush to each other">Snap</button><button class="chip" data-show="thirds" type="button" title="Rule-of-thirds lines on the canvas">Thirds</button><button class="chip" data-show="golden" type="button" title="Golden-section lines (φ) on the canvas">Golden φ</button><button class="chip" id="pvSqChip" type="button" title="A squaring grid on the canvas, columns lettered and rows numbered, for transferring the plan to the real canvas. It prints too (Drafting layer).">Squaring grid</button>
       </div>
     </section>
     <section class="panel">
@@ -402,7 +521,8 @@
         <title id="svgTitle">Sacred geometry construction</title><desc id="svgDesc">An interactive geometric construction drawing.</desc>
         <g id="gridLayer"></g><g id="perspectiveLayer"></g><g id="ghostLayer"></g><g id="guideLayer"></g><g id="shapeLayer"></g><g id="pointLayer"></g><g id="overlayLayer"></g><g id="lineageLayer"></g>
       </svg>
-      <button type="button" class="pv-ref-exit" id="pvRefExit">✕ Leave reference view</button>
+      <div class="pv-refbar" id="pvRefBar" role="toolbar" aria-label="Reference controls"><button type="button" data-r="prev" aria-label="Previous shot">‹</button><span class="pv-ref-shot" id="pvRefShot">Your view</span><button type="button" data-r="next" aria-label="Next shot">›</button><i></i><button type="button" data-r="grid" aria-label="Squaring grid">Grid</button><button type="button" data-r="lines" aria-label="Construction lines">Lines</button><button type="button" data-r="values" aria-label="Light and shade">Values</button><button type="button" data-r="theme" aria-label="Paper or night">◐</button><button type="button" data-r="lock" aria-label="Lock the view">Locked</button><button type="button" id="pvRefExit" data-r="exit" aria-label="Leave reference view">✕</button></div>
+      <div class="pv-boxbar" id="pvBoxBar" role="toolbar" aria-label="Selected box" hidden><button type="button" data-act="dup" title="Copy it beside itself (D)">⧉<span>Copy</span></button><button type="button" data-act="stack" title="Copy it on top">⬒<span>Stack</span></button><button type="button" data-act="rot" title="Turn it 90°">⟳<span>90°</span></button><button type="button" data-act="edit" title="Size, turn and repeats">✎<span>Edit</span></button><button type="button" data-act="del" title="Delete (Delete)">✕<span>Delete</span></button></div>
       <svg id="pvPlan" viewBox="0 0 200 200" role="img" aria-label="Plan: where you stand and what the canvas takes in" hidden></svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
@@ -689,7 +809,7 @@
     const turn=(k,a)=>{const c=Math.cos(a),s=Math.sin(a),t=1-c,[x,y,z]=k;return[[c+x*x*t,x*y*t-z*s,x*z*t+y*s],[y*x*t+z*s,c+y*y*t,y*z*t-x*s],[z*x*t-y*s,z*y*t+x*s,c+z*z*t]]};   // Rodrigues, right-handed about k
 
     /* ----- scenes ----- */
-    const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across'};
+    const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across',twist:0};
     const box=(id,x,y,z,s,extra={})=>({id,x,y,z,w:s,h:s,d:s,ry:0,rx:0,...extra,arr:{...ARR,...(extra.arr||{})}});
     const SHOW={floor:true,horizon:true,vps:true,guides:true,cone:false,hidden:false,values:true,depth:true,plan:true,snap:true,thirds:true,golden:false};
     const SCENES={
@@ -701,6 +821,11 @@
         pv:{canvas:{w:36,h:48},dist:34,proj:'linear',eye:{x:0,y:62,z:0},yaw:22,pitch:30,boxes:[box(1,52,0,138,26,{arr:{type:'tower',n:8,gap:0}})]}},
       room:{name:'A room of cubes',note:'A grid of cubes on the floor, seen from a little above and turned: three-point perspective, looking down.',
         pv:{canvas:{w:48,h:36},dist:40,proj:'linear',eye:{x:0,y:80,z:0},yaw:30,pitch:-18,boxes:[box(1,-60,0,60,16,{arr:{type:'grid',n:4,n2:4,gap:28}})]}},
+      totem:{name:'Totem · 36 × 48',note:'After the canvas on the easel: a column of cubes twisting up the middle, blocks turned in from both sides, two arches over your head and a ring of cubes bending into a bowl at your feet. Curvilinear, on a 36 × 48 portrait. Pick a cube in the column and slide Twist.',
+        pv:{canvas:{w:36,h:48},dist:13.5,proj:'curvi',eye:{x:0,y:60,z:0},yaw:0,pitch:14,cv:{x:0,y:2},boxes:[box(1,0,0,52,16,{arr:{type:'tower',n:16,gap:2,twist:9}}),
+          box(2,-50,0,100,28,{ry:35}),box(3,50,0,100,28,{ry:-35}),box(4,-38,84,74,18,{ry:22,rx:-12}),box(5,38,84,74,18,{ry:-22,rx:-12}),
+          box(6,-110,60,64,14,{arr:{type:'arch',n:15,span:180,pivot:{x:0,y:60,z:64}}}),box(7,-150,60,34,11,{arr:{type:'arch',n:21,span:180,pivot:{x:0,y:60,z:34}}}),
+          box(8,-70.9,0,12.5,12,{arr:{type:'ring',n:13,span:160,pivot:{x:0,y:60,z:0}}})]}},
       blank:{name:'One cube',note:'A single cube on the floor in front of you. Add more, drag them around, and look at them from anywhere.',
         pv:{canvas:{w:36,h:48},dist:40,proj:'linear',eye:{x:0,y:62,z:0},yaw:0,pitch:-20,boxes:[box(1,0,0,96,24,{ry:28})]}}};
     const fromScene=id=>{const S=SCENES[id];return{scene:id,name:S.name,cv:{x:0,y:0},grid:12,show:{...SHOW},...structuredClone(S.pv)}};
@@ -710,6 +835,9 @@
     function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
     const byId=id=>st().boxes.find(b=>b.id===id);
     let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
+    let lastPtr='mouse',lastSnap='';
+    // a tick under the finger when something clicks into place (Android vibrates; elsewhere it's a no-op)
+    const buzz=(ms=8)=>{if(lastPtr==='touch')try{navigator.vibrate?.(ms)}catch{}};
 
     /* ----- the camera ----- */
     const rotZ=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,-s,0],[s,c,0],[0,0,1]]};   // Dutch tilt: rolls the picture about the line of sight
@@ -730,7 +858,8 @@
 
     /* ----- view: picture-plane inches ↔ the 900 × 700 drawing ----- */
     const view={s:8,ox:450,oy:350,key:''};
-    function fit(force){const {w,h}=st().canvas,ref=document.body.classList.contains('pv-ref'),key=w+'x'+h+(ref?'r':'');if(!force&&view.key===key)return;view.key=key;const V=visCache||{x0:0,y0:0,x1:900,y1:700},vw=V.x1-V.x0,vh=V.y1-V.y0;view.s=ref?Math.min(vw*.94/w,vh*.94/h):Math.min(vw*(vw<vh?.9:.7)/w,vh*.74/h);view.ox=(V.x0+V.x1)/2;view.oy=(V.y0+V.y1)/2}
+    // in Reference view on a sideways touch screen the canvas centres left of the rail of controls
+    function fit(force){const {w,h}=st().canvas,ref=document.body.classList.contains('pv-ref'),key=w+'x'+h+(ref?'r':'');if(!force&&view.key===key)return;view.key=key;const V0=visCache||{x0:0,y0:0,x1:900,y1:700},rail=ref&&document.body.classList.contains('pv-touch')&&innerWidth>innerHeight?152*U:0,V={...V0,x1:V0.x1-rail},vw=V.x1-V.x0,vh=V.y1-V.y0;view.s=ref?Math.min(vw*.94/w,vh*.94/h):Math.min(vw*(vw<vh?.9:.7)/w,vh*(document.body.classList.contains('pv-touch')?.8:.74)/h);view.ox=(V.x0+V.x1)/2;view.oy=(V.y0+V.y1)/2}
     const toSvg=([X,Y])=>[view.ox+(X+st().cv.x)*view.s,view.oy-(Y+st().cv.y)*view.s];
     const fromSvg=(x,y)=>[(x-view.ox)/view.s-st().cv.x,(view.oy-y)/view.s-st().cv.y];
     const canvasRect=()=>{const {w,h}=st().canvas;return{x:view.ox-w/2*view.s,y:view.oy-h/2*view.s,w:w*view.s,h:h*view.s}};
@@ -767,7 +896,7 @@
       const put=(R,t,k)=>out.push({b,k,R,t,hw:b.w/2,h:b.h,hd:b.d/2});
       if(a.type==='row'){const away=a.axis==='away',dir=mv(R0,away?[0,0,1]:[1,0,0]),step=(away?b.d:b.w)+gap;for(let i=0;i<n;i++)put(R0,add(t0,scl(dir,i*step)),i)}
       else if(a.type==='grid'){const m=Math.max(1,Math.round(a.n2||1)),dx=mv(R0,[1,0,0]),dz=mv(R0,[0,0,1]);for(let i=0;i<n;i++)for(let j=0;j<m;j++)put(R0,add(t0,add(scl(dx,i*(b.w+gap)),scl(dz,j*(b.d+gap)))),i*m+j)}
-      else if(a.type==='tower'){const up=mv(R0,[0,1,0]);for(let i=0;i<n;i++)put(R0,add(t0,scl(up,i*(b.h+gap))),i)}
+      else if(a.type==='tower'){const up=mv(R0,[0,1,0]),tw=(+a.twist||0)*D2R;for(let i=0;i<n;i++)put(mm(R0,rotY(i*tw)),add(t0,scl(up,i*(b.h+gap))),i)}   // twist: each cube turns that much more than the one below
       else if(a.type==='ring'||a.type==='arch'){
         // a ring turns about the vertical through your eye; an arch turns about the level line through your eye that is square to the box, so it rises over you
         const E=a.pivot?[a.pivot.x,a.pivot.y,a.pivot.z]:[pv.eye.x,pv.eye.y,pv.eye.z],span=clamp(+a.span||0,-360,360)*D2R,full=Math.abs(Math.abs(span)-2*Math.PI)<1e-9,step=n>1?span/(full?n:n-1):0;
@@ -799,7 +928,8 @@
       if(i>2&&out.some(o=>Math.hypot(o.p[0]-p[0],o.p[1]-p[1])<.5))return;out.push({dir:w,c,p,name:(i>2?'box ':'')+vpName(K,c,w)})}));
       const seen={};out.forEach(v=>{seen[v.name]=(seen[v.name]||0)+1;if(seen[v.name]>1)v.name+=' '+seen[v.name]});return out}
     function directionsOf(pv,K){const dirs=[[1,0,0],[0,1,0],[0,0,1]],same=(a,b)=>Math.abs(Math.abs(dot(a,b))-1)<1e-9,addR=R=>[0,1,2].forEach(j=>{const a=[R[0][j],R[1][j],R[2][j]];if(!dirs.some(d=>same(d,a)))dirs.push(a)});
-      pv.boxes.forEach(b=>addR(boxR(b)));const s=sel&&byId(sel.id);if(s){const I=instances(pv,s)[sel.k]||instances(pv,s)[0];addR(I.R)}return dirs}
+      const n0=dirs.length;pv.boxes.forEach(b=>addR(boxR(b)));if(dirs.length-n0>4)dirs.length=n0;   // a crowd of differently turned boxes: just the world's VPs and the selected box's, or the labels bury the picture
+      const s=sel&&byId(sel.id);if(s){const I=instances(pv,s)[sel.k]||instances(pv,s)[0];addR(I.R)}return dirs}
 
     /* ----- drawing ----- */
     let lastFrame=null;
@@ -814,8 +944,9 @@
       drawBoxes(K,list);
       if(S.guides&&sel)drawGuides(K,list);
       drawMarks(K);
-      if(!harvesting)drawOverlay(K,list);
-      if(!harvesting){drawPlan(K,list);if(!interacting){readouts(K,list);renderShots()}heading(K);save()}}
+      drawSquares();
+      if(!harvesting){drawOverlay(K,list);const t=snapNote?snapNote.text:'';if(t&&t!==lastSnap&&drag)buzz();lastSnap=t}
+      if(!harvesting){placeBoxBar(K,list);drawPlan(K,list);if(!interacting){readouts(K,list);renderShots()}heading(K);save()}}
     function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
       const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
       // the floor only changes when you move, so it is kept between frames (sampled every 3°: it is a guide, not a line you paint)
@@ -859,12 +990,13 @@
     let visCache=null;new ResizeObserver(()=>{visCache=null;if(state.app==='perspective'&&els.svg.getBoundingClientRect().width){visCache=measureVisible();fit(true);paint()}}).observe(els.svg);
     function visibleRect(){if(visCache)return visCache;return visCache=measureVisible()}
     let U=1;const coarse=matchMedia('(pointer: coarse)').matches;
-    function measureVisible(){const r0=els.svg.getScreenCTM();if(r0&&r0.a){U=1/r0.a;els.svg.style.setProperty('--u',U.toFixed(4))}const r=els.svg.getBoundingClientRect(),m=els.svg.getScreenCTM();if(!m||!r.width)return{x0:0,y0:0,x1:900,y1:700};const i=m.inverse(),a=new DOMPoint(r.left,r.top).matrixTransform(i),b=new DOMPoint(r.right,r.bottom).matrixTransform(i);return{x0:a.x,y0:a.y,x1:b.x,y1:b.y}}
+    let svgOff={x:0,y:0};
+    function measureVisible(){const r0=els.svg.getScreenCTM();if(r0&&r0.a){U=1/r0.a;els.svg.style.setProperty('--u',U.toFixed(4))}const r=els.svg.getBoundingClientRect(),wr=els.wrap.getBoundingClientRect();svgOff={x:r.left-wr.left,y:r.top-wr.top};m=els.svg.getScreenCTM();if(!m||!r.width)return{x0:0,y0:0,x1:900,y1:700};const i=m.inverse(),a=new DOMPoint(r.left,r.top).matrixTransform(i),b=new DOMPoint(r.right,r.bottom).matrixTransform(i);return{x0:a.x,y0:a.y,x1:b.x,y1:b.y}}
     const fmtIn=v=>`${r1(v)} in`.replace('.0 in',' in');
     const fov=K=>Math.round(K.curvi?4*Math.atan(K.W/(4*K.D))*R2D:2*Math.atan(K.W/(2*K.D))*R2D);
     const lbl=(x,y,text,cls='vp-label',anchor='start')=>{const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;return t};
     const refMode=()=>document.body.classList.contains('pv-ref');
-    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];if(refMode()){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim solid','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));return}
+    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];if(refMode()){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim solid','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));squareLabels(g,R);return}
       visibleRect();const tag=(x,y,text,anchor='start',cls='vp-label')=>{const w=(text.length*6.1+4)*U,x0=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;let yy=y;
         for(let k=0;k<10;k++){if(!placed.some(r=>x0<r[0]+r[2]&&x0+w>r[0]&&yy-10*U<r[1]+r[3]&&yy+2*U>r[1]))break;yy=y+(k%2?-1:1)*13*U*Math.ceil((k+1)/2)}placed.push([x0,yy-10*U,w,12*U]);return lbl(x,yy,text,cls,anchor)};
       // dim everything off the canvas, frame it and rule it in inches
@@ -874,6 +1006,7 @@
       for(let i=0;i<=pv.canvas.w+1e-9;i+=step){const x=R.x+i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${x.toFixed(1)},${R.y+R.h}v${l}`;if(i%major===0)g.appendChild(lbl(x,R.y+R.h+17,`${i}`,'pv-rule','middle'))}
       for(let i=0;i<=pv.canvas.h+1e-9;i+=step){const y=R.y+R.h-i*view.s,l=i%major===0?7:i%6===0?4.5:2.5;ticks+=`M${R.x},${y.toFixed(1)}h${-l}`;if(i%major===0&&i)g.appendChild(lbl(R.x-10,y+3,`${i}`,'pv-rule','end'))}
       g.appendChild(svgEl('path',{d:ticks,class:'pv-ticks'}));g.appendChild(lbl(R.x-10,R.y+R.h+17,'in','pv-rule','end'));
+      squareLabels(g,R);
       // composition: thirds and golden-section lines across the canvas (the horizon and boxes snap to them)
       if(!refMode()){let d='';const fr=compFractions().filter(f=>f!==.5);fr.forEach(f=>{d+=`M${R.x+f*R.w},${R.y}v${R.h}M${R.x},${R.y+f*R.h}h${R.w}`});if(d)g.appendChild(svgEl('path',{d,class:'pv-comp'}))}
       // the cone of comfortable vision, and where linear perspective gives up
@@ -951,7 +1084,7 @@
     function planeHit(K,X,Y,P0,n){const d=rayDir(K,X,Y),den=dot(d,n);if(Math.abs(den)<1e-9)return null;const t=dot(sub(P0,K.E),n)/den;return t>0?add(K.E,scl(d,t)):null}
     const snap=v=>st().show.snap?Math.round(v/3)*3:r1(v);
     let drag=null;const touches=new Map();
-    function down(e){const p=ev(e);touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
+    function down(e){lastPtr=e.pointerType;const p=ev(e);if(refMode()&&refLock){drag={type:'swipe',p,x:e.clientX,y:e.clientY};return}touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
       if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
       const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
       if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
@@ -975,6 +1108,7 @@
     function move(e){const p=ev(e);if(touches.has(e.pointerId))touches.set(e.pointerId,p);
       if(!drag){const h=pick(p[0],p[1]),id=h&&h.id;if((hover&&hover.id)!==id){hover=h;paint()}els.wrap.style.cursor=e.target.closest('.pv-handle')?'':h?'grab':'';return}
       const dx=p[0]-(drag.p?.[0]??0),dy=p[1]-(drag.p?.[1]??0);if(Math.hypot(dx,dy)>3)drag.moved=true;const K=camera(),pv=st();
+      if(drag.type==='swipe')return;
       if(drag.type==='pinch'){if(touches.size<2)return;const [a,b]=[...touches.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=[(a[0]+b[0])/2,(a[1]+b[1])/2],f=d/drag.d;
         view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;paint();return}
       if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;paint();return}
@@ -1003,7 +1137,11 @@
           snapNote=null;if(st().show.snap&&!e.ctrlKey&&!e.metaKey){const f=flush(st(),nb);nb={...nb,x:f.x,z:f.z};snapCue=f.cue;if(f.cue)snapNote={text:'FLUSH',p};if(drag.rest)nb.y=supportUnder(st(),nb);
             if(!f.cue){const c=compSnap(K,nb);if(c){nb={...nb,x:c.x,z:c.z};snapNote={text:c.name,p};if(drag.rest)nb.y=supportUnder(st(),nb)}}}else snapCue=null;setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
         paint()}}
-    function up(e){touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;interacting=false;snapNote=null;snapCue=null;liveDim=null;render();sync();renderShots();
+    let lastTap=null;
+    function up(e){if(drag&&drag.type==='swipe'){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag=null;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.3)cycleShot(dx<0?1:-1);else if(Math.hypot(dx,dy)<10){if(refBar.classList.contains('idle'))wakeRefBar();else{clearTimeout(refIdle);refBar.classList.add('idle')}}return}
+      touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;interacting=false;snapNote=null;snapCue=null;liveDim=null;render();sync();renderShots();
+      // double-tap the floor on a touch screen to add a box (the mouse has dblclick)
+      if(e.pointerType==='touch'&&!d.moved&&(d.type==='look'||d.type==='orbit')){const now=performance.now(),p=ev(e);if(lastTap&&now-lastTap.t<350&&Math.hypot(p[0]-lastTap.p[0],p[1]-lastTap.p[1])<30*U){lastTap=null;commitChange();addAtPoint(p);return}lastTap={t:now,p}}
       if(!d.moved&&(d.type==='look'||d.type==='orbit'||d.type==='move')){if(d.edge&&(d.type==='look'||d.type==='orbit'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'||d.type==='orbit'){sel=null;pin=null}render();sync()}
       commitChange()}
     const wrap180=a=>((a+180)%360+360)%360-180;let wheelOpen=false,wheelTimer=0,wheelIdle=0;
@@ -1017,7 +1155,8 @@
         const J=[[(qy[0]-q[0])/h,(qp[0]-q[0])/h],[(qy[1]-q[1])/h,(qp[1]-q[1])/h]],det=J[0][0]*J[1][1]-J[0][1]*J[1][0];if(Math.abs(det)<1e-12)break;
         y-=clamp((J[1][1]*r[0]-J[0][1]*r[1])/det,-20,20);p-=clamp((-J[1][0]*r[0]+J[0][0]*r[1])/det,-20,20);p=clamp(p,-80,80)}
       set({yaw:wrap180(r1(y*100)/100),pitch:r1(p*100)/100})}
-    function dblclick(e){const [x,y]=ev(e);if(pick(x,y))return;const K=camera(),[X,Y]=fromSvg(x,y),d=rayDir(K,X,Y);if(d[1]>=-1e-6)return;const t=-K.E[1]/d[1],q=add(K.E,scl(d,t));
+    function dblclick(e){addAtPoint(ev(e))}
+    function addAtPoint([x,y]){if(pick(x,y))return;const K=camera(),[X,Y]=fromSvg(x,y),d=rayDir(K,X,Y);if(d[1]>=-1e-6)return;const t=-K.E[1]/d[1],q=add(K.E,scl(d,t));
       beginChange();addBox({x:snap(q[0]),z:snap(q[2])});commitChange()}
     // the selected copy's handles: one on a stalk out of each face you can see, and a turn dial at its foot
     let liveDim=null,snapCue=null;
@@ -1131,6 +1270,7 @@
     function remove(){if(!sel)return;beginChange();set({boxes:st().boxes.filter(b=>b.id!==sel.id)});sel=null;pin=null;render();sync();commitChange()}
     function key(e){const k=e.key,b=sel&&byId(sel.id);
       if(k==='Escape'&&refMode()){setRef(false);return}
+      if(refMode()){if(k==='ArrowRight'){cycleShot(1);return}if(k==='ArrowLeft'){cycleShot(-1);return}if(k==='g'||k==='G'){refAction('grid');return}if(k==='l'||k==='L'){refAction('lines');return}if(k==='v'||k==='V'){refAction('values');return}}
       if(k==='Escape'){sel=null;pin=null;render();sync();return}
       if(k==='f'||k==='F'){fit(true);render();return}
       if(k==='a'||k==='A'){beginChange();aim();render();sync();commitChange();return}
@@ -1164,7 +1304,7 @@
     Object.entries(ranges).forEach(([id,[k,f]])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{set({[k]:f(+el.value)});paint();sync(id)})});
     {const el=q('pvDist');rangeHistory(el);el.addEventListener('input',()=>{const pv=st(),D1=+el.value,F=focus(),E=[pv.eye.x,pv.eye.y,pv.eye.z],v=sub(E,F),r=len(v),Q=r>1e-6?add(F,scl(v,D1/pv.dist)):E;
       set({dist:D1,eye:{x:Q[0],y:Math.max(1,Q[1]),z:Q[2]}});paint();sync('pvDist')})}
-    const boxRanges={pvRy:'ry',pvRx:'rx'},arrRanges={pvCount:'n',pvGap:'gap',pvRows:'n2',pvSpan:'span'};
+    const boxRanges={pvRy:'ry',pvRx:'rx'},arrRanges={pvCount:'n',pvGap:'gap',pvRows:'n2',pvSpan:'span',pvTwist:'twist'};
     Object.entries(boxRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{[k]:+el.value});render();sync(id)})});
     Object.entries(arrRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{arr:{[k]:+el.value}});render();sync(id)})});
     const nums={pvW:'w',pvH:'h',pvD:'d',pvY:'y'};
@@ -1181,9 +1321,79 @@
     q('pvDel').addEventListener('click',remove);
     q('pvFit').addEventListener('click',()=>{fit(true);render()});
     let wake=null;
-    function setRef(on){document.body.classList.toggle('pv-ref',on);try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
+    function setRef(on){document.body.classList.toggle('pv-ref',on);if(on)armBack();else disarmBack();if(on){refLock=true;shotIndex=-1;$('#pvRefShot').textContent=activeShot?SHOTS.find(S=>S.id===activeShot).name:'Your view';syncRefBar();wakeRefBar()}try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
       try{if(on&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen?.().catch(()=>{})}catch{}}
-    $('#pvRefBtn').addEventListener('click',()=>setRef(!refMode()));$('#pvRefExit').addEventListener('click',()=>setRef(false));
+    $('#pvRefBtn').addEventListener('click',()=>setRef(!refMode()));
+
+    /* ----- squaring grid: columns lettered, rows numbered from the top, the same on screen and on the print ----- */
+    function drawSquares(){const n=st().sq||0;if(!n)return;const {w,h}=st().canvas,R=canvasRect(),polys=[];
+      for(let x=0;x<=w+1e-9;x+=n)polys.push([[R.x+x*view.s,R.y],[R.x+x*view.s,R.y+R.h]]);for(let y=0;y<=h+1e-9;y+=n)polys.push([[R.x,R.y+y*view.s],[R.x+R.w,R.y+y*view.s]]);emit(els.points,polys,'sq')}
+    const colName=i=>i<26?String.fromCharCode(65+i):String.fromCharCode(64+Math.floor(i/26))+String.fromCharCode(65+i%26);
+    function squareLabels(g,R){const n=st().sq||0;if(!n)return;const {w,h}=st().canvas,cs=n*view.s,f=v=>v.toFixed(1);if(cs<8*U)return;
+      for(let i=0;i*n<w-1e-9;i++)g.appendChild(lbl(f(R.x+(i+.5)*cs),f(R.y-6*U),colName(i),'pv-sq-label','middle'));for(let j=0;j*n<h-1e-9;j++)g.appendChild(lbl(f(R.x-7*U),f(R.y+(j+.5)*cs+3*U),String(j+1),'pv-sq-label','end'))}
+    const autoSq=()=>{const m=Math.max(st().canvas.w,st().canvas.h);return m>=36?6:m>=20?3:2};
+    q('pvSqChip').addEventListener('click',()=>{beginChange();set({sq:st().sq?0:autoSq()});render();sync();commitChange()});
+
+    /* ----- the selected box's bar: copy, stack, turn, edit, delete, right next to it ----- */
+    // a tap is a finger down and up on the same control: act on the up. Right after a flick Chrome swallows the next click
+    // (it reads the tap as stopping the fling), so the click only stands in for the keyboard
+    function onTap(root,selector,fn){let down=null,ate=0;
+      root.addEventListener('pointerdown',e=>{down=e.target.closest(selector)},true);
+      root.addEventListener('pointerup',e=>{const t=e.target.closest(selector);if(t&&t===down&&!t.disabled){ate=performance.now();fn(t)}down=null},true);
+      root.addEventListener('click',e=>{const t=e.target.closest(selector);if(!t)return;if(performance.now()-ate<800){ate=0;return}fn(t)})}
+    const boxBar=$('#pvBoxBar');
+    function placeBoxBar(K,list){const I=sel&&selInstance(list);if(!I||interacting||refMode()||drag){boxBar.hidden=true;return}let x0=1e9,x1=-1e9,y1=-1e9,y0=1e9;
+      I.P.forEach(p=>{const q=img(K,toCam(K,p));if(!q)return;const [x,y]=toSvg(q);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});if(x0>x1){boxBar.hidden=true;return}
+      const V=visibleRect(),px=x=>svgOff.x+(x-V.x0)/U,py=y=>svgOff.y+(y-V.y0)/U,W=els.wrap.clientWidth,H=els.wrap.clientHeight;boxBar.hidden=false;
+      const bw=boxBar.offsetWidth||260,bh=boxBar.offsetHeight||48;let left=clamp(px((x0+x1)/2)-bw/2,8,W-bw-8),top=py(y1)+14;if(top+bh>H-8)top=py(y0)-bh-14;top=clamp(top,8,H-bh-8);
+      boxBar.style.transform=`translate(${Math.round(left)}px,${Math.round(top)}px)`}
+    boxBar.addEventListener('pointerdown',e=>e.stopPropagation());
+    onTap(boxBar,'[data-act]',el=>{const a=el.dataset.act,b=sel&&byId(sel.id);if(!a||!b)return;
+      if(a==='edit'){openTab('box');if(!touchMQ.matches)q('pvBoxPanel').scrollIntoView({behavior:'smooth',block:'start'});return}
+      beginChange();if(a==='dup')addBox();else if(a==='stack'){const c={...structuredClone(b),id:nextId(),y:b.y+b.h,arr:{...ARR}};set({boxes:[...st().boxes,c]});sel={id:c.id,k:0}}
+      else if(a==='rot')setBox(b.id,{ry:wrap180((b.ry||0)+90)});else if(a==='del'){set({boxes:st().boxes.filter(x=>x.id!==b.id)});sel=null;pin=null}
+      render();sync();commitChange()});
+
+    /* ----- touch layout: the controls live in a sheet you pull up from the bottom ----- */
+    const touchMQ=matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1366px)'),sideMQ=matchMedia('(orientation: landscape) and (min-width: 860px)'),side=$('.sidebar');
+    side.querySelector('.brand').dataset.tab='scene';$('#appMode').dataset.tab='scene';
+    ['scene','canvas','camera','box','box','guides','measure'].forEach((t,i)=>{const el=[...$('#pvSide').children][i];if(el)el.dataset.tab=t});
+    function syncTouch(){const on=state.app==='perspective'&&touchMQ.matches,beside=on&&sideMQ.matches,B=document.body.classList;if(on!==B.contains('pv-touch')||beside!==B.contains('pv-side')){B.toggle('pv-touch',on);B.toggle('pv-side',beside);visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render()})}disarmBack();
+      $$('#pvSheetBar [data-t]').forEach(b=>{const a=b.dataset.t===side.dataset.tab;b.classList.toggle('active',a);b.setAttribute('aria-selected',a)})}
+    touchMQ.addEventListener('change',syncTouch);sideMQ.addEventListener('change',syncTouch);
+    const sheetMode=()=>document.body.classList.contains('pv-touch')&&!document.body.classList.contains('pv-side');
+    // Android's back gesture closes the sheet, or leaves Reference view, before it leaves the page: one history entry, held only while something is open
+    // (the step back waits for the gesture to finish: stepping back mid-touch makes Chrome drop the next tap's click)
+    let backArmed=false,skipPop=false,pendingBack=0;const overlayUp=()=>refMode()||(sheetMode()&&side.dataset.sheet!=='peek');
+    function armBack(){if(backArmed||!overlayUp())return;if(pendingBack){clearTimeout(pendingBack);pendingBack=0;skipPop=false;backArmed=true;return}try{history.pushState({locus:'open'},'');backArmed=true}catch{}}
+    function disarmBack(){if(backArmed&&!overlayUp()){backArmed=false;skipPop=true;pendingBack=setTimeout(()=>{pendingBack=0;try{history.back()}catch{skipPop=false}},60)}}
+    addEventListener('popstate',()=>{if(skipPop){skipPop=false;return}if(!backArmed)return;backArmed=false;if(refMode())setRef(false);else setSheet('peek');armBack()});
+    // type into a size and the sheet lifts, with the field clear of the keyboard
+    side.addEventListener('focusin',e=>{const t=e.target;if(!document.body.classList.contains('pv-touch')||!t.matches('input[type=number],input[type=text]'))return;if(sheetMode()&&side.dataset.sheet!=='full')setSheet('full');setTimeout(()=>t.scrollIntoView({block:'start'}),340)});
+    function openTab(t){side.dataset.tab=t;if(side.dataset.sheet==='peek')setSheet('half');syncTouch()}
+    function setSheet(v){side.dataset.sheet=v;side.style.transform='';side.scrollTop=0;if(v==='peek')disarmBack();else armBack()}
+    onTap($('#pvSheetBar'),'[data-t]',t=>{{if(side.dataset.tab===t.dataset.t&&side.dataset.sheet!=='peek')setSheet('peek');else openTab(t.dataset.t);syncTouch()}});
+    // drag the sheet by its bar: it follows the finger, then settles on peek, half or full
+    {let sd=null;const bar=$('#pvSheetBar'),stops=()=>{const H=innerHeight,h=side.offsetHeight;return{peek:h-72,half:Math.max(0,h-H*.48),full:0}};
+      bar.addEventListener('pointerdown',e=>{if(!sheetMode()||e.target.closest('[data-t]'))return;const S=stops();sd={y:e.clientY,base:S[side.dataset.sheet]??S.peek,moved:false};bar.setPointerCapture(e.pointerId);side.classList.add('dragging')});
+      bar.addEventListener('pointermove',e=>{if(!sd)return;const dy=e.clientY-sd.y;if(Math.abs(dy)>4)sd.moved=true;side.style.transform=`translateY(${clamp(sd.base+dy,0,stops().peek)}px)`});
+      const end=e=>{if(!sd)return;side.classList.remove('dragging');const S=stops(),y=sd.moved?clamp(sd.base+e.clientY-sd.y,0,S.peek):null;
+        if(y==null)setSheet(side.dataset.sheet==='peek'?'half':'peek');else setSheet(Object.entries(S).sort((a,b)=>Math.abs(a[1]-y)-Math.abs(b[1]-y))[0][0]);sd=null};
+      bar.addEventListener('pointerup',end);bar.addEventListener('pointercancel',end)}
+
+    /* ----- easel mode: big controls over the reference, swipe between shots, locked against stray touches ----- */
+    const refBar=$('#pvRefBar');let refLock=true,refIdle=0,shotIndex=-1;
+    function wakeRefBar(){refBar.classList.remove('idle');clearTimeout(refIdle);refIdle=setTimeout(()=>refBar.classList.add('idle'),3500)}
+    function cycleShot(dir){const n=SHOTS.length;shotIndex=((shotIndex<0?(activeShot?SHOTS.findIndex(S=>S.id===activeShot):-1):shotIndex)+dir+n)%n;const S=SHOTS[shotIndex],cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;buzz(6);
+      shotBar.querySelectorAll('.pv-shot').forEach(x=>x.classList.toggle('active',x.dataset.shot===S.id));$('#pvRefShot').textContent=`${S.name} · ${S.sub}`;glideTo(cam);wakeRefBar()}
+    function refAction(r){const pv=st();if(r==='prev')cycleShot(-1);else if(r==='next')cycleShot(1);else if(r==='exit'){setRef(false);return}
+      else if(r==='grid'){const seq=[0,6,3,12,2],i=seq.indexOf(pv.sq||0);beginChange();set({sq:seq[(i+1)%seq.length]});commitChange();render()}
+      else if(r==='lines'){const on=!(pv.show.floor||pv.show.horizon);beginChange();set({show:{...pv.show,floor:on,horizon:on}});commitChange();render()}
+      else if(r==='values'){beginChange();set({show:{...pv.show,values:!pv.show.values}});commitChange();render()}
+      else if(r==='theme')$('#themeBtn').click();else if(r==='lock'){refLock=!refLock}syncRefBar();wakeRefBar()}
+    function syncRefBar(){const pv=st(),b=k=>refBar.querySelector(`[data-r="${k}"]`);b('grid').textContent=pv.sq?`Grid ${pv.sq}″`:'Grid';b('grid').classList.toggle('on',!!pv.sq);
+      b('lines').classList.toggle('on',!!(pv.show.floor||pv.show.horizon));b('values').classList.toggle('on',!!pv.show.values);b('lock').textContent=refLock?'Locked':'Unlocked';b('lock').classList.toggle('on',refLock);b('lock').setAttribute('aria-pressed',refLock)}
+    refBar.addEventListener('pointerdown',e=>e.stopPropagation());onTap(refBar,'[data-r]',el=>refAction(el.dataset.r));
     els.wrap.addEventListener('contextmenu',e=>{if(state.app==='perspective')e.preventDefault()});
     q('pvAim').addEventListener('click',()=>{beginChange();aim();render();sync();commitChange()});
     $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));
@@ -1193,10 +1403,10 @@
       $$('#pvProj button').forEach(b=>b.classList.toggle('active',b.dataset.v===pv.proj));
       q('pvProjNote').textContent=K.curvi?'Every straight edge becomes an exact circular arc. Wraps all the way round: over your head, beside you, behind.':'Straight edges stay straight. Honest inside the 60° circle; past 90° it stretches, and it can’t show anything beside or behind you.';
       val('pvEye',pv.eye.y);q('pvEyeValue').textContent=fmtIn(pv.eye.y);q('pvPitch').min=K.curvi?-90:-80;q('pvPitch').max=K.curvi?90:80;val('pvPitch',pv.pitch);q('pvPitchValue').textContent=`${Math.round(pv.pitch)}°`;val('pvYaw',pv.yaw);q('pvYawValue').textContent=`${Math.round(pv.yaw)}°`;val('pvRoll',pv.roll||0);q('pvRollValue').textContent=`${Math.round(pv.roll||0)}°`;
-      const b=sel&&byId(sel.id);q('pvBoxPanel').hidden=!b;q('pvDup').disabled=q('pvDel').disabled=!b;
+      const b=sel&&byId(sel.id);q('pvBoxPanel').hidden=!b;q('pvBoxEmpty').hidden=!!b;q('pvSqChip').classList.toggle('active',!!pv.sq);syncTouch();q('pvDup').disabled=q('pvDel').disabled=!b;
       if(b){val('pvW',b.w);val('pvH',b.h);val('pvD',b.d);val('pvY',r1(b.y));val('pvRy',b.ry);q('pvRyValue').textContent=`${Math.round(b.ry)}°`;val('pvRx',b.rx||0);q('pvRxValue').textContent=`${Math.round(b.rx||0)}°`;
-        const a=b.arr;val('pvArr',a.type);val('pvCount',a.n);q('pvCountValue').textContent=a.type==='grid'?`${a.n} × ${a.n2}`:a.n;val('pvGap',a.gap);q('pvGapValue').textContent=fmtIn(a.gap);val('pvRows',a.n2);q('pvRowsValue').textContent=a.n2;val('pvSpan',a.span);q('pvSpanValue').textContent=`${Math.round(a.span)}°`;
-        const t=a.type,showIf=(id,on)=>q(id).hidden=!on;showIf('pvCountRow',t!=='none');showIf('pvGapRow',['row','grid','tower'].includes(t));showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvAxisRow',t==='row');
+        const a=b.arr;val('pvArr',a.type);val('pvCount',a.n);q('pvCountValue').textContent=a.type==='grid'?`${a.n} × ${a.n2}`:a.n;val('pvGap',a.gap);q('pvGapValue').textContent=fmtIn(a.gap);val('pvRows',a.n2);q('pvRowsValue').textContent=a.n2;val('pvSpan',a.span);q('pvSpanValue').textContent=`${Math.round(a.span)}°`;val('pvTwist',a.twist||0);q('pvTwistValue').textContent=`${Math.round(a.twist||0)}° a cube`;
+        const t=a.type,showIf=(id,on)=>q(id).hidden=!on;showIf('pvCountRow',t!=='none');showIf('pvGapRow',['row','grid','tower'].includes(t));showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvTwistRow',t==='tower');showIf('pvAxisRow',t==='row');
         $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
         if(t!=='none'){const n=instances(st(),b).length;q('pvArrNote').textContent+=` Copy ${Math.min(sel.k,n-1)+1} of ${n} selected: moving or resizing it changes them all.`}
         q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
@@ -1204,7 +1414,7 @@
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -1403,7 +1613,7 @@
   const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],'perspective-box':['perspective',.4,.75],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
     node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
-    aux:['perspective',.6,.75,'2 4'],hidden:['ghost',.8,.8,'4 4'],floor:['ghost',.4,.6],'vp-mark':['perspective',0,.8],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
+    aux:['perspective',.6,.75,'2 4'],sq:['focus',.5,.75],hidden:['ghost',.8,.8,'4 4'],floor:['ghost',.4,.6],'vp-mark':['perspective',0,.8],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
   function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px * var(--dzw,1)))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):weight==null?`calc(${w}px * var(--dzw,1))`:`${w}px`;
     return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${weight==null?`calc(${o} * var(--dzo,1))`:o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
   document.head.appendChild(Object.assign(document.createElement('style'),{textContent:kindCss('#geometry ',c=>c==='ink'?'var(--ink-line)':`var(--${c})`)}));
@@ -1533,7 +1743,7 @@
   // --- read the drawing back out of the SVG ---
   let harvesting=false;
   function layerOf(kind,src){
-    if(kind==='hidden'||kind==='horizon')return 'construction';if(kind==='vp-mark')return 'marks';
+    if(kind==='hidden'||kind==='horizon'||kind==='sq')return 'construction';   // a squaring grid you turned on should reach the paperif(kind==='vp-mark')return 'marks';
     if(src==='grid')return 'drafting';
     if(kind==='main'||kind==='web'||kind==='bindu')return 'figure';
     if(kind==='lens'||kind==='boundary'||kind==='phi-spiral')return 'accent';
@@ -1752,8 +1962,8 @@
   $('#themeBtn').addEventListener('click',()=>{theme=theme==='system'?'night':theme==='night'?'paper':'system';try{localStorage.setItem('locus-theme',theme)}catch{}applyTheme();render()});applyTheme();
   {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
   $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
-  // in Perspective the planner takes the pointer first; the plan inset handles its own
-  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan'))return;e.stopPropagation();fn(e)};
+  // in Perspective the planner takes the pointer first; the plan inset and the floating bars handle their own
+  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan,#pvBoxBar,#pvRefBar'))return;e.stopPropagation();fn(e)};
   els.wrap.addEventListener('pointerdown',pvOnly(e=>{e.preventDefault();getSelection()?.removeAllRanges();els.wrap.classList.add('dragging');PV.down(e)}),true);
   els.wrap.addEventListener('pointermove',pvOnly(PV.move),true);
   ['pointerup','pointercancel'].forEach(t=>els.wrap.addEventListener(t,pvOnly(e=>{els.wrap.classList.remove('dragging');PV.up(e)}),true));

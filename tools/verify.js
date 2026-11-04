@@ -1,6 +1,6 @@
 // Geometry and behaviour checks for Locus. Exits non-zero if any check fails.
 // usage: node tools/verify.js [path/to/index.html]   (PLAYWRIGHT=/path/to/playwright to use an existing install)
-const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
+const { chromium, devices } = require(process.env.PLAYWRIGHT || 'playwright');
 const path = require('path');
 const file = path.resolve(process.argv[2] || path.join(__dirname, '..', 'index.html'));
 const results = [];
@@ -434,6 +434,118 @@ for(const k of Object.keys(T))await T[k]();
     check('Drawing the busiest scene takes under 20 ms (median)',ms<20,+ms.toFixed(1))}};
 for(const k of Object.keys(T))await T[k]();
   }
+  // ── at the easel: Android phone and tablet, driven with real touch events (CDP), so pointerType is 'touch'
+  const touchCtx = async dev => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); return c; };
+  for (const [dn, dev] of [['Galaxy S24', devices['Galaxy S24']], ['Galaxy Tab S9', devices['Galaxy Tab S9']]]) {
+    const tctx = await touchCtx(dev), tp = await tctx.newPage();
+    tp.on('pageerror', e => errors.push(dn + ': ' + e.message));
+    await tp.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    await tp.goto('file://' + file);
+    await tp.evaluate(() => document.querySelector('#appMode [data-app="perspective"]').click()); await tp.waitForTimeout(400);
+    const cdp = await tctx.newCDPSession(tp), T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
+    const tap = async (x, y) => { await T('touchStart', [{ x, y }]); await tp.waitForTimeout(30); await T('touchEnd', []); await tp.waitForTimeout(60); };
+    const swipe = async (x0, y0, x1, y1, n = 10) => { await T('touchStart', [{ x: x0, y: y0 }]); for (let i = 1; i <= n; i++) { await T('touchMove', [{ x: x0 + (x1 - x0) * i / n, y: y0 + (y1 - y0) * i / n }]); await tp.waitForTimeout(16); } await T('touchEnd', []); await tp.waitForTimeout(80); };
+    const mid = sel => tp.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, sel);
+    const shown = sel => tp.evaluate(s => { const e = document.querySelector(s), r = e && e.getBoundingClientRect(); return !!e && !e.hidden && getComputedStyle(e).display !== 'none' && r.width > 0; }, sel);
+    const sheet = () => tp.evaluate(() => { const s = document.querySelector('.sidebar'); return { tab: s.dataset.tab, sheet: s.dataset.sheet }; });
+    const n = () => tp.evaluate(() => window.__state.pv.boxes.length);
+    const lay = await tp.evaluate(() => { const f = document.querySelector('.pv-frame').getBoundingClientRect(), s = document.querySelector('.sidebar').getBoundingClientRect(); return { frame: Math.round(f.width), vw: innerWidth, sheetTop: Math.round(s.top), vh: innerHeight, scroll: document.documentElement.scrollHeight - innerHeight }; });
+    check(`${dn}: the drawing gets the screen (canvas ≥ 80% of the width, no page scroll)`, lay.frame >= lay.vw * .8 && lay.scroll <= 0, lay);
+    check(`${dn}: controls start as a sheet peeking from the bottom`, (await sheet()).sheet === 'peek' && lay.vh - lay.sheetTop < 100, lay);
+    await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(400);
+    const tabs = await tp.evaluate(() => [...document.querySelectorAll('#pvSide [data-tab]')].filter(e => e.offsetParent).map(e => e.dataset.tab));
+    check(`${dn}: tapping a tab opens the sheet half way on just that tab`, (await sheet()).sheet === 'half' && tabs.length && tabs.every(t => t === 'camera'), { s: await sheet(), tabs });
+    const wide = []; for (const t of ['scene', 'canvas', 'camera', 'box', 'guides', 'measure']) { await tp.evaluate(t => { if (t === 'box') { window.__pv.sel = { id: 1, k: 0 }; window.__pv.render(); window.__pv.sync(); } window.__pv.openTab(t); }, t); await tp.waitForTimeout(120);
+      wide.push(...await tp.evaluate(t => { const s = document.querySelector('.sidebar'); return s.scrollWidth > s.clientWidth + 1 ? [t + ':' + s.scrollWidth] : []; }, t)); }
+    check(`${dn}: every tab fits the sheet's width (nothing cut off at the right)`, !wide.length, wide);
+    await tp.evaluate(() => { window.__pv.sel = null; window.__pv.render(); window.__pv.sync(); window.__pv.openTab('camera'); }); await tp.waitForTimeout(400);
+    const g = await mid('.pv-grip'); await swipe(g[0], g[1], g[0], 40); await tp.waitForTimeout(450);
+    check(`${dn}: drag the grip up and the sheet opens full`, (await sheet()).sheet === 'full', await sheet());
+    const g2 = await mid('.pv-grip'); await swipe(g2[0], g2[1], g2[0], lay.vh - 10, 12); await tp.waitForTimeout(450);
+    check(`${dn}: drag it down and it tucks away`, (await sheet()).sheet === 'peek', await sheet());
+    await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(350);
+    check(`${dn}: a tap straight after flicking the sheet shut still lands (Chrome's fling tap-suppression)`, (await sheet()).sheet === 'half', await sheet());
+    await tp.goBack({ waitUntil: 'commit' }).catch(() => {}); await tp.waitForTimeout(400);
+    check(`${dn}: Android back closes the sheet and stays on the page`, (await sheet()).sheet === 'peek' && await tp.evaluate(() => document.body.classList.contains('pv-app')), await sheet());
+    await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(300); await tap(...await mid('.pv-tabs [data-t="camera"]')); await tp.waitForTimeout(500);
+    check(`${dn}: closing the sheet by hand leaves no dead back entry`, (await sheet()).sheet === 'peek' && !(await tp.evaluate(() => history.state && history.state.locus)));
+    await tp.evaluate(() => { window.__pv.sel = { id: 1, k: 0 }; window.__pv.render(); window.__pv.sync(); window.__pv.openTab('box'); }); await tp.waitForTimeout(400);
+    await tp.evaluate(() => document.querySelector('#pvH').focus()); await tp.waitForTimeout(700);
+    const kb = await tp.evaluate(() => ({ sheet: document.querySelector('.sidebar').dataset.sheet, y: Math.round(document.querySelector('#pvH').getBoundingClientRect().top), vh: innerHeight }));
+    check(`${dn}: tap a size field and the sheet lifts it clear of the keyboard (top half)`, kb.sheet === 'full' && kb.y < kb.vh * .5, kb);
+    await tp.evaluate(() => { document.activeElement.blur(); window.__pv.sel = null; window.__pv.render(); window.__pv.sync(); window.__pv.setSheet('peek'); }); await tp.waitForTimeout(400);
+    const face = await tp.evaluate(() => { const W = document.querySelector('#canvasWrap').getBoundingClientRect(), sb = document.querySelector('.sidebar').getBoundingClientRect().top; let best = null;
+      document.querySelectorAll('#geometry .pv-face').forEach(f => { const r = f.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2; if (cx < W.x + 20 || cx > W.right - 20 || cy < W.y + 20 || cy > Math.min(W.bottom, sb) - 20) return; const a = r.width * r.height; if (!best || a > best.a) best = { a, cx, cy }; }); return best; });
+    await tap(face.cx, face.cy); await tp.waitForTimeout(250);
+    const bar = await tp.evaluate(() => { const b = document.querySelector('#pvBoxBar'), r = b.getBoundingClientRect(), W = document.querySelector('#canvasWrap').getBoundingClientRect(); return { on: !b.hidden, inside: r.left >= W.left - 1 && r.right <= W.right + 1 && r.top >= W.top - 1, btn: Math.min(...[...b.querySelectorAll('button')].map(x => x.getBoundingClientRect().height)) }; });
+    check(`${dn}: tap a box and a finger-sized bar floats under it`, bar.on && bar.inside && bar.btn >= 44, bar);
+    const act = async a => { await tap(...await mid(`#pvBoxBar [data-act="${a}"]`)); await tp.waitForTimeout(200); };
+    let c0 = await n(); await act('dup'); check(`${dn}: bar · Copy adds a box`, await n() === c0 + 1);
+    const top = await tp.evaluate(() => { const b = window.__state.pv.boxes; return b[b.length - 1]; }); await act('stack');
+    const st = await tp.evaluate(() => { const b = window.__state.pv.boxes; return b[b.length - 1]; });
+    check(`${dn}: bar · Stack sets a copy on top`, Math.abs(st.y - (top.y + top.h)) < 1e-6 && st.id !== top.id, { top, st });
+    await act('rot'); const rot = await tp.evaluate(() => { const b = window.__state.pv.boxes; return b[b.length - 1].ry; });
+    check(`${dn}: bar · 90° turns it a quarter`, Math.abs(rot - (st.ry || 0) - 90) < 1e-6, [st.ry, rot]);
+    c0 = await n(); await act('del'); check(`${dn}: bar · Delete removes it and the bar goes`, await n() === c0 - 1 && !(await shown('#pvBoxBar')));
+    await tap(face.cx, face.cy); await tp.waitForTimeout(250); await act('edit'); await tp.waitForTimeout(350);
+    check(`${dn}: bar · Edit opens the Box tab`, (await sheet()).tab === 'box' && await shown('#pvBoxPanel'), await sheet());
+    await tp.evaluate(() => window.__pv.setSheet('peek')); await tp.waitForTimeout(400);
+    const spot = await tp.evaluate(() => { const W = document.querySelector('#canvasWrap').getBoundingClientRect(), sb = document.querySelector('.sidebar').getBoundingClientRect().top, faces = [...document.querySelectorAll('#geometry .pv-face')].map(f => f.getBoundingClientRect()), bot = Math.min(W.bottom, sb) - 30;
+      for (let y = bot; y > W.y + W.height * .55; y -= 12) for (let x = W.x + 30; x < W.right - 120; x += 12) if (!faces.some(r => x > r.left - 14 && x < r.right + 14 && y > r.top - 14 && y < r.bottom + 14)) return [x, y]; return null; });
+    c0 = await n(); await tap(...spot); await tp.waitForTimeout(90); await tap(...spot); await tp.waitForTimeout(250);
+    check(`${dn}: double-tap the floor adds a box there`, await n() === c0 + 1, spot);
+    c0 = await n(); await tap(spot[0] + 4, spot[1] - 40); await tp.waitForTimeout(450); check(`${dn}: a single tap adds nothing`, await n() === c0);
+    // reference view at the easel
+    await tap(...await mid('#pvRefBtn')); await tp.waitForTimeout(500);
+    check(`${dn}: Reference: the sheet goes, the big bar comes`, await tp.evaluate(() => document.body.classList.contains('pv-ref')) && !(await shown('.sidebar')) && await shown('#pvRefBar'));
+    const rbtn = await tp.evaluate(() => { const W = document.querySelector('#canvasWrap').getBoundingClientRect(); return [...document.querySelectorAll('#pvRefBar button')].map(b => { const r = b.getBoundingClientRect(); return { r: b.dataset.r, h: r.height, in: r.left >= W.left && r.right <= W.right }; }); });
+    check(`${dn}: Reference: every button on screen and ≥ 48px`, rbtn.every(b => b.in && b.h >= 48), rbtn);
+    const W = await tp.evaluate(() => { const r = document.querySelector('#canvasWrap').getBoundingClientRect(); return { cx: r.x + r.width / 2, cy: r.y + r.height / 2, w: r.width }; });
+    const y0 = await tp.evaluate(() => window.__state.pv.yaw), s0 = await tp.textContent('#pvRefShot');
+    await tp.evaluate(() => window.__buzz.length = 0); await swipe(W.cx + W.w * .3, W.cy, W.cx - W.w * .3, W.cy, 8); await tp.waitForTimeout(900); const s1 = await tp.textContent('#pvRefShot');
+    check(`${dn}: Reference: swipe to the next shot (with a tick), the view locked against stray touches`, s1 !== s0 && s1.includes('·') && await tp.evaluate(() => window.__buzz.length) > 0, [s0, s1]);
+    await swipe(W.cx - W.w * .3, W.cy, W.cx + W.w * .3, W.cy, 8); await tp.waitForTimeout(900);
+    check(`${dn}: Reference: swipe back`, await tp.textContent('#pvRefShot') !== s1);
+    const rb = async r => { await tap(...await mid(`#pvRefBar [data-r="${r}"]`)); await tp.waitForTimeout(150); };
+    const sqs = []; for (let i = 0; i < 5; i++) { await rb('grid'); sqs.push(await tp.evaluate(() => [window.__state.pv.sq || 0, document.querySelectorAll('#geometry .pv-sq-label').length])); }
+    check(`${dn}: Reference: Grid steps 6″ → 3″ → 12″ → 2″ → off, lettered and numbered`, sqs.map(x => x[0]).join() === '6,3,12,2,0' && sqs[0][1] > 4 && sqs[4][1] === 0, sqs);
+    await rb('lock'); const ly0 = await tp.evaluate(() => window.__state.pv.yaw); await swipe(W.cx - 60, W.cy, W.cx + 60, W.cy + 20, 8); await tp.waitForTimeout(200);
+    check(`${dn}: Reference: unlocked, a drag turns the view`, !(await tp.evaluate(() => window.__pv.refLock)) && Math.abs(await tp.evaluate(() => window.__state.pv.yaw) - ly0) > 1);
+    await rb('lock'); await tp.waitForTimeout(3800);
+    check(`${dn}: Reference: the bar fades when left alone, a tap brings it back`, await tp.evaluate(() => document.querySelector('#pvRefBar').classList.contains('idle')) && (await tap(W.cx, W.cy), await tp.waitForTimeout(200), await tp.evaluate(() => !document.querySelector('#pvRefBar').classList.contains('idle'))));
+    await rb('exit'); await tp.waitForTimeout(400);
+    check(`${dn}: Reference: ✕ leaves and the sheet returns`, !(await tp.evaluate(() => document.body.classList.contains('pv-ref'))) && await shown('.sidebar'));
+    await tap(...await mid('#pvRefBtn')); await tp.waitForTimeout(400); await tp.goBack({ waitUntil: 'commit' }).catch(() => {}); await tp.waitForTimeout(400);
+    check(`${dn}: Android back leaves Reference view, not the page`, !(await tp.evaluate(() => document.body.classList.contains('pv-ref'))) && await tp.evaluate(() => document.body.classList.contains('pv-app')));
+    await tctx.close();
+  }
+  // ── an Android tablet on its side: the controls become a side panel and the drawing gets the height
+  {
+    const lctx = await touchCtx(devices['Galaxy Tab S9 landscape']), lp = await lctx.newPage(); lp.on('pageerror', e => errors.push('Tab landscape: ' + e.message));
+    await lp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await lp.goto('file://' + file);
+    await lp.evaluate(() => document.querySelector('#appMode [data-app="perspective"]').click()); await lp.waitForTimeout(400);
+    const L = await lp.evaluate(() => { const f = document.querySelector('.pv-frame').getBoundingClientRect(), s = document.querySelector('.sidebar'), t = document.querySelector('.pv-tabs'), sr = s.getBoundingClientRect();
+      return { side: document.body.classList.contains('pv-side'), frame: Math.round(f.height), vh: innerHeight, panel: [Math.round(sr.left), Math.round(sr.width), Math.round(sr.height)], tabsFit: t.scrollWidth <= t.clientWidth + 1, scroll: document.documentElement.scrollHeight - innerHeight }; });
+    check('Tab landscape: controls move to a side panel and the drawing gets ⅔ of the height', L.side && L.frame >= L.vh * .66 && L.panel[0] > 600 && L.tabsFit && L.scroll <= 0, L);
+    await lp.evaluate(() => window.__pv.openTab('box')); await lp.waitForTimeout(300);
+    check('Tab landscape: the panel never slides and leaves no back entry', await lp.evaluate(() => getComputedStyle(document.querySelector('.sidebar')).transform === 'none' && !(history.state && history.state.locus)));
+    await lp.evaluate(() => window.__pv.setRef(true)); await lp.waitForTimeout(400);
+    check('Tab landscape: Reference view takes the whole screen', await lp.evaluate(() => Math.round(document.querySelector('#canvasWrap').getBoundingClientRect().width) === innerWidth));
+    const rail = await lp.evaluate(() => { const f = document.querySelector('.pv-frame').getBoundingClientRect(), r = document.querySelector('#pvRefBar').getBoundingClientRect(); return { clear: r.left >= f.right || r.right <= f.left || r.top >= f.bottom || r.bottom <= f.top, onScreen: r.top >= 0 && r.bottom <= innerHeight && r.right <= innerWidth, f: [f.left, f.right].map(Math.round), r: [r.left, r.top, r.height].map(Math.round) }; });
+    check('Tab landscape: Reference controls stand in a rail beside the drawing, never on it', rail.clear && rail.onScreen, rail);
+    await lctx.close();
+  }
+  // the squaring grid goes out with the drawing
+  await page.setViewportSize({ width: 1400, height: 900 });
+  const sqOut = await page.evaluate(() => { const s = document.querySelector('#pvScene'); s.value = 'totem'; s.dispatchEvent(new Event('change')); const S = window.__state; S.pv = { ...S.pv, sq: 6 }; window.__pv.render();
+    const P = window.__pv, f = P.frame(), lines = [...document.querySelectorAll('#geometry [data-kind="sq"], #geometry .pv-sq')].length; return { lines, w: f.w, h: f.h, tower: S.pv.boxes[0].arr }; });
+  check('Squaring grid draws on the canvas (and so goes out with it)', sqOut.lines > 0, sqOut);
+  const sqHarvest = await page.evaluate(() => { const g = window.__studio.geometry(); const st = (g.strokes || g).filter(s => s.kind === 'sq'); return { n: st.length, layer: [...new Set(st.map(s => s.layer))] }; });
+  check('…and reaches the Studio on the Construction layer, which is on by default', sqHarvest.n > 0 && sqHarvest.layer.join() === 'construction', sqHarvest);
+  const tw = await page.evaluate(() => { const P = window.__pv, S = window.__state, b = S.pv.boxes[0], I = P.instances(S.pv, b), ang = R => Math.atan2(R[0][2], R[0][0]) * 180 / Math.PI; return I.slice(0, 3).map(i => ang(i.R)); });
+  check('Tower twist turns each cube that much more than the one below', Math.abs(Math.abs(tw[1] - tw[0]) - 9) < 1e-6 && Math.abs(Math.abs(tw[2] - tw[1]) - 9) < 1e-6, tw);
+  const totMs = await page.evaluate(() => { const P = window.__pv; for (let i = 0; i < 3; i++) P.render(); const xs = []; for (let i = 0; i < 15; i++) { const t = performance.now(); P.render(); xs.push(performance.now() - t); } xs.sort((a, b) => a - b); return xs[7]; });
+  check('Totem (69 cubes) draws under 25 ms (median)', totMs < 25, +totMs.toFixed(1));
   check('No script errors', errors.length === 0, errors);
   await browser.close();
   const failed = results.filter(r => !r.ok);
