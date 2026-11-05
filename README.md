@@ -105,7 +105,38 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
   - **A** aims at the selection, keeping you level if you were. **F** fits the view, and **Esc** deselects or leaves Reference view.
   - Ctrl/⌘-Z undoes, and a whole glide is one undo.
 
-### At the easel (Android phone and tablet)
+### Lock view, and the little guy
+
+Once the boxes are where you want them and the view is right, **lock it**: the padlock at the top right of the drawing.
+
+- **While locked, nothing can change the perspective.** Scroll, pinch and drag only magnify and move the picture, like zooming into a photo of it. **F** fits it back.
+- **What's refused:** the Shots strip, Aim, Reference view's shot swipe, the Canvas and Camera controls, and dragging the horizon or vanishing points. Each shows a short note instead.
+- **Boxes stay editable,** and undo still works.
+
+**The little guy** is a box mannequin, the old perspective-drawing scale figure, standing in your scene at your walking size.
+
+- **Tap him** and you walk as him, in first person (below).
+- **Come back** (✕, Esc or Android's back) and your composition is exactly as you left it, locked or not, with him standing wherever you stopped.
+- **Drag him** to place him; he stands on top of a box if you drop him there.
+- **The *Little guy* chip** in Guides hides him, or puts one in front of you if you haven't walked yet.
+- **He's a guide, not part of the picture:** Export and the Studio leave him out.
+
+### Walk (first person, at any size)
+
+**Walk** (in the heading) puts you inside the scene. The camera becomes your eyes, so every frame is a true perspective you could paint, with real vanishing points.
+
+- **Choose your size.** *Size* offers Ant ¼″, Mouse 2″, Cat 10″, Child 3′, You 5′8″ and Giant 20′, with a slider for anything in between. Walk speed, jump height, step height and gravity all scale with you, so any size feels like your own body, and the boxes become furniture or skyscrapers. The readout says how tall you are, how high your eye is, what you're standing on, and how the boxes compare to you.
+- **Gravity and solid boxes.**
+  - You stop at a box's face and slide along walls.
+  - You walk straight up anything under a third of your height.
+  - You jump about 0.8 of your height, onto boxes, turned ones and tilted tops included, and your head stops at the underside of anything above.
+  - Ring cubes make steps and arches make bridges.
+- **On a phone or tablet:** the left thumb is a stick that appears wherever you put it, and pushed all the way it runs. Drag anywhere on the right to look, and **Jump** sits bottom-right. Android's back gesture takes you out.
+- **With a keyboard:** **WASD** or the arrows to move (←/→ turn), drag to look, **Space** to jump, **Shift** to run, **+**/**−** to grow or shrink, the wheel to resize, **Esc** to go back, **Enter** to keep the view.
+- **Frame** shows your canvas as a viewfinder, and **Curvi/Linear** swaps the projection as you walk. At ant size the near plane shrinks with you, so nothing close gets cut away.
+- **Use this view** leaves with the camera where you're standing, your found composition, ready for Reference view or Studio; one undo puts it back. It's hidden while the view is locked. **✕**, Esc or back returns to the plan exactly as it was, and the little guy stays where you stopped. Locus remembers your size for next time.
+
+
 
 Built and tested for Chrome on Android: emulated Galaxy S24, Pixel 8 and Galaxy Tab S9, upright and on its side, driven with real touch events. Other touch screens get the same layout.
 
@@ -161,7 +192,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 190 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
+node tools/verify.js              # 225 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
@@ -187,6 +218,21 @@ node tools/pwa-check.js           # serves the repo over http, asks Chrome wheth
     - a sheet clipped by its own tab strip;
     - a squaring grid that never reached the paper.
   - 190 checks.
+- **v12, Walk, the lock and the little guy**: first person at any size, from ¼ inch to 20 feet.
+  - **Lock view**, so zooming never changes the perspective.
+  - **The little guy:** a box mannequin who stays in the scene where you left him. Tap him to walk as him, drag him to place him. He never goes into Export or the Studio.
+  - Physics: gravity, solid boxes you slide along, step-up, a jump onto boxes (turned and tilted ones too), and ceilings, all scaled to your size.
+  - A thumb stick, look-drag and a Jump button on Android; WASD, mouse and Space on a keyboard.
+  - A viewfinder for your canvas, and *Use this view* to keep what you find.
+  - 20 new checks:
+    - stopping exactly at a box's face, jumping on and staying, walking off an edge;
+    - a 4″ you who can't reach a 24″ box, step-up, sliding along a turned box without entering it, ceilings;
+    - speed scaling 17× from 4″ to 68″, an ant who still sees the world;
+    - the keys and the two ways out with undo;
+    - on a Galaxy S24: the stick, look, Jump, Size and back.
+  - 15 more checks cover the lock (wheel, drag, Shots, Aim, the controls, boxes still editable, pinch on a phone) and the little guy (left in place, kept out of Export and the Studio, drag, tap to walk, the chip).
+  - The phone checks caught a class-name clash that had switched off every touch in walk mode, and the lock button losing its tap to the canvas.
+  - 225 checks.
 - **v11, The app**: Locus installs on Android as a full-screen app that works offline.
   - A manifest with the new icon, shortcuts (At the easel, Perspective, Geometry), and install screenshots.
   - A service worker; a one-time install banner and a lasting Install button; the address bar colour follows the theme.
