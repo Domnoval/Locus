@@ -105,6 +105,19 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
   - **A** aims at the selection, keeping you level if you were. **F** fits the view, and **Esc** deselects or leaves Reference view.
   - Ctrl/⌘-Z undoes, and a whole glide is one undo.
 
+### The edit tray (fine-tuning on a phone or tablet, and while walking)
+
+Dragging a box in perspective gets you close; the last inch is easier with buttons. On a touch screen, **Edit** on a box's floating bar opens a slim tray along the bottom of the drawing. The box stays in view above it: the picture slides up, the camera doesn't move.
+
+- **Move** ◀ ▲ ▼ ▶ pushes the box left, away, toward or right of you, along the floor direction nearest your view, so its numbers stay clean.
+- **Lift** ▲ ▼ raises and lowers it, and **⤓** sets it back on whatever is under it.
+- **Turn** ⟲ ⟳ and **Tip** ⤺ ⤻ step it round; **0°** squares or levels it.
+- **Size** ＋ － grows or shrinks **All** sides, or just **W**, **H** or **D**.
+- **Steps you choose:** 1″, 3″ or 12″, and 1°, 5° or 15°. Values snap to the step.
+- **Hold a button** and it keeps going, faster after a moment. A whole hold is one undo.
+- **The readout** shows the numbers. **⋯** opens the Box tab for exact entries and repeats. **✓** (or Android back) closes the tray.
+- **While walking**, tap any box you're looking at to select it and open the tray (the thumb stick and Jump step aside). ✓ and you walk on.
+
 ### Lock view, and the little guy
 
 Once the boxes are where you want them and the view is right, **lock it**: the padlock at the top right of the drawing.
@@ -192,7 +205,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 225 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
+node tools/verify.js              # 239 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
@@ -218,6 +231,12 @@ node tools/pwa-check.js           # serves the repo over http, asks Chrome wheth
     - a sheet clipped by its own tab strip;
     - a squaring grid that never reached the paper.
   - 190 checks.
+- **v13, The edit tray**:
+  - Fine-tuning without fiddly drags: Move, Lift, Turn, Tip and Size in steps you choose, with hold-to-repeat as one undo.
+  - The box kept in view above the tray, so the sheet no longer covers what you're editing.
+  - In walk mode, tap a box to adjust it from where you stand.
+  - Entering Reference view or Walk closes the tray, and back closes it.
+  - 14 new checks on a Galaxy S24, in the plan and while walking. 239 checks.
 - **v12, Walk, the lock and the little guy**: first person at any size, from ¼ inch to 20 feet.
   - **Lock view**, so zooming never changes the perspective.
   - **The little guy:** a box mannequin who stays in the scene where you left him. Tap him to walk as him, drag him to place him. He never goes into Export or the Studio.
