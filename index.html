@@ -393,8 +393,8 @@
     .pv-tray button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;font:inherit;letter-spacing:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
     .pv-tray button.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
     .pv-tray-tabs{display:flex;gap:4px;align-items:center}
-    .pv-tray-tabs [data-tm]{flex:1 1 0;min-width:0;min-height:42px;padding:0 2px;text-transform:uppercase;font-size:10.5px}
-    .pv-tray-end{display:flex;gap:4px;margin-left:4px}.pv-tray-end button{width:42px;min-height:42px;font-size:16px}
+    .pv-tray-tabs [data-tm]{flex:1 1 0;min-width:0;min-height:42px;padding:0 1px;text-transform:uppercase;font-size:10px;letter-spacing:0}
+    .pv-tray-end{display:flex;gap:4px;margin-left:4px}.pv-tray-end button{width:38px;min-height:42px;font-size:16px}
     .pv-tray-end .go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
     body.pv-walk .pv-tray [data-ta="more"]{display:none}
     .pv-tray-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px;min-height:34px}
@@ -405,6 +405,17 @@
     .pv-tray-pad button.held{background:color-mix(in srgb,var(--accent) 22%,transparent)}
     .pv-tray-pad .axis{flex:.7 1 0;font-size:11px}
     body.pv-tray-open .pv-jump,body.pv-tray-open .pv-stick,body.pv-tray-open .pv-walk-hint{display:none}
+    /* shapes: a row of little drawings to pick from, in the Box panel and the tray */
+    .pv-shapes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:8px 0 12px}
+    .pv-shapes button,.pv-tray-pad.shapes button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;padding:5px 1px 4px;cursor:pointer;font:500 9px "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.02em;min-width:0;touch-action:manipulation}
+    .pv-shapes button small,.pv-tray-pad.shapes button small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;margin:0;color:var(--muted);text-transform:none;letter-spacing:.02em}
+    .pv-shapes button.on,.pv-tray-pad.shapes button.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}.pv-shapes button.on small,.pv-tray-pad.shapes button.on small{color:var(--ink)}
+    .pv-shapes button:hover{border-color:var(--strong)}
+    .pv-ico{width:30px;height:30px;overflow:visible;flex:none}.pv-ico path{stroke:none;fill:currentColor}.pv-ico .l{opacity:.07}.pv-ico .m{opacity:.2}.pv-ico .d{opacity:.38}.pv-ico .e{fill:none;stroke:currentColor;stroke-width:1.15;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+    .pv-perfect{margin-top:10px}
+    .pv-tray-pad.shapes{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x;padding-bottom:1px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 28px),transparent)}.pv-tray-pad.shapes::-webkit-scrollbar{display:none}
+    .pv-tray-pad.shapes button{flex:0 0 60px;min-height:58px}
+    .pv-tray-steps [data-ta="perfect"]{padding:0 10px;color:var(--ink)}
     body.pv-tray-open #pvBoxBar{display:none}
     /* the view lock, and the little guy */
     .pv-lock{display:none;position:absolute;top:10px;right:10px;z-index:4;align-items:center;gap:6px;min-height:40px;padding:0 12px 0 10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);color:var(--muted);border-radius:3px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;touch-action:manipulation}
@@ -548,15 +559,19 @@
     <section class="panel pv-box-empty" id="pvBoxEmpty"><span class="label">Box</span><p class="picker-note">Tap a box on the canvas to edit it, or double-tap the floor to add one.</p></section>
     <section class="panel" id="pvBoxPanel" hidden>
       <span class="label">Selected box · inches</span>
+      <div class="pv-shapes" id="pvShapes" role="group" aria-label="Shape"></div>
       <div class="st-row pv-dims"><label class="st-field">Width<input type="number" id="pvW" min="0.5" step="1"></label><label class="st-field">Height<input type="number" id="pvH" min="0.5" step="1"></label><label class="st-field">Depth<input type="number" id="pvD" min="0.5" step="1"></label><label class="st-field">Off floor<input type="number" id="pvY" min="0" step="1"></label></div>
+      <button type="button" class="chip pv-perfect" id="pvPerfect" title="True proportions at about the same size: every edge of a cube the same, a sphere round, a tetrahedron regular">◆ <span id="pvPerfectName">Perfect cube</span></button>
       <div class="control"><div class="control-head"><label for="pvRy">Rotation</label><span class="value" id="pvRyValue">0°</span></div><input id="pvRy" type="range" min="-180" max="180" step="1"></div>
       <div class="control"><div class="control-head"><label for="pvRx">Tip</label><span class="value" id="pvRxValue">0°</span></div><input id="pvRx" type="range" min="-90" max="90" step="1"></div>
-      <label class="st-field" style="margin-top:14px">Repeat<select id="pvArr"><option value="none">None</option><option value="row">Row</option><option value="grid">Grid</option><option value="tower">Tower</option><option value="ring">Ring around you</option><option value="arch">Arch over you</option></select></label>
+      <label class="st-field" style="margin-top:14px">Repeat<select id="pvArr"><option value="none">None</option><option value="row">Row</option><option value="grid">Grid</option><option value="tower">Tower</option><option value="ring">Ring around you</option><option value="arch">Arch over you</option><optgroup label="Sacred geometry"><option value="seed">Seed of Life · 7</option><option value="metatron">Metatron’s Cube · 13</option><option value="flower">Flower of Life · 19</option><option value="metatron3">Metatron in 3D · 13</option><option value="merkaba">Star tetrahedron · 8</option></optgroup><optgroup label="On the corners of a solid"><option value="p-tetra">Tetrahedron · 4</option><option value="p-octa">Octahedron · 6</option><option value="p-box">Cube · 8</option><option value="p-icosa">Icosahedron · 12</option><option value="p-dodeca">Dodecahedron · 20</option></optgroup></select></label>
       <p class="picker-note" id="pvArrNote"></p>
       <div id="pvAxisRow" style="margin-top:10px"><div class="segmented two" id="pvAxis" role="group" aria-label="Row direction"><button data-v="across" type="button">Across</button><button data-v="away" type="button">Away from you</button></div></div>
+      <div id="pvPlaneRow" style="margin-top:10px" hidden><div class="segmented two" id="pvPlane" role="group" aria-label="The figure lies"><button data-v="floor" type="button">On the floor</button><button data-v="wall" type="button">Standing up</button></div></div>
+      <div class="toggle-row" id="pvSacredRow" style="margin-top:10px" hidden><button class="chip" id="pvLines" type="button" title="Draw the figure’s own lines through the copies: Metatron’s 78, a solid’s edges, the circles of the Flower">Lines</button><button class="chip" id="pvSprawl" type="button" title="The whole figure again at every one of its centres">Figure of figures</button></div>
       <div class="control" id="pvCountRow"><div class="control-head"><label for="pvCount">Count</label><span class="value" id="pvCountValue">6</span></div><input id="pvCount" type="range" min="1" max="48" step="1"></div>
       <div class="control" id="pvRowsRow"><div class="control-head"><label for="pvRows">Rows</label><span class="value" id="pvRowsValue">3</span></div><input id="pvRows" type="range" min="1" max="24" step="1"></div>
-      <div class="control" id="pvGapRow"><div class="control-head"><label for="pvGap">Gap</label><span class="value" id="pvGapValue">6 in</span></div><input id="pvGap" type="range" min="0" max="120" step="1"></div>
+      <div class="control" id="pvGapRow"><div class="control-head"><label for="pvGap" id="pvGapLabel">Gap</label><span class="value" id="pvGapValue">6 in</span></div><input id="pvGap" type="range" min="0" max="120" step="1"></div>
       <div class="control" id="pvSpanRow"><div class="control-head"><label for="pvSpan">Sweep</label><span class="value" id="pvSpanValue">180°</span></div><input id="pvSpan" type="range" min="10" max="360" step="5"></div>
       <div class="control" id="pvTwistRow"><div class="control-head"><label for="pvTwist" title="Each cube in the tower turns this much more than the one below">Twist</label><span class="value" id="pvTwistValue">0°</span></div><input id="pvTwist" type="range" min="-45" max="45" step="1"></div>
     </section>
@@ -610,7 +625,7 @@
       <div class="pv-refbar" id="pvRefBar" role="toolbar" aria-label="Reference controls"><button type="button" data-r="prev" aria-label="Previous shot">‹</button><span class="pv-ref-shot" id="pvRefShot">Your view</span><button type="button" data-r="next" aria-label="Next shot">›</button><i></i><button type="button" data-r="grid" aria-label="Squaring grid">Grid</button><button type="button" data-r="lines" aria-label="Construction lines">Lines</button><button type="button" data-r="values" aria-label="Light and shade">Values</button><button type="button" data-r="theme" aria-label="Paper or night">◐</button><button type="button" data-r="lock" aria-label="Lock the view">Locked</button><button type="button" id="pvRefExit" data-r="exit" aria-label="Leave reference view">✕</button></div>
       <div class="pv-boxbar" id="pvBoxBar" role="toolbar" aria-label="Selected box" hidden><button type="button" data-act="dup" title="Copy it beside itself (D)">⧉<span>Copy</span></button><button type="button" data-act="stack" title="Copy it on top">⬒<span>Stack</span></button><button type="button" data-act="rot" title="Turn it 90°">⟳<span>90°</span></button><button type="button" data-act="edit" title="Size, turn and repeats">✎<span>Edit</span></button><button type="button" data-act="del" title="Delete (Delete)">✕<span>Delete</span></button></div>
       <div class="pv-tray" id="pvTray" role="group" aria-label="Fine-tune the selected box" hidden>
-        <div class="pv-tray-tabs" role="tablist"><button type="button" data-tm="move">Move</button><button type="button" data-tm="lift">Lift</button><button type="button" data-tm="turn">Turn</button><button type="button" data-tm="tip">Tip</button><button type="button" data-tm="size">Size</button><span class="pv-tray-end"><button type="button" data-ta="more" title="More: exact numbers, repeats" aria-label="More">⋯</button><button type="button" data-ta="done" class="go" aria-label="Done">✓</button></span></div>
+        <div class="pv-tray-tabs" role="tablist"><button type="button" data-tm="move">Move</button><button type="button" data-tm="lift">Lift</button><button type="button" data-tm="turn">Turn</button><button type="button" data-tm="tip">Tip</button><button type="button" data-tm="size">Size</button><button type="button" data-tm="shape">Shape</button><span class="pv-tray-end"><button type="button" data-ta="more" title="More: exact numbers, repeats" aria-label="More">⋯</button><button type="button" data-ta="done" class="go" aria-label="Done">✓</button></span></div>
         <div class="pv-tray-row"><div class="pv-tray-steps" id="pvTraySteps"></div><b class="pv-tray-read" id="pvTrayRead"></b></div>
         <div class="pv-tray-pad" id="pvTrayPad"></div>
       </div>
@@ -902,7 +917,7 @@
     const turn=(k,a)=>{const c=Math.cos(a),s=Math.sin(a),t=1-c,[x,y,z]=k;return[[c+x*x*t,x*y*t-z*s,x*z*t+y*s],[y*x*t+z*s,c+y*y*t,y*z*t-x*s],[z*x*t-y*s,z*y*t+x*s,c+z*z*t]]};   // Rodrigues, right-handed about k
 
     /* ----- scenes ----- */
-    const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across',twist:0};
+    const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across',twist:0,plane:'floor',levels:1,lines:true};
     const box=(id,x,y,z,s,extra={})=>({id,x,y,z,w:s,h:s,d:s,ry:0,rx:0,...extra,arr:{...ARR,...(extra.arr||{})}});
     const SHOW={guy:true,floor:true,horizon:true,vps:true,guides:true,cone:false,hidden:false,values:true,depth:true,plan:true,snap:true,thirds:true,golden:false};
     const SCENES={
@@ -919,6 +934,14 @@
           box(2,-50,0,100,28,{ry:35}),box(3,50,0,100,28,{ry:-35}),box(4,-38,84,74,18,{ry:22,rx:-12}),box(5,38,84,74,18,{ry:-22,rx:-12}),
           box(6,-110,60,64,14,{arr:{type:'arch',n:15,span:180,pivot:{x:0,y:60,z:64}}}),box(7,-150,60,34,11,{arr:{type:'arch',n:21,span:180,pivot:{x:0,y:60,z:34}}}),
           box(8,-70.9,0,12.5,12,{arr:{type:'ring',n:13,span:160,pivot:{x:0,y:60,z:0}}})]}},
+      metatron:{name:'Metatron’s Cube · 13 cubes',note:'Thirteen cubes on the centres of the Fruit of Life, every one joined to every other: Metatron’s 78 lines, drawn on the floor in true perspective. Pick a cube to change its shape or the spacing, or stand the whole figure up.',
+        pv:{canvas:{w:36,h:36},dist:42,proj:'linear',eye:{x:0,y:118,z:0},yaw:0,pitch:-35,boxes:[box(1,0,0,162,16,{arr:{type:'metatron',gap:6}})]}},
+      platonic:{name:'The five Platonic solids',note:'Tetrahedron, cube, octahedron, dodecahedron and icosahedron, each one perfect, in a row in front of you. Pick one to try another shape, or Repeat it on the corners of its own solid.',
+        pv:{canvas:{w:48,h:30},dist:36,proj:'linear',eye:{x:0,y:44,z:0},yaw:0,pitch:-10,cv:{x:0,y:4},boxes:[box(1,-58,0,124,18,{shape:'tetra',w:20,h:16.33,d:17.32,ry:24}),box(2,-29,0,124,18,{ry:24}),box(3,0,0,124,18,{shape:'octa',w:18,h:18,d:18,ry:24}),box(4,29,0,124,18,{shape:'dodeca',w:18,h:18,d:18,ry:24}),box(5,58,0,124,18,{shape:'icosa',w:18,h:18,d:18,ry:24})]}},
+      fruit:{name:'Fruit of Life · 13 spheres',note:'Thirteen spheres standing on the centres of the Fruit of Life, with Metatron’s lines running between them. Every outline is exact: the circle (or ellipse) each sphere really makes in perspective.',
+        pv:{canvas:{w:36,h:48},dist:26,proj:'curvi',eye:{x:0,y:48,z:0},yaw:0,pitch:0,boxes:[box(1,0,0,104,16,{shape:'sphere',arr:{type:'metatron',plane:'wall',gap:-3}})]}},
+      sprawl:{name:'Metatron of Metatrons',note:'The whole figure again on each of its own thirteen centres: 169 cubes, and Metatron’s lines at both scales on the floor. Seen from straight overhead in curvilinear, the cubes lean out from the middle like a mandala.',
+        pv:{canvas:{w:48,h:48},dist:16,proj:'curvi',eye:{x:0,y:190,z:300},yaw:0,pitch:-90,show:{...SHOW,floor:false,vps:false},boxes:[box(1,0,0,300,8,{arr:{type:'metatron',gap:3,levels:2}})]}},
       blank:{name:'One cube',note:'A single cube on the floor in front of you. Add more, drag them around, and look at them from anywhere.',
         pv:{canvas:{w:36,h:48},dist:40,proj:'linear',eye:{x:0,y:62,z:0},yaw:0,pitch:-20,boxes:[box(1,0,0,96,24,{ry:28})]}}};
     const fromScene=id=>{const S=SCENES[id];return{scene:id,name:S.name,cv:{x:0,y:0},grid:12,show:{...SHOW},...structuredClone(S.pv)}};
@@ -982,11 +1005,98 @@
     function circlePolys(K,G,R=VR){if(!G)return[];if(G.type==='line'){const [px,py]=G.p,[dx,dy]=G.d,l=Math.hypot(dx,dy),big=1e5;return clipPoly([toSvg([px-dx/l*big,py-dy/l*big]),toSvg([px+dx/l*big,py+dy/l*big])],R)}
       const n=Math.max(96,Math.min(2880,Math.round(G.r*view.s/2.5*RES))),pts=[];for(let i=0;i<=n;i++){const a=i/n*2*Math.PI;pts.push(toSvg([G.c[0]+G.r*Math.cos(a),G.c[1]+G.r*Math.sin(a)]))}return clipPoly(pts,R)}
 
-    /* ----- boxes and their repeats ----- */
+    /* ----- solids: every shape sits inside its box (x −1…1, y 0…1, z −1…1 of its half-width, height and half-depth), so sizing, stacking and snapping treat them all alike ----- */
     const CORNERS=Array.from({length:8},(_,i)=>[i&1?1:-1,i&2?1:0,i&4?1:-1]);
     const EDGES=[];for(let i=0;i<8;i++)for(const b of [1,2,4])if(!(i&b))EDGES.push([i,i|b]);
     const FACES=[{c:[0,4,6,2],n:[-1,0,0]},{c:[1,3,7,5],n:[1,0,0]},{c:[0,1,5,4],n:[0,-1,0]},{c:[2,6,7,3],n:[0,1,0]},{c:[0,2,3,1],n:[0,0,-1]},{c:[4,5,7,6],n:[0,0,1]}];
+    const PHI=(1+Math.sqrt(5))/2,R3=Math.sqrt(3),NC=48,pm=v=>v.reduce((o,x)=>o.flatMap(p=>x?[[...p,x],[...p,-x]]:[[...p,0]]),[[]]),cyc=([a,b,c])=>[[a,b,c],[b,c,a],[c,a,b]];
+    const ringAt=(n,y,r=1)=>Array.from({length:n},(_,i)=>[r*Math.cos(i/n*2*Math.PI),y,r*Math.sin(i/n*2*Math.PI)]);
+    // the faces of a convex solid from its corners: each plane through three corners with every other corner behind it
+    function hullFaces(V){const F=[],seen=new Set(),n=V.length;
+      for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){const c=cross(sub(V[j],V[i]),sub(V[k],V[i])),l=len(c);if(l<1e-9)continue;const nn=scl(c,1/l),d=dot(nn,V[i]);let pos=0,neg=0;const on=[];
+        for(let m=0;m<n;m++){const s=dot(nn,V[m])-d;if(s>1e-7)pos++;else if(s<-1e-7)neg++;else on.push(m)}
+        const key=on.join();if(pos&&neg||seen.has(key))continue;seen.add(key);const mid=scl(on.reduce((s,q)=>add(s,V[q]),[0,0,0]),1/on.length),u=unit(sub(V[on[0]],mid)),w=cross(nn,u);
+        F.push(on.map(q=>{const v=sub(V[q],mid);return[Math.atan2(dot(v,w),dot(v,u)),q]}).sort((a,b)=>a[0]-b[0]).map(x=>x[1]))}
+      return F}
+    // a solid from its corners in true proportion: fitted to the unit box, faces turned outward, edges found. Curved faces are smooth: the edges between them never draw, the outline does
+    function solid(id,name,V0,F,o={}){const lo=[0,1,2].map(k=>Math.min(...V0.map(v=>v[k]))),ext=[0,1,2].map(k=>Math.max(...V0.map(v=>v[k]))-lo[k]),N=V0.length;
+      const V=V0.map(v=>[2*(v[0]-lo[0])/ext[0]-1,(v[1]-lo[1])/ext[1],2*(v[2]-lo[2])/ext[2]-1]),mid=scl(V.reduce(add,[0,0,0]),1/N);
+      const faces=F.map((c,fi)=>{let n=[0,0,0];c.forEach((a,j)=>{const p=V[a],q=V[c[(j+1)%c.length]];n=add(n,[(p[1]-q[1])*(p[2]+q[2]),(p[2]-q[2])*(p[0]+q[0]),(p[0]-q[0])*(p[1]+q[1])])});
+        if(dot(n,sub(scl(c.reduce((s,i)=>add(s,V[i]),[0,0,0]),1/c.length),mid))<0){c=[...c].reverse();n=scl(n,-1)}n=unit(n);return{c,n,d:dot(n,V[c[0]]),smooth:!!(o.smooth&&o.smooth(fi))}});
+      const E=[],EF=[],EI=new Map(),at=(a,b)=>Math.min(a,b)*N+Math.max(a,b),edge=(a,b)=>{let e=EI.get(at(a,b));if(e==null){e=E.length;EI.set(at(a,b),e);E.push([Math.min(a,b),Math.max(a,b)]);EF.push([])}return e};
+      (o.edges||[]).forEach(([a,b])=>edge(a,b));faces.forEach((f,fi)=>f.c.forEach((a,j)=>EF[edge(a,f.c[(j+1)%f.c.length])].push(fi)));
+      const smoothE=E.map((_,e)=>EF[e].every(f=>faces[f].smooth)),vn=V.map(()=>[0,0,0]);faces.forEach(f=>{if(f.smooth)f.c.forEach(i=>vn[i]=add(vn[i],f.n))});
+      (o.sharp||[]).forEach(i=>vn[i]=[0,0,0]);vn.forEach((v,i)=>vn[i]=len(v)>1e-9?unit(v):null);
+      return{id,name,raw:V0,V,F:faces,E,EF,smoothE,vn,ei:(a,b)=>({e:EI.get(at(a,b)),rev:a>b}),G:o.guide||E.filter((_,e)=>!smoothE[e]),sil:o.sil||null,ratio:[1,ext[1]/ext[0],ext[2]/ext[0]]}}
+    const SOLIDS={},polyhedron=(id,name,V)=>solid(id,name,V,hullFaces(V));
+    // a curved solid, with coarser meshes for when it's small on screen (its outline is exact whatever the mesh)
+    const curved=(id,name,make,[n,...rest])=>({...solid(id,name,...make(n)),lod:rest.map(k=>solid(id,name,...make(k)))});
+    [solid('box','Cube',CORNERS.map(([x,y,z])=>[x,2*y,z]),FACES.map(F=>F.c),{edges:EDGES}),
+     polyhedron('tetra','Tetrahedron',[[-1,0,-1/R3],[1,0,-1/R3],[0,0,2/R3],[0,Math.sqrt(8/3),0]]),
+     polyhedron('octa','Octahedron',[[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],[0,1,0],[0,-1,0]]),
+     polyhedron('dodeca','Dodecahedron',[...pm([1,1,1]),...cyc([0,1/PHI,PHI]).flatMap(pm)]),
+     polyhedron('icosa','Icosahedron',cyc([0,1,PHI]).flatMap(pm)),
+     polyhedron('pyramid','Pyramid',[[-1,0,-1],[1,0,-1],[1,0,1],[-1,0,1],[0,Math.SQRT2,0]]),
+     polyhedron('prism','Prism',[[-1,0,-1],[1,0,-1],[0,R3,-1],[-1,0,1],[1,0,1],[0,R3,1]]),
+     curved('cyl','Cylinder',n=>{const F=[[...Array(n).keys()],Array.from({length:n},(_,i)=>n+i)];for(let i=0;i<n;i++){const j=(i+1)%n;F.push([i,j,n+j,n+i])}
+       return[[...ringAt(n,0),...ringAt(n,2),[0,0,0],[0,2,0]],F,{smooth:f=>f>1,guide:[[2*n,2*n+1]],sil:'cyl'}]},[NC,24,12]),
+     curved('cone','Cone',n=>{const F=[[...Array(n).keys()]];for(let i=0;i<n;i++)F.push([i,(i+1)%n,n]);return[[...ringAt(n,0),[0,R3,0],[0,0,0]],F,{smooth:f=>f>0,guide:[[n+1,n]],sil:'cone',sharp:[n]}]},[NC,24,12]),
+     curved('sphere','Sphere',M=>{const L=M/2,V=[[0,-1,0]];for(let k=1;k<L;k++){const a=k/L*Math.PI;V.push(...ringAt(M,-Math.cos(a),Math.sin(a)))}V.push([0,1,0]);const top=V.length-1,at=(k,i)=>1+(k-1)*M+i%M,F=[];
+       for(let i=0;i<M;i++){F.push([0,at(1,i+1),at(1,i)],[top,at(L-1,i),at(L-1,i+1)]);for(let k=1;k<L-1;k++)F.push([at(k,i),at(k,i+1),at(k+1,i+1),at(k+1,i)])}
+       return[V,F,{smooth:()=>true,guide:[[0,top]],sil:'sphere'}]},[32,20,12])].forEach(S=>SOLIDS[S.id]=S);
+    const SHAPES=Object.keys(SOLIDS),solidOf=b=>SOLIDS[b&&b.shape]||SOLIDS.box;
+    // true proportions for the shape (a cube, for a box) at about the same size: the same volume, a whole-inch width
+    function perfectPatch(b,shape=b.shape){const [rw,rh,rd]=(SOLIDS[shape]||SOLIDS.box).ratio,k=Math.cbrt(b.w*b.h*b.d/(rw*rh*rd)),w=Math.max(1,Math.round(k*rw)),r2=v=>Math.round(v*100)/100;return{w,h:r2(w*rh/rw),d:r2(w*rd/rw)}}
+    const isPerfect=b=>{const [rw,rh,rd]=solidOf(b).ratio;return Math.abs(b.h*rw/(b.w*rh)-1)<.01&&Math.abs(b.d*rw/(b.w*rd)-1)<.01};
+    // a point of one copy's unit solid ↔ the world
+    const toU=(I,P)=>{const q=mv(I.RT,sub(P,I.t));return[q[0]/I.hw,q[1]/I.h,q[2]/I.hd]},fromU=(I,u)=>add(I.t,mv(I.R,[u[0]*I.hw,u[1]*I.h,u[2]*I.hd]));
+    // which faces of a copy look toward E, and a face's outward normal in the world (for light and shade)
+    const frontOf=(I,E,T=I.S)=>{const e=toU(I,E);return T.F.map(f=>dot(f.n,e)>f.d+1e-9)},normalW=(I,f)=>unit(mv(I.R,[f.n[0]/I.hw,f.n[1]/I.h,f.n[2]/I.hd]));
+    // the outline of a curved solid seen from E, exact: worked in the unit solid, where squashing and stretching keep every tangent a tangent
+    function silhouettes(I,E){const k=I.S.sil;if(!k)return[];const e=toU(I,E),out=[];
+      if(k==='sphere'){const s=[e[0],2*e[1]-1,e[2]],d=len(s);if(d<=1+1e-9)return out;const n=scl(s,1/d),c=scl(n,1/d),r=Math.sqrt(1-1/(d*d)),a=unit(cross(n,Math.abs(n[1])<.9?[0,1,0]:[1,0,0])),b=cross(n,a),m=Math.round(96*Math.max(1,RES)),pl=[];
+        for(let i=0;i<=m;i++){const t=i/m*2*Math.PI,q=add(c,add(scl(a,r*Math.cos(t)),scl(b,r*Math.sin(t))));pl.push(fromU(I,[q[0],(q[1]+1)/2,q[2]]))}out.push(pl);return out}
+      // a cylinder's or a cone's two side lines: where the plane through you just grazes the side
+      const rho=Math.hypot(e[0],e[2]),c=k==='cyl'?1/rho:(1-e[1])/rho;if(!(rho>1e-9)||Math.abs(c)>=1)return out;const ph=Math.atan2(e[2],e[0]),da=Math.acos(c);
+      [ph+da,ph-da].forEach(a=>{const b=[Math.cos(a),0,Math.sin(a)];out.push([fromU(I,b),fromU(I,k==='cyl'?[b[0],1,b[2]]:[0,1,0])])});return out}
+    // the part of the line o + t·d inside a copy, as [t in, t out], or null: slabs for a box, the face planes for any other solid
+    function span(I,o,d){let t0=-Infinity,t1=Infinity;
+      if(I.S.id==='box'){const e=mv(I.RT,sub(o,I.t)),v=mv(I.RT,d),lo=[-I.hw,0,-I.hd],hi=[I.hw,I.h,I.hd];
+        for(let k=0;k<3;k++){if(Math.abs(v[k])<1e-12){if(e[k]<lo[k]||e[k]>hi[k])return null;continue}let a=(lo[k]-e[k])/v[k],b=(hi[k]-e[k])/v[k];if(a>b)[a,b]=[b,a];if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return null}return[t0,t1]}
+      const e=toU(I,o),v=mv(I.RT,d),w=[v[0]/I.hw,v[1]/I.h,v[2]/I.hd];
+      // a sphere has no sharp edges to agree with, so it gets the exact answer: one quadratic, in the space where it's round
+      if(I.S.sil==='sphere'){const es=[e[0],2*e[1]-1,e[2]],ws=[w[0],2*w[1],w[2]],A=dot(ws,ws),B=2*dot(es,ws),C=dot(es,es)-1,D=B*B-4*A*C;if(A<1e-18||D<0)return null;const r=Math.sqrt(D);return[(-B-r)/(2*A),(-B+r)/(2*A)]}
+      for(const f of I.S.F){const num=f.d-dot(f.n,e),den=dot(f.n,w);if(Math.abs(den)<1e-12){if(num<-1e-12)return null;continue}const t=num/den;if(den<0){if(t>t0)t0=t}else if(t<t1)t1=t;if(t0>t1)return null}
+      return[t0,t1]}
+    // a solid's level slice at height y: a convex outline in (x, z), or null
+    function sliceAt(I,y){const pts=[];I.S.E.forEach(([a,b])=>{const A=I.P[a],B=I.P[b],sa=A[1]-y,sb=B[1]-y;if(sa*sb>0||sa===sb)return;const t=sa/(sa-sb);pts.push([A[0]+(B[0]-A[0])*t,A[2]+(B[2]-A[2])*t])});return pts.length>2?hull2(pts):null}
+    function hull2(P){P=[...P].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],hi=[];
+      for(const p of P){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=1e-12)lo.pop();lo.push(p)}
+      for(let i=P.length-1;i>=0;i--){const p=P[i];while(hi.length>1&&cr(hi[hi.length-2],hi[hi.length-1],p)<=1e-12)hi.pop();hi.push(p)}
+      return lo.slice(0,-1).concat(hi.slice(0,-1))}
+    // push a circle (x, z, r) out of a convex outline (anticlockwise): the shortest way out
+    function pushPoly(poly,x,z,r){let inside=true,best=null,bd=Infinity,pen=Infinity,pn=null;
+      for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],ex=b[0]-a[0],ez=b[1]-a[1],L=Math.hypot(ex,ez);if(L<1e-12)continue;const nx=ez/L,nz=-ex/L,s=(x-a[0])*nx+(z-a[1])*nz;
+        if(s>0)inside=false;if(-s<pen){pen=-s;pn=[nx,nz]}const t=clamp(((x-a[0])*ex+(z-a[1])*ez)/(L*L),0,1),qx=a[0]+t*ex,qz=a[1]+t*ez,dd=Math.hypot(x-qx,z-qz);if(dd<bd){bd=dd;best=[qx,qz]}}
+      if(!pn)return null;if(inside)return[pn[0]*(pen+r),pn[1]*(pen+r)];if(bd>=r)return null;return[(x-best[0])/bd*(r-bd),(z-best[1])/bd*(r-bd)]}
+    // a little drawing of a shape for its button: lit faces and edges, seen from a little above and to one side
+    const iconCache={};function shapeIcon(id){if(iconCache[id])return iconCache[id];const S=SOLIDS[id],[rw,rh,rd]=S.ratio,k=1/Math.max(rw,rh,rd),I={S,hw:rw*k,h:2*rh*k,hd:rd*k,R:mm(rotX(.42),rotY(.5))};I.RT=tr(I.R);I.t=mv(I.R,[0,-I.h/2,0]);
+      I.P=S.V.map(u=>fromU(I,u));const E=[0,0,-1e4],front=frontOf(I,E),L=unit([-.5,.75,-.6]),f=v=>v.toFixed(2),xy=p=>f(p[0])+','+f(-p[1]),tones={l:'',m:'',d:''};
+      S.F.forEach((F,i)=>{if(!front[i])return;const l=dot(normalW(I,F),L);tones[l>.45?'l':l>-.15?'m':'d']+='M'+F.c.map(c=>xy(I.P[c])).join('L')+'Z'});
+      let lines='';S.E.forEach(([a,b],e)=>{if(!S.smoothE[e]&&S.EF[e].some(x=>front[x]))lines+=`M${xy(I.P[a])}L${xy(I.P[b])}`});silhouettes(I,E).forEach(pl=>lines+='M'+pl.map(xy).join('L'));
+      return iconCache[id]=`<svg class="pv-ico" viewBox="-1.25 -1.25 2.5 2.5" aria-hidden="true">${Object.entries(tones).map(([t,d])=>d?`<path class="${t}" d="${d}"/>`:'').join('')}<path class="e" d="${lines}"/></svg>`}
     const boxR=b=>mm(rotY((b.ry||0)*D2R),rotX((b.rx||0)*D2R));
+    /* ----- sacred figures: the centres of the copies, in steps of one spacing. Flat ones lie on the floor or stand up; the rest are solids in space ----- */
+    const HEX=[0,1,2,3,4,5].map(k=>[Math.cos((90+60*k)*D2R),Math.sin((90+60*k)*D2R)]);
+    const SEED=[[0,0],...HEX],FRUIT=[...SEED,...HEX.map(([x,y])=>[2*x,2*y])],FLOWER=[...FRUIT,...HEX.map(([x,y],k)=>[x+HEX[(k+1)%6][0],y+HEX[(k+1)%6][1]])];
+    const unitEdge=V=>{const c=scl(V.reduce(add,[0,0,0]),1/V.length);let m=Infinity;V.forEach((a,i)=>V.forEach((b,j)=>{if(j>i)m=Math.min(m,len(sub(a,b)))}));return V.map(v=>scl(sub(v,c),1/m))};
+    const SACRED={seed:{name:'Seed of Life',flat:SEED,circles:[1,2],note:'Seven copies, each where a circle of the Seed of Life is centred. Lines draws the circles.'},
+      metatron:{name:'Metatron’s Cube',flat:FRUIT,circles:[.5],chords:'all',note:'Thirteen copies on the centres of the Fruit of Life, every one joined to every other: 78 lines.'},
+      flower:{name:'Flower of Life',flat:FLOWER,circles:[1,3],note:'Nineteen copies on the centres of the Flower of Life. Lines draws its circles.'},
+      metatron3:{name:'Metatron in 3D',pts:[[0,0,0],...cyc([1,1,0]).flatMap(pm).map(v=>scl(v,Math.SQRT1_2))],chords:'all',note:'Twelve around one in space (the cuboctahedron, the vector equilibrium), every copy joined to every other.'},
+      merkaba:{name:'Star tetrahedron',pts:unitEdge(SOLIDS.box.raw),chords:'diag',note:'Eight copies on the corners of a cube, joined as two tetrahedra through each other.'},
+      ...Object.fromEntries(['tetra','octa','box','icosa','dodeca'].map(id=>['p-'+id,{name:SOLIDS[id].name,pts:unitEdge(SOLIDS[id].raw),chords:'edges',note:`A copy on every corner of ${{tetra:'a tetrahedron',octa:'an octahedron',box:'a cube',icosa:'an icosahedron',dodeca:'a dodecahedron'}[id]}, joined along its edges.`}]))};
+    Object.values(SACRED).forEach(F=>{const p=F.pts||F.flat.map(([u,v])=>[u,0,v]);F.size=p.length;F.reach=Math.max(...p.map(len));F.pairs=[];if(F.chords)p.forEach((A,i)=>p.forEach((B,j)=>{if(j<=i)return;const d=len(sub(A,B));if(F.chords==='all'||F.chords==='edges'&&Math.abs(d-1)<1e-6||F.chords==='diag'&&Math.abs(d-Math.SQRT2)<1e-6)F.pairs.push([i,j])}))});
     function instances(pv,b){const R0=boxR(b),t0=[b.x,b.y,b.z],a=b.arr||ARR,n=Math.max(1,Math.round(a.n||1)),gap=+a.gap||0,out=[];
       const put=(R,t,k)=>out.push({b,k,R,t,hw:b.w/2,h:b.h,hd:b.d/2});
       if(a.type==='row'){const away=a.axis==='away',dir=mv(R0,away?[0,0,1]:[1,0,0]),step=(away?b.d:b.w)+gap;for(let i=0;i<n;i++)put(R0,add(t0,scl(dir,i*step)),i)}
@@ -997,18 +1107,23 @@
         const E=a.pivot?[a.pivot.x,a.pivot.y,a.pivot.z]:[pv.eye.x,pv.eye.y,pv.eye.z],span=clamp(+a.span||0,-360,360)*D2R,full=Math.abs(Math.abs(span)-2*Math.PI)<1e-9,step=n>1?span/(full?n:n-1):0;
         let axis=[0,1,0];if(a.type==='arch'){const c=add(t0,mv(R0,[0,b.h/2,0])),hz=[c[0]-E[0],0,c[2]-E[2]];axis=len(hz)<1e-9?[-1,0,0]:unit(cross(hz,[0,1,0]))}
         for(let i=0;i<n;i++){const Q=turn(axis,i*step);put(mm(Q,R0),add(E,mv(Q,sub(t0,E))),i)}}
+      else if(SACRED[a.type]){
+        // copies far enough apart never touch, whichever way they're turned: the spacing is a copy's diagonal plus the gap. A figure of figures puts the whole figure at every centre
+        const F=SACRED[a.type],plane=!F.flat?'space':a.plane==='wall'?'wall':'floor',step=(plane==='floor'?Math.hypot(b.w,b.d):plane==='wall'?Math.hypot(b.w,b.h):Math.hypot(b.w,b.h,b.d))+gap;
+        const pts=F.pts||F.flat.map(([u,v])=>plane==='floor'?[u,0,v]:[u,v,0]),M=2*F.reach+1,all=F.flat&&a.levels>1?pts.flatMap(p=>pts.map(q=>add(scl(p,M),q))):pts,W=all.map(p=>add(t0,mv(R0,scl(p,step))));
+        if(plane!=='floor'){const lift=t0[1]-Math.min(...W.map(w=>w[1]));W.forEach(w=>w[1]+=lift)}W.forEach((t,i)=>put(R0,t,i))}
       else put(R0,t0,0);
       return out}
-    function sceneOf(pv,K,boxes=pv.boxes){const list=[];boxes.forEach(b=>instances(pv,b).forEach(I=>{I.RT=tr(I.R);I.P=CORNERS.map(([x,y,z])=>add(I.t,mv(I.R,[x*I.hw,y*I.h,z*I.hd])));
-      const c=add(I.t,mv(I.R,[0,I.h/2,0])),dv=sub(c,K.E),dist=len(dv);I.c=c;I.rad=Math.hypot(I.hw,I.h/2,I.hd);I.dist=dist;I.dirC=dist>1e-9?scl(dv,1/dist):[0,0,1];I.cosR=dist>I.rad?Math.cos(Math.asin(I.rad/dist)):-2;list.push(I)}));return list}
-    // where the segment E→P first enters box I, as a fraction of the way to P (Infinity if it doesn't, or if the eye is inside)
-    function entry(I,E,P){const e=mv(I.RT,sub(E,I.t)),p=mv(I.RT,sub(P,I.t)),d=sub(p,e),lo=[-I.hw,0,-I.hd],hi=[I.hw,I.h,I.hd];let t0=-Infinity,t1=Infinity;
-      for(let k=0;k<3;k++){if(Math.abs(d[k])<1e-12){if(e[k]<lo[k]||e[k]>hi[k])return Infinity;continue}let a=(lo[k]-e[k])/d[k],b=(hi[k]-e[k])/d[k];if(a>b)[a,b]=[b,a];if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return Infinity}
-      return t0>0?t0:Infinity}
+    // a curved solid's corners are only worked out when something needs them; roughP() is the few-cornered stand-in for framing and the plan
+    const roughP=I=>I.S.lod?(I.cP||(I.cP=I.S.lod[I.S.lod.length-1].V.map(u=>fromU(I,u)))):I.P;
+    function sceneOf(pv,K,boxes=pv.boxes){const list=[];boxes.forEach(b=>instances(pv,b).forEach(I=>{I.S=solidOf(b);I.RT=tr(I.R);if(I.S.lod){let P=null;Object.defineProperty(I,'P',{get:()=>P||(P=I.S.V.map(u=>fromU(I,u))),enumerable:true})}else I.P=I.S.V.map(u=>fromU(I,u));
+      const c=add(I.t,mv(I.R,[0,I.h/2,0])),dv=sub(c,K.E),dist=len(dv),sil=I.S.sil;I.c=c;I.rad=sil==='sphere'?Math.max(I.hw,I.h/2,I.hd):sil?Math.hypot(Math.max(I.hw,I.hd),I.h/2):Math.hypot(I.hw,I.h/2,I.hd);I.dist=dist;I.dirC=dist>1e-9?scl(dv,1/dist):[0,0,1];I.cosR=dist>I.rad?Math.cos(Math.asin(I.rad/dist)):-2;list.push(I)}));return list}
+    // where the segment E→P first enters copy I, as a fraction of the way to P (Infinity if it doesn't, or if the eye is inside)
+    function entry(I,E,P){const s=span(I,E,sub(P,E));return s&&s[0]>0?s[0]:Infinity}
     // hidden lines by casting a ray from the eye: exact, and the same in both projections
     function hidden(P,list,K){const v=sub(P,K.E),dp=len(v);if(dp<1e-9)return false;const u=scl(v,1/dp);
       for(const I of list){if(I.dist-I.rad>=dp)continue;if(dot(u,I.dirC)<I.cosR-1e-9)continue;const t=entry(I,K.E,P);if(t<1&&(1-t)*dp>TOL)return true}return false}
-    function runsOf(A,B,list,K){const N=Math.max(10,Math.round(24*RES)),vis=[];for(let i=0;i<=N;i++)vis.push(!hidden(lerp(A,B,i/N),list,K));
+    function runsOf(A,B,list,K,N=Math.max(10,Math.round(24*RES))){const vis=[];for(let i=0;i<=N;i++)vis.push(!hidden(lerp(A,B,i/N),list,K));
       const runs=[];let start=0;for(let i=1;i<=N;i++)if(vis[i]!==vis[i-1]){let lo=(i-1)/N,hi=i/N;for(let k=0;k<24;k++){const m=(lo+hi)/2;if(!hidden(lerp(A,B,m),list,K)===vis[i-1])lo=m;else hi=m}const m=(lo+hi)/2;runs.push([start,m,vis[i-1]]);start=m}
       runs.push([start,1,vis[N]]);const L=len(sub(B,A)),out=[];runs.forEach(r=>{const last=out[out.length-1];if(last&&((r[1]-r[0])*L<.05||last[2]===r[2]))last[1]=r[1];else if(!last&&(r[1]-r[0])*L<.05&&runs.length>1){runs[1]&&(runs[1][0]=r[0])}else out.push([...r])});
       for(let i=1;i<out.length;i++)if(out[i][2]===out[i-1][2]){out[i-1][1]=out[i][1];out.splice(i--,1)}return out}
@@ -1029,50 +1144,95 @@
     /* ----- drawing ----- */
     let lastFrame=null;
     let raf=0,frames=0;const paint=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;render();sync()})};
-    let runsCache=new Map();const runsFor=(I,e,list,K)=>{const key=I.b.id+':'+I.k+':'+e;let r=runsCache.get(key);if(!r){const [a,b]=EDGES[e];r=runsOf(I.P[a],I.P[b],list,K);runsCache.set(key,r)}return r};
+    let runsCache=new Map();const runsFor=(I,e,A,B,list,K,N)=>{const key=I.b.id+':'+I.k+':'+e;let r=runsCache.get(key);if(!r){r=runsOf(A,B,list,K,N);runsCache.set(key,r)}return r};
     function render(){if(raf){cancelAnimationFrame(raf);raf=0}frames++;NEAR=walking?Math.max(.005,Math.min(1,walking.size*.04)):1;const pv=st(),K=camera(pv);fit();lastFrame={K,list:sceneOf(pv,K)};const {list}=lastFrame;runsCache=new Map();
       [els.grid,els.guides,els.shapes,els.points,els.perspective,els.overlay,els.lineage,els.ghost].forEach(clear);els.svg.style.setProperty('--w',state.weight);els.svg.classList.remove('darkline','tracing');
       if(sel&&!byId(sel.id))sel=null;if(pin&&!byId(pin.id))pin=null;
       const S=pv.show;
       if(S.floor)drawFloor(K,list);
       if(S.horizon){emit(els.guides,circlePolys(K,circleOf(K,mv(K.CT,[0,1,0]))),'horizon')}
-      const guyOn=pv.guy&&!walking&&!harvesting&&S.guy!==false,guys=guyOn?guyList(pv,K):[];drawBoxes(K,list,guys);guyHit=guyOn?screenBounds(K,guys):null;
+      const guyOn=pv.guy&&!walking&&!harvesting&&S.guy!==false,guys=guyOn?guyList(pv,K):[];drawSacred(K,list,'under');drawBoxes(K,list,guys);drawSacred(K,list,'over');guyHit=guyOn?screenBounds(K,guys):null;
       if(S.guides&&sel)drawGuides(K,list);
       drawMarks(K);
       drawSquares();
       if(!harvesting){drawOverlay(K,list);const t=snapNote?snapNote.text:'';if(t&&t!==lastSnap&&drag)buzz();lastSnap=t}
       if(!harvesting&&!walking){placeBoxBar(K,list);drawPlan(K,list);if(!interacting){readouts(K,list);renderShots()}heading(K);save()}}
-    function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>I.P.forEach(p=>R=Math.max(R,Math.hypot(p[0]-K.E[0],p[2]-K.E[2])+96)));R=Math.ceil(R/g)*g;
+    function drawFloor(K,list){const pv=st(),g=pv.grid||12;let R=360;list.forEach(I=>R=Math.max(R,Math.hypot(I.c[0]-K.E[0],I.c[2]-K.E[2])+I.rad+96));R=Math.ceil(R/g)*g;
       const cx=Math.round(K.E[0]/g)*g,cz=Math.round(K.E[2]/g)*g;
       // the floor only changes when you move, so it is kept between frames (sampled every 3°: it is a guide, not a line you paint)
       const key=JSON.stringify([pv.yaw,pv.pitch,pv.eye,pv.dist,pv.proj,pv.cv,view.s,view.ox,view.oy,R,g,RES]);
       if(floorCache.key!==key){const ds=[];for(let i=-R;i<=R;i+=g){ds.push(dOf(segPolys(K,[cx+i,0,cz-R],[cx+i,0,cz+R],0,1,3)),dOf(segPolys(K,[cx-R,0,cz+i],[cx+R,0,cz+i],0,1,3)))}floorCache={key,d:ds.join('')}}
       if(floorCache.d){const el=svgEl('path',{d:floorCache.d,'vector-effect':'non-scaling-stroke'});el.dataset.kind='floor';els.grid.appendChild(el)}}
     let floorCache={key:''};
-    const LIGHT=unit([-.45,.82,-.36]);
-    // which edge joins two corners (and whether it runs the other way), and which two faces meet at each edge
-    const EI={};EDGES.forEach(([a,b],e)=>{EI[a*8+b]={e,rev:false};EI[b*8+a]={e,rev:true}});
-    const EDGE_FACES=EDGES.map(([a,b])=>FACES.map((F,f)=>F.c.includes(a)&&F.c.includes(b)?f:-1).filter(f=>f>=0));
+    const LIGHT=unit([-.45,.82,-.36]),BANDS=[['light',.45,Infinity],['mid',-.15,.45],['dark',-Infinity,-.15]];
+    // the part of a little face whose light falls in [lo, hi), the light varying linearly between its corners
+    function band(pts,lv,lo,hi){let P=pts.map((p,i)=>[p,lv[i]]);const cut=(keep,th)=>{const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],ka=keep(a[1]),kb=keep(b[1]);if(ka)out.push(a);
+        if(ka!==kb){const t=(th-a[1])/(b[1]-a[1]);out.push([[a[0][0]+(b[0][0]-a[0][0])*t,a[0][1]+(b[0][1]-a[0][1])*t],th])}}P=out};
+      if(lo>-Infinity)cut(v=>v>=lo,lo);if(P.length>2&&hi<Infinity)cut(v=>v<hi,hi);return P.length>2?P.map(x=>x[0]):null}
     let interacting=false;
+    // linear, with every point in front of you and on the drawing: each corner projects once and edges are just pairs (the same as segPolys, far quicker)
+    function projAll(K,P){const out=new Array(P.length),cs=K.curvi?new Array(P.length):null;for(let i=0;i<P.length;i++){const c=toCam(K,P[i]);let q;
+        if(cs){q=img(K,c);if(!q||Math.hypot(q[0],q[1])>60*K.D)return null;const l=len(c);cs[i]=[c[0]/l,c[1]/l,c[2]/l]}else{if(c[2]<NEAR)return null;q=[K.D*c[0]/c[2],K.D*c[1]/c[2]]}
+        q=toSvg(q);if(!(q[0]>VR.x0&&q[0]<VR.x1&&q[1]>VR.y0&&q[1]<VR.y1))return null;out[i]=q}out.cam=cs;return out}
+    // curvilinear: an edge seen across so small an angle that segPolys would draw its chord anyway
+    const short=(f,a,b)=>!f.cam||len(sub(f.cam[a],f.cam[b]))*R2D*RES<1.2;
+    // a curved outline, joined into as few strokes as it will go
+    function chainPolys(K,pl){const fast=projAll(K,pl);if(fast&&pl.every((_,i)=>!i||short(fast,i-1,i)))return[fast];const out=[];for(let i=1;i<pl.length;i++)segPolys(K,pl[i-1],pl[i]).forEach(p=>{const last=out[out.length-1],e=last&&last[last.length-1];if(e&&Math.abs(e[0]-p[0][0])<1e-6&&Math.abs(e[1]-p[0][1])<1e-6)last.push(...p.slice(1));else out.push(p)});return out}
+    // exports: a polyline cast against the solids, its visible stretches joined into whole strokes (one path each: the Studio reads a path as one stroke)
+    function chainRuns(K,pl,list,I,key,N,kind){const S=st().show;let cur=null;const vis=[];
+      for(let i=1;i<pl.length;i++){const A=pl[i-1],B=pl[i];runsFor(I,key+'.'+i,A,B,list,K,N).forEach(([t0,t1,v])=>{const ps=segPolys(K,A,B,t0,t1);
+        if(!v){if(S.hidden)ps.forEach(p=>emit(els.shapes,[p],'hidden'));cur=null;return}
+        ps.forEach((p,j)=>{if(cur&&!j&&t0<1e-9)cur.push(...p.slice(1));else vis.push(cur=[...p])});if(t1<1-1e-9)cur=null})}
+      vis.forEach(p=>emit(els.shapes,[p],kind))}
     function drawBoxes(K,list,extra=[]){const S=st().show;
-      if(harvesting){list.forEach(I=>EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden')})));return}
-      // on screen: far to near, each box's lit faces then its edges, so nearer boxes cover farther ones; cheap enough to run every frame
+      if(harvesting){
+        // exact hidden lines: every sharp edge, and each curved solid's outline, cast against everything
+        const put=(I,key,A,B,N)=>runsFor(I,key,A,B,list,K,N).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;emit(els.shapes,segPolys(K,A,B,t0,t1),v?'main':'hidden')});
+        // a convex solid never hides its own outline, so the outline is cast against the others only
+        list.forEach(I=>{const T=I.S;T.E.forEach(([a,b],e)=>{if(!T.smoothE[e])put(I,e,I.P[a],I.P[b])});const others=list.filter(J=>J!==I);silhouettes(I,K.E).forEach((pl,s)=>chainRuns(K,pl,others,I,'s'+s,pl.length>2?6:undefined,'main'))});return}
+      // on screen: far to near, each solid's lit faces then its edges, so nearer ones cover farther ones; cheap enough to run every frame
       const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1),f2=v=>v.toFixed(2);
-      [...list,...extra].sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>segPolys(K,I.P[a],I.P[b]));
-        const front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});const tones={};
-        FACES.forEach((F,fi)=>{if(!front[fi])return;let ring=[],ok=true;F.c.forEach((c,j)=>{const {e,rev}=EI[c*8+F.c[(j+1)%4]],p=polys[e];if(p.length!==1){ok=false;return}ring=ring.concat(rev?[...p[0]].reverse():p[0])});if(!ok)return;
-          const n=mv(I.R,F.n),tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';tones[tone]=(tones[tone]||'')+'M'+ring.map(q=>f2(q[0])+','+f2(q[1])).join('L')+'Z'});
+      [...list,...extra].sort((a,b)=>b.dist-a.dist).forEach(I=>{const px=I.rad/Math.max(I.dist,1e-9)*K.D*view.s/U,T=I.S.lod?(px<16?I.S.lod[1]:px<56?I.S.lod[0]:I.S):I.S,P=T===I.S?I.P:T===I.S.lod[1]?roughP(I):T.V.map(u=>fromU(I,u));
+        const front=frontOf(I,K.E,T),fast=projAll(K,P),vl=[],pc=[],poly=e=>{if(pc[e])return pc[e];const [a,b]=T.E[e];return pc[e]=fast&&short(fast,a,b)?[[fast[a],fast[b]]]:segPolys(K,P[a],P[b])},tones={};
+        T.F.forEach((F,fi)=>{if(!front[fi])return;let ring=[];if(fast&&!fast.cam)ring=F.c.map(i=>fast[i]);else for(let j=0;j<F.c.length;j++){const {e,rev}=T.ei(F.c[j],F.c[(j+1)%F.c.length]),p=poly(e);if(p.length!==1)return;ring=ring.concat(rev?[...p[0]].reverse():p[0])}
+          const put=(t,r)=>tones[t]=(tones[t]||'')+'M'+r.map(q=>f2(q[0])+','+f2(q[1])).join('L')+'Z';if(!S.values){put('flat',ring);return}
+          if(F.smooth&&fast&&F.c.every(i=>T.vn[i])){const lv=F.c.map(i=>vl[i]!==undefined?vl[i]:(vl[i]=dot(unit(mv(I.R,[T.vn[i][0]/I.hw,T.vn[i][1]/I.h,T.vn[i][2]/I.hd])),LIGHT))),pts=F.c.map(i=>fast[i]);
+            BANDS.forEach(([t,lo,hi])=>{const r=band(pts,lv,lo,hi);if(r)put(t,r)});return}
+          const l=dot(normalW(I,F),LIGHT);put(l>.45?'light':l>-.15?'mid':'dark',ring)});
         Object.entries(tones).forEach(([t,d])=>els.shapes.appendChild(svgEl('path',{d,class:'pv-face '+t+(I.guy?' guy':'')})));
-        const seen=polys.filter((p,e)=>EDGE_FACES[e].some(f=>front[f])).flat(),el=emit(els.shapes,seen,I.guy?'guy':'main');
+        const seen=[];T.E.forEach((_,e)=>{if(!T.smoothE[e]&&T.EF[e].some(f=>front[f]))seen.push(...poly(e))});silhouettes(I,K.E).forEach(pl=>seen.push(...chainPolys(K,pl)));
+        const el=emit(els.shapes,seen,I.guy?'guy':'main');
         if(el&&S.depth&&!I.guy){const t=(I.dist-near)/Math.max(1,far-near);el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}});
-      // hidden edges, dashed on top: exact when you let go, the backs of boxes while you are moving
-      if(S.hidden)list.forEach(I=>EDGES.forEach(([a,b],e)=>{if(interacting){if(!EDGE_FACES[e].some(f=>{const F=FACES[f],n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9}))emit(els.shapes,segPolys(K,I.P[a],I.P[b]),'hidden');return}
-        runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v)emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),'hidden')})}))}
+      // hidden edges, dashed on top: exact when you let go, the backs of solids while you are moving
+      if(S.hidden)list.forEach(I=>{const T=I.S,front=interacting?frontOf(I,K.E):null;T.E.forEach(([a,b],e)=>{if(T.smoothE[e])return;
+        if(interacting){if(!T.EF[e].some(f=>front[f]))emit(els.shapes,segPolys(K,I.P[a],I.P[b]),'hidden');return}
+        runsFor(I,e,I.P[a],I.P[b],list,K).forEach(([t0,t1,v])=>{if(!v)emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),'hidden')})})})}
+    /* ----- a sacred figure's own lines through its copies: Metatron's 78, a solid's edges, the circles of the Flower ----- */
+    // a floor figure draws on the floor under its copies; standing and solid ones run between the copies' centres
+    const sacCache=new WeakMap();
+    function sacredLines(b,list){const F=SACRED[b.arr&&b.arr.type];if(!F||b.arr.lines===false)return null;let C=sacCache.get(list);if(!C)sacCache.set(list,C=new Map());const key=b.id+':'+RES;if(C.has(key))return C.get(key);const L=sacredFigure(b,list,F);C.set(key,L);return L}
+    function sacredFigure(b,list,F){const mine=list.filter(J=>J.b.id===b.id).sort((p,q)=>p.k-q.k),floor=!!F.flat&&b.arr.plane!=='wall',n=F.size;
+      if(!mine.length||mine.length%n)return null;const P=mine.map(J=>floor?J.t:J.c),groups=[];for(let g=0;g<P.length;g+=n)groups.push(P.slice(g,g+n));if(groups.length>1)groups.push(groups.map(G=>G[0]));
+      const R0=boxR(b),U=mv(R0,[1,0,0]),V=mv(R0,floor?[0,0,1]:[0,1,0]),segs=[],loops=[],m=Math.round((groups.length>1?48:96)*Math.max(1,RES));
+      const circle=(C,r)=>loops.push(Array.from({length:m+1},(_,i)=>{const a=i/m*2*Math.PI;return add(C,add(scl(U,r*Math.cos(a)),scl(V,r*Math.sin(a))))}));
+      groups.forEach(G=>{const s=len(sub(G[1],G[0]));F.pairs.forEach(([i,j])=>segs.push([G[i],G[j]]));if(F.circles){G.forEach(C=>circle(C,F.circles[0]*s));if(F.circles[1])circle(G[0],F.circles[1]*s)}});
+      return{floor,segs,loops}}
+    function drawSacred(K,list,phase){const pv=st(),S=pv.show;pv.boxes.forEach(b=>{const L=sacredLines(b,list);if(!L)return;
+      if(harvesting){if(phase!=='over')return;const put=(key,A,B,N)=>runsFor({b,k:key},0,A,B,list,K,N).forEach(([t0,t1,v])=>{if(v||S.hidden)emit(els.shapes,segPolys(K,A,B,t0,t1),v?'sacred':'hidden')});
+        L.segs.forEach(([A,B],i)=>put('L'+i,A,B));L.loops.forEach((pl,j)=>chainRuns(K,pl,list,{b,k:'C'+j},0,4,'sacred'));return}
+      // on screen, anything lying on the floor goes down first and the solids cover it, exactly as they would
+      if(phase==='under'){const polys=[];L.loops.forEach(pl=>polys.push(...chainPolys(K,pl)));if(L.floor)L.segs.forEach(([A,B])=>polys.push(...segPolys(K,A,B)));emit(els.shapes,polys,'sacred');return}
+      if(L.floor)return;
+      // chords in the air: out of the copies at each end, and behind any other solid, unless you're moving or there are very many
+      const own=list.filter(J=>J.b.id===b.id),exact=!interacting&&!walking&&L.segs.length*list.length<6000,polys=[];
+      L.segs.forEach(([A,B],i)=>{if(exact){runsFor({b,k:'L'+i},0,A,B,list,K,16).forEach(([t0,t1,v])=>{if(v)polys.push(...segPolys(K,A,B,t0,t1))});return}
+        const d=sub(B,A);let a=0,z=1;own.forEach(J=>{const sp=span(J,A,d);if(!sp)return;if(sp[0]<=1e-9&&sp[1]>=-1e-9)a=Math.max(a,sp[1]);if(sp[0]<=1+1e-9&&sp[1]>=1-1e-9)z=Math.min(z,sp[0])});if(z>a)polys.push(...segPolys(K,A,B,a,z))});
+      emit(els.shapes,polys,'sacred')})}
     // the edges of a box you can see from here (its lit faces), for outlines
-    function frontEdges(K,I){const front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});return EDGES.map(([a,b],e)=>EDGE_FACES[e].some(f=>front[f])?segPolys(K,I.P[a],I.P[b]):[]).flat()}
+    function frontEdges(K,I){const T=I.S,front=frontOf(I,K.E),out=[];T.E.forEach(([a,b],e)=>{if(!T.smoothE[e]&&T.EF[e].some(f=>front[f]))out.push(...segPolys(K,I.P[a],I.P[b]))});silhouettes(I,K.E).forEach(pl=>out.push(...chainPolys(K,pl)));return out}
     function selInstance(list){if(!sel)return null;return list.find(I=>I.b.id===sel.id&&I.k===sel.k)||list.find(I=>I.b.id===sel.id)}
     // every edge of the chosen box, carried on to its vanishing points: straight in linear, the full circle in curvilinear
-    function drawGuides(K,list){const I=selInstance(list);if(!I)return;EDGES.forEach(([a,b])=>{const ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);let n=cross(ca,cb);if(len(n)<1e-9)return;n=unit(n);
+    function drawGuides(K,list){const I=selInstance(list);if(!I)return;const T=I.S,front=T.id==='box'?null:frontOf(I,K.E);T.G.forEach(([a,b],g)=>{if(front){const e=T.ei(a,b).e;if(e!=null&&!T.EF[e].some(f=>front[f]))return}const ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);let n=cross(ca,cb);if(len(n)<1e-9)return;n=unit(n);
       emit(els.guides,circlePolys(K,circleOf(K,n)),'perspective-line')})}
     // exported marks: vanishing points and the centre of vision, so they land on the canvas
     function drawMarks(K){if(!st().show.vps)return;const cross=(p,r=.8)=>{const [x,y]=toSvg(p),s=r*view.s;return[[[x-s,y],[x+s,y]],[[x,y-s],[x,y+s]]]};
@@ -1139,7 +1299,7 @@
       if(snapNote)g.appendChild(tag(snapNote.p[0]+16,snapNote.p[1]-14,snapNote.text,'start','vp-label pv-live pv-snapnote'));
       if(pin)drawArc(K,list,g,tag)}
     // the arc an edge sits on: its centre and radius in canvas inches, the thing you swing with a string
-    function arcOf(K,list,e){const I=list.find(I=>I.b.id===e.id&&I.k===e.k);if(!I)return null;const [a,b]=EDGES[e.edge],ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);const n=unit(cross(ca,cb)),G=circleOf(K,n);return{I,a,b,G}}
+    function arcOf(K,list,e){const I=list.find(I=>I.b.id===e.id&&I.k===e.k);if(!I||!I.S.G[e.edge])return null;const [a,b]=I.S.G[e.edge],ca=toCam(K,I.P[a]),cb=toCam(K,I.P[b]);const n=unit(cross(ca,cb)),G=circleOf(K,n);return{I,a,b,G}}
     function drawArc(K,list,g,tag){const A=arcOf(K,list,pin);if(!A)return;const {G}=A;emit(g,segPolys(K,A.I.P[A.a],A.I.P[A.b]),null,{class:'pv-pin'});
       if(G.type==='circle'){const [cx,cy]=toSvg(G.c),mid=segPolys(K,A.I.P[A.a],A.I.P[A.b])[0];if(!mid)return;const m=mid[Math.floor(mid.length/2)];
         g.appendChild(svgEl('path',{d:`M${cx},${cy}L${m[0]},${m[1]}`,class:'pv-string'}));g.appendChild(svgEl('circle',{cx,cy,r:4,class:'pv-pin-dot'}));
@@ -1148,13 +1308,13 @@
     /* ----- the plan: where you stand, from above ----- */
     const plan=$('#pvPlan');let planT=null,planHold=false;
     function drawPlan(K,list){plan.toggleAttribute('hidden',!st().show.plan);if(!st().show.plan)return;clear(plan);const pv=st();
-      if(!planHold||!planT){let b=[K.E[0]-60,K.E[2]-60,K.E[0]+60,K.E[2]+60];list.forEach(I=>I.P.forEach(p=>{b[0]=Math.min(b[0],p[0]);b[1]=Math.min(b[1],p[2]);b[2]=Math.max(b[2],p[0]);b[3]=Math.max(b[3],p[2])}));
+      if(!planHold||!planT){let b=[K.E[0]-60,K.E[2]-60,K.E[0]+60,K.E[2]+60];list.forEach(I=>roughP(I).forEach(p=>{b[0]=Math.min(b[0],p[0]);b[1]=Math.min(b[1],p[2]);b[2]=Math.max(b[2],p[0]);b[3]=Math.max(b[3],p[2])}));
         const w=b[2]-b[0],h=b[3]-b[1],k=170/Math.max(w,h,1);planT={k,cx:(b[0]+b[2])/2,cz:(b[1]+b[3])/2}}
       const P=(x,z)=>[100+(x-planT.cx)*planT.k,100-(z-planT.cz)*planT.k];
       const g=pv.grid*(planT.k*pv.grid<6?4:1);let d='';for(let x=Math.floor((planT.cx-100/planT.k)/g)*g;x<=planT.cx+100/planT.k;x+=g){const [px]=P(x,0);d+=`M${px.toFixed(1)},0V200`}for(let z=Math.floor((planT.cz-100/planT.k)/g)*g;z<=planT.cz+100/planT.k;z+=g){const [,py]=P(0,z);d+=`M0,${py.toFixed(1)}H200`}
       plan.appendChild(svgEl('path',{d,class:'pv-plan-grid'}));
-      list.forEach(I=>{const q=[0,1,5,4].map(i=>P(I.P[i][0],I.P[i][2])),u=[2,3,7,6].map(i=>P(I.P[i][0],I.P[i][2]));const on=sel&&I.b.id===sel.id;
-        plan.appendChild(svgEl('path',{d:'M'+q.map(p=>p.join(',')).join('L')+'ZM'+u.map(p=>p.join(',')).join('L')+'Z',class:'pv-plan-box'+(on?' on':''),'data-box':I.b.id}))});
+      list.forEach(I=>{const on=sel&&I.b.id===sel.id,ring=r=>'M'+r.map(p=>p.join(',')).join('L')+'Z',d=I.S.id==='box'?ring([0,1,5,4].map(i=>P(I.P[i][0],I.P[i][2])))+ring([2,3,7,6].map(i=>P(I.P[i][0],I.P[i][2]))):ring(hull2(roughP(I).map(p=>[p[0],p[2]])).map(([x,z])=>P(x,z)));
+        plan.appendChild(svgEl('path',{d,class:'pv-plan-box'+(on?' on':''),'data-box':I.b.id}))});
       // what the canvas takes in, at eye level
       const half=K.W/2,ang=K.curvi?[2*Math.atan((-half-pv.cv.x)/(2*K.D)),2*Math.atan((half-pv.cv.x)/(2*K.D))]:[Math.atan((-half-pv.cv.x)/K.D),Math.atan((half-pv.cv.x)/K.D)];
       const yaw=pv.yaw*D2R,[ex,ez]=P(K.E[0],K.E[2]),reach=Math.max(60,Math.min(400,90/planT.k)),ray=a=>{const t=yaw+a;return P(K.E[0]+Math.sin(t)*reach,K.E[2]+Math.cos(t)*reach)};
@@ -1176,7 +1336,7 @@
     /* ----- hands on the drawing ----- */
     function pick(x,y){if(!lastFrame)return null;const {K,list}=lastFrame,[X,Y]=fromSvg(x,y),dir=rayDir(K,X,Y),far=add(K.E,scl(dir,1e5));let best=null;
       list.forEach(I=>{const t=entry(I,K.E,far);if(t<Infinity&&(!best||t<best.t))best={t,I}});return best&&{id:best.I.b.id,k:best.I.k,hit:add(K.E,scl(dir,1e5*best.t))}}
-    function pickEdge(x,y){if(!lastFrame||!sel)return null;const {K,list}=lastFrame;let best=null,bd=9;list.filter(I=>I.b.id===sel.id).forEach(I=>EDGES.forEach(([a,b],e)=>segPolys(K,I.P[a],I.P[b]).forEach(p=>p.forEach((q,i)=>{if(!i)return;const r=p[i-1],dx=q[0]-r[0],dy=q[1]-r[1],l2=dx*dx+dy*dy||1,t=clamp(((x-r[0])*dx+(y-r[1])*dy)/l2,0,1),d=Math.hypot(r[0]+t*dx-x,r[1]+t*dy-y);if(d<bd){bd=d;best={id:I.b.id,k:I.k,edge:e}}}))));return best}
+    function pickEdge(x,y){if(!lastFrame||!sel)return null;const {K,list}=lastFrame;let best=null,bd=9;list.filter(I=>I.b.id===sel.id).forEach(I=>I.S.G.forEach(([a,b],e)=>segPolys(K,I.P[a],I.P[b]).forEach(p=>p.forEach((q,i)=>{if(!i)return;const r=p[i-1],dx=q[0]-r[0],dy=q[1]-r[1],l2=dx*dx+dy*dy||1,t=clamp(((x-r[0])*dx+(y-r[1])*dy)/l2,0,1),d=Math.hypot(r[0]+t*dx-x,r[1]+t*dy-y);if(d<bd){bd=d;best={id:I.b.id,k:I.k,edge:e}}}))));return best}
     function planeHit(K,X,Y,P0,n){const d=rayDir(K,X,Y),den=dot(d,n);if(Math.abs(den)<1e-9)return null;const t=dot(sub(P0,K.E),n)/den;return t>0?add(K.E,scl(d,t)):null}
     const snap=v=>st().show.snap?Math.round(v/3)*3:r1(v);
     let drag=null;const touches=new Map();
@@ -1290,7 +1450,7 @@
       set({yaw,pitch:clamp(Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D,-lim,lim),cv:{x:0,y:0}})}
     // what you're looking at: the selected box, or the middle of everything
     function focus(){const pv=st(),K=camera(pv),list=lastFrame?lastFrame.list:sceneOf(pv,K),I=selInstance(list),src=I?[I]:list;if(!src.length)return add(K.E,mv(K.C,[0,0,100]));
-      const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];src.forEach(J=>J.P.forEach(q=>{for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],q[k]);hi[k]=Math.max(hi[k],q[k])}}));return scl(add(lo,hi),.5)}
+      const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];src.forEach(J=>roughP(J).forEach(q=>{for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],q[k]);hi[k]=Math.max(hi[k],q[k])}}));return scl(add(lo,hi),.5)}
     // the way the subject faces: the selected box, or the first one
     const subjectYaw=()=>{const b=(sel&&byId(sel.id))||st().boxes[0];return b?b.ry||0:0};
     // the view directions a painter reaches for click into place: square on (one point), 45° and 30/60 corners (two point)
@@ -1325,7 +1485,8 @@
     const lensDist=(spec,W)=>spec.proj==='curvi'?W/(4*Math.tan(spec.fov/4*D2R)):W/(2*Math.tan(spec.fov/2*D2R));
     // the camera for a shot: pointed the shot's way, then the nearest distance at which the whole scene fits 82% of the canvas,
     // with the lens shifted (not tilted) to centre it, so level shots keep their verticals; level shots put the horizon on a third when the scene still fits
-    function frameShot(spec,pv=st()){const W=pv.canvas.w,H=pv.canvas.h,dist=lensDist(spec,W),list=sceneOf(pv,camera(pv)),pts=list.flatMap(I=>I.P);if(!pts.length)return null;
+    function frameShot(spec,pv=st()){const W=pv.canvas.w,H=pv.canvas.h,dist=lensDist(spec,W),list=sceneOf(pv,camera(pv));let pts=list.flatMap(roughP);if(!pts.length)return null;
+      if(pts.length>3000){const m=scl(list.reduce((s,I)=>add(s,I.c),[0,0,0]),1/list.length);pts=[];[...list].sort((a,b)=>len(sub(b.c,m))-len(sub(a.c,m))).forEach(I=>{if(pts.length<3000)pts.push(...roughP(I))})}
       const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];pts.forEach(q=>{for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],q[k]);hi[k]=Math.max(hi[k],q[k])}});const F=scl(add(lo,hi),.5),R=len(sub(hi,lo))/2,psi=subjectYaw();
       const eyeY=spec.eyeY==='auto'?clamp(hi[1]+.3*(hi[1]-lo[1]),8,62):spec.eyeY;
       // straight up: lying on your back, at the middle of a ring or arch if there is one, otherwise just beside the subject
@@ -1347,10 +1508,11 @@
       const at=q=>[(q[0]+P.cv.x+W/2)*k,(H/2-q[1]-P.cv.y)*k],seg=(A,B)=>{const n=K.curvi?10:2,out=[];for(let i=0;i<n;i++){const q=img(K,toCam(K,lerp(A,B,i/(n-1))));if(!q||Math.hypot(...q)>40*K.D)return null;out.push(at(q))}return out};
       let body='';const G=circleOf(K,mv(K.CT,[0,1,0]));if(G){if(G.type==='line'){const [px,py]=G.p,[dx,dy]=G.d,l=Math.hypot(dx,dy),A=at([px-dx/l*1e3,py-dy/l*1e3]),B=at([px+dx/l*1e3,py+dy/l*1e3]);body+=`<path class="th-hz" d="M${f(A[0])},${f(A[1])}L${f(B[0])},${f(B[1])}"/>`}
         else{const c=at(G.c);body+=`<circle class="th-hz" cx="${f(c[0])}" cy="${f(c[1])}" r="${f(G.r*k)}"/>`}}
-      sceneOf(P,K).sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>seg(I.P[a],I.P[b])),front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});
-        FACES.forEach((F,fi)=>{if(!front[fi])return;let ring=[];for(let j=0;j<4;j++){const {e,rev}=EI[F.c[j]*8+F.c[(j+1)%4]],q=polys[e];if(!q)return;ring=ring.concat(rev?[...q].reverse():q)}
-          const n=mv(I.R,F.n),t=dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';body+=`<path class="th-${t}" d="M${ring.map(q=>f(q[0])+','+f(q[1])).join('L')}Z"/>`});
-        body+=`<path class="th-edge" d="${polys.map((q,e)=>q&&EDGE_FACES[e].some(x=>front[x])?'M'+q.map(v=>f(v[0])+','+f(v[1])).join('L'):'').join('')}"/>`});
+      sceneOf(P,K).sort((a,b)=>b.dist-a.dist).forEach(I=>{const T=I.S.lod?I.S.lod[1]:I.S,V=T===I.S?I.P:T.V.map(u=>fromU(I,u)),pc=[],poly=e=>pc[e]!==undefined?pc[e]:(pc[e]=seg(V[T.E[e][0]],V[T.E[e][1]])),front=frontOf(I,K.E,T),tones={},xy=v=>f(v[0])+','+f(v[1]);
+        T.F.forEach((F,fi)=>{if(!front[fi])return;let ring=[];for(let j=0;j<F.c.length;j++){const {e,rev}=T.ei(F.c[j],F.c[(j+1)%F.c.length]),q=poly(e);if(!q)return;ring=ring.concat(rev?[...q].reverse():q)}
+          const l=dot(normalW(I,F),LIGHT),t=l>.45?'light':l>-.15?'mid':'dark';tones[t]=(tones[t]||'')+'M'+ring.map(xy).join('L')+'Z'});
+        Object.entries(tones).forEach(([t,d])=>body+=`<path class="th-${t}" d="${d}"/>`);
+        body+=`<path class="th-edge" d="${T.E.map((_,e)=>{if(T.smoothE[e]||!T.EF[e].some(x=>front[x]))return'';const q=poly(e);return q?'M'+q.map(xy).join('L'):''}).join('')}${silhouettes(I,K.E).map(pl=>{const q=pl.map(p=>img(K,toCam(K,p)));return q.every(v=>v&&Math.hypot(...v)<40*K.D)?'M'+q.map(v=>xy(at(v))).join('L'):''}).join('')}"/>`});
       return`<svg viewBox="0 0 ${f(tw)} ${f(th)}" width="${f(tw)}" height="${f(th)}" aria-hidden="true"><rect class="th-bg" width="${f(tw)}" height="${f(th)}"/>${body}</svg>`}
     let shotKey='',shotTimer=0,shotCams={},activeShot=null;const shotBar=$('#pvShots');
     shotBar.innerHTML=SHOTS.map(S=>`<button type="button" class="pv-shot" data-shot="${S.id}" title="${S.name}: ${S.sub}"><span class="pv-shot-pic"></span><b>${S.name}</b><small>${S.sub}</small></button>`).join('');
@@ -1409,7 +1571,18 @@
     Object.entries(arrRanges).forEach(([id,k])=>{const el=q(id);rangeHistory(el);el.addEventListener('input',()=>{if(!sel)return;setBox(sel.id,{arr:{[k]:+el.value}});render();sync(id)})});
     const nums={pvW:'w',pvH:'h',pvD:'d',pvY:'y'};
     Object.entries(nums).forEach(([id,k])=>q(id).addEventListener('change',e=>{if(!sel)return;const v=Math.max(k==='y'?0:.5,+e.target.value||0);beginChange();setBox(sel.id,{[k]:v});render();sync();commitChange()}));
-    q('pvArr').addEventListener('change',e=>{if(!sel)return;beginChange();const t=e.target.value,b=byId(sel.id),patch={type:t};if((t==='ring'||t==='arch')&&b.arr.type!==t){patch.span=t==='ring'?360:180;patch.pivot={...st().eye}}if(t!=='none'&&b.arr.n<2)patch.n=6;setBox(sel.id,{arr:patch});sel.k=0;render();sync();commitChange()});
+    /* ----- shapes: any box can be another solid; Perfect gives it true proportions ----- */
+    const SHORT={box:'Cube',tetra:'Tetra',octa:'Octa',dodeca:'Dodeca',icosa:'Icosa',pyramid:'Pyramid',prism:'Prism',cyl:'Cylinder',cone:'Cone',sphere:'Sphere'};
+    q('pvShapes').innerHTML=SHAPES.map(id=>`<button type="button" data-shape="${id}" title="${SOLIDS[id].name}" aria-label="${SOLIDS[id].name}" aria-pressed="false">${shapeIcon(id)}<small>${SHORT[id]}</small></button>`).join('');
+    const afterEdit=()=>{if(walking)walking.dirty=true;else{render();sync()}if(trayOn())updateTray()};
+    // a perfect shape stays perfect when it becomes another (a cube turns into a regular tetrahedron); one you've stretched keeps its box
+    function setShape(id){const b=sel&&byId(sel.id);if(!b||!SOLIDS[id]||(b.shape||'box')===id)return;beginChange();setBox(b.id,{shape:id,...(isPerfect(b)?perfectPatch(b,id):{})});afterEdit();commitChange();buzz(4)}
+    function makePerfect(){const b=sel&&byId(sel.id);if(!b)return;beginChange();setBox(b.id,perfectPatch(b));afterEdit();commitChange();buzz(4)}
+    onTap(q('pvShapes'),'[data-shape]',el=>setShape(el.dataset.shape));q('pvPerfect').addEventListener('click',makePerfect);
+    $$('#pvPlane button').forEach(x=>x.addEventListener('click',()=>{if(!sel)return;beginChange();setBox(sel.id,{arr:{plane:x.dataset.v}});render();sync();commitChange()}));
+    q('pvLines').addEventListener('click',()=>{const b=sel&&byId(sel.id);if(!b)return;beginChange();setBox(b.id,{arr:{lines:b.arr.lines===false}});render();sync();commitChange()});
+    q('pvSprawl').addEventListener('click',()=>{const b=sel&&byId(sel.id);if(!b)return;beginChange();setBox(b.id,{arr:{levels:b.arr.levels>1?1:2}});sel.k=0;render();sync();commitChange()});
+    q('pvArr').addEventListener('change',e=>{if(!sel)return;beginChange();const t=e.target.value,b=byId(sel.id),patch={type:t};if(SACRED[t]&&!SACRED[b.arr.type])patch.lines=true;if(!SACRED[t]&&b.arr.gap<0)patch.gap=0;if((t==='ring'||t==='arch')&&b.arr.type!==t){patch.span=t==='ring'?360:180;patch.pivot={...st().eye}}if(t!=='none'&&b.arr.n<2)patch.n=6;setBox(sel.id,{arr:patch});sel.k=0;render();sync();commitChange()});
     $$('#pvAxis button').forEach(b=>b.addEventListener('click',()=>{if(!sel)return;beginChange();setBox(sel.id,{arr:{axis:b.dataset.v}});render();sync();commitChange()}));
     $$('#pvProj button').forEach(b=>b.addEventListener('click',()=>{if(st().proj===b.dataset.v)return;beginChange();set({proj:b.dataset.v,pitch:clamp(st().pitch,-80,80)});pin=null;render();sync();commitChange()}));
     q('pvScene').addEventListener('change',e=>{beginChange();state.pv=fromScene(e.target.value);sel=null;pin=null;hover=null;fit(true);render();sync();commitChange()});
@@ -1497,14 +1670,17 @@
 
     /* ----- the edit tray: fine-tune the selected box with steps you choose; each press is one undo, hold to repeat ----- */
     const trayEl=$('#pvTray'),traySteps=$('#pvTraySteps'),trayRead=$('#pvTrayRead'),trayPad=$('#pvTrayPad');
-    const STEPS={move:[1,3,12],lift:[1,3,12],turn:[1,5,15],tip:[1,5,15],size:[1,3,12]},stepAt={move:1,lift:1,turn:2,tip:2,size:1};let trayMode='move',sizeAxis='all';
+    const STEPS={move:[1,3,12],lift:[1,3,12],turn:[1,5,15],tip:[1,5,15],size:[1,3,12],shape:[]},stepAt={move:1,lift:1,turn:2,tip:2,size:1,shape:0};let trayMode='move',sizeAxis='all';
     const PADS={move:[['left','◀','left'],['away','▲','away'],['toward','▼','toward'],['right','▶','right']],lift:[['down','▼','lower'],['floor','⤓','on what’s under'],['up','▲','raise']],
-      turn:[['ccw','⟲','turn'],['zero','0°','square'],['cw','⟳','turn']],tip:[['back','⤺','tip back'],['zero','0°','level'],['fwd','⤻','tip forward']],size:[['minus','－','smaller'],['plus','＋','bigger']]};
+      turn:[['ccw','⟲','turn'],['zero','0°','square'],['cw','⟳','turn']],tip:[['back','⤺','tip back'],['zero','0°','level'],['fwd','⤻','tip forward']],size:[['minus','－','smaller'],['plus','＋','bigger'],['perfect','◆','perfect']],shape:[]};
     function buildTray(){trayEl.querySelectorAll('[data-tm]').forEach(b=>{b.classList.toggle('on',b.dataset.tm===trayMode);b.setAttribute('aria-selected',b.dataset.tm===trayMode)});
-      const unit=trayMode==='turn'||trayMode==='tip'?'°':'″';traySteps.innerHTML=STEPS[trayMode].map((v,i)=>`<button type="button" data-step="${i}">${v}${unit}</button>`).join('');
-      trayPad.innerHTML=(trayMode==='size'?['all','w','h','d'].map(a=>`<button type="button" class="axis" data-axis="${a}">${a==='all'?'All':a.toUpperCase()}</button>`).join(''):'')+PADS[trayMode].map(([n,g,t])=>`<button type="button" data-n="${n}" aria-label="${t}">${g}<small>${t}</small></button>`).join('');updateTray()}
+      const unit=trayMode==='turn'||trayMode==='tip'?'°':'″';traySteps.innerHTML=trayMode==='shape'?'<button type="button" data-ta="perfect" title="True proportions">◆ Perfect</button>':STEPS[trayMode].map((v,i)=>`<button type="button" data-step="${i}">${v}${unit}</button>`).join('');
+      trayPad.classList.toggle('shapes',trayMode==='shape');trayPad.innerHTML=trayMode==='shape'?SHAPES.map(id=>`<button type="button" data-shape="${id}" aria-label="${SOLIDS[id].name}">${shapeIcon(id)}<small>${SHORT[id]}</small></button>`).join(''):(trayMode==='size'?['all','w','h','d'].map(a=>`<button type="button" class="axis" data-axis="${a}">${a==='all'?'All':a.toUpperCase()}</button>`).join(''):'')+PADS[trayMode].map(([n,g,t])=>`<button type="button" data-n="${n}" aria-label="${t}">${g}<small>${t}</small></button>`).join('');updateTray();
+      // the shapes scroll sideways: start with the current one in the middle
+      if(trayMode==='shape'){const on=trayPad.querySelector('.on');if(on)trayPad.scrollLeft=on.offsetLeft-trayPad.offsetLeft-(trayPad.clientWidth-on.offsetWidth)/2}}
     function updateTray(){const b=sel&&byId(sel.id);if(!b)return;traySteps.querySelectorAll('[data-step]').forEach(x=>x.classList.toggle('on',+x.dataset.step===stepAt[trayMode]));trayPad.querySelectorAll('[data-axis]').forEach(x=>x.classList.toggle('on',x.dataset.axis===sizeAxis));
-      const r=v=>fmtIn(v).replace(' in','″');trayRead.textContent=trayMode==='move'?`x ${r(b.x)} · z ${r(b.z)}`:trayMode==='lift'?`${r(b.y)} up`:trayMode==='turn'?`turned ${Math.round(b.ry||0)}°`:trayMode==='tip'?`tipped ${Math.round(b.rx||0)}°`:`${r(b.w)} × ${r(b.h)} × ${r(b.d)}`}
+      const r=v=>fmtIn(v).replace(' in','″'),sh=b.shape||'box';trayPad.querySelectorAll('[data-shape]').forEach(x=>x.classList.toggle('on',x.dataset.shape===sh));traySteps.querySelector('[data-ta="perfect"]')?.classList.toggle('on',isPerfect(b));
+      trayRead.textContent=trayMode==='shape'?`${SOLIDS[sh].name} · ${r(b.w)} × ${r(b.h)} × ${r(b.d)}`:trayMode==='move'?`x ${r(b.x)} · z ${r(b.z)}`:trayMode==='lift'?`${r(b.y)} up`:trayMode==='turn'?`turned ${Math.round(b.ry||0)}°`:trayMode==='tip'?`tipped ${Math.round(b.rx||0)}°`:`${r(b.w)} × ${r(b.h)} × ${r(b.d)}`}
     // the tray covers the bottom of the drawing: slide the picture up so the box sits above it (the picture, never the camera)
     function keepInView(){if(walking||!sel)return;const K=camera(),I=(lastFrame?lastFrame.list:sceneOf(st(),K)).find(I=>I.b.id===sel.id&&I.k===sel.k);if(!I)return;const bb=screenBounds(K,[I]);if(!bb)return;
       const V=visibleRect(),wr=els.wrap.getBoundingClientRect(),top=V.y0+(trayEl.getBoundingClientRect().top-wr.top-svgOff.y)*U,need=bb[3]-(top-10*U);
@@ -1518,6 +1694,7 @@
       else if(trayMode==='lift')patch={y:n==='floor'?supportUnder(st(),b):Math.max(0,snapTo(b.y+(n==='up'?s:-s),s))};
       else if(trayMode==='turn')patch={ry:n==='zero'?0:wrap180(snapTo((b.ry||0)+(n==='cw'?s:-s),s))};
       else if(trayMode==='tip')patch={rx:n==='zero'?0:clamp(snapTo((b.rx||0)+(n==='fwd'?s:-s),s),-90,90)};
+      else if(n==='perfect')patch=perfectPatch(b);
       else if(trayMode==='size'){const k=n==='plus'?s:-s,ax=sizeAxis==='all'?['w','h','d']:[sizeAxis];patch={};ax.forEach(a=>patch[a]=Math.max(.5,snapTo(b[a]+k,s)||s))}
       if(!patch)return;setBox(b.id,patch);if(walking)walking.dirty=true;else{render();sync()}updateTray();buzz(4)}
     // press = one step; hold = keep going (faster after a moment); the whole hold is one undo
@@ -1527,7 +1704,7 @@
       ['pointerup','pointercancel','lostpointercapture'].forEach(t=>trayPad.addEventListener(t,stop));
       trayPad.addEventListener('click',e=>{const btn=e.target.closest('[data-n]');if(btn&&e.detail===0){beginChange();nudge(btn.dataset.n);commitChange()}})}
     trayEl.addEventListener('pointerdown',e=>e.stopPropagation());
-    onTap(trayEl,'[data-tm],[data-step],[data-axis],[data-ta]',el=>{if(el.dataset.tm){trayMode=el.dataset.tm;buildTray()}else if(el.dataset.step!=null){stepAt[trayMode]=+el.dataset.step;updateTray()}else if(el.dataset.axis){sizeAxis=el.dataset.axis;updateTray()}
+    onTap(trayEl,'[data-tm],[data-step],[data-axis],[data-ta],[data-shape]',el=>{if(el.dataset.shape){setShape(el.dataset.shape);return}if(el.dataset.ta==='perfect'){makePerfect();return}if(el.dataset.tm){trayMode=el.dataset.tm;buildTray()}else if(el.dataset.step!=null){stepAt[trayMode]=+el.dataset.step;updateTray()}else if(el.dataset.axis){sizeAxis=el.dataset.axis;updateTray()}
       else if(el.dataset.ta==='done'){sel=null;closeTray();if(walking)walking.dirty=true;else{render();sync()}}else if(el.dataset.ta==='more'){closeTray();openTab('box')}});
 
     /* ----- lock: the composition stays put. Scroll, pinch and drag only magnify and move the picture; boxes stay editable ----- */
@@ -1556,15 +1733,14 @@
     const sizeToRange=v=>Math.round(100*Math.log(v/SMIN)/Math.log(SMAX/SMIN)),rangeToSize=r=>SMIN*Math.pow(SMAX/SMIN,r/100);
     let walkPref=null;try{walkPref=+localStorage.getItem('locus-walk-size')||null}catch{}
     // a ray against one box: how far along d from o it first enters (null if it misses, or starts inside)
-    function rayBox(I,o,d){const q=mv(I.RT,sub(o,I.t)),v=mv(I.RT,d),lo=[-I.hw,0,-I.hd],hi=[I.hw,I.h,I.hd];let t0=-Infinity,t1=Infinity;
-      for(let a=0;a<3;a++){if(Math.abs(v[a])<1e-12){if(q[a]<lo[a]||q[a]>hi[a])return null;continue}let ta=(lo[a]-q[a])/v[a],tb=(hi[a]-q[a])/v[a];if(ta>tb)[ta,tb]=[tb,ta];if(ta>t0)t0=ta;if(tb<t1)t1=tb;if(t0>t1)return null}
-      return t0<0?null:t0}
+    function rayBox(I,o,d){const s=span(I,o,d);return s&&s[0]>=0?s[0]:null}
     const solids=()=>(lastFrame&&lastFrame.list)||sceneOf(st(),camera());
     // the highest surface under (x,z) at or below top: a box's top (tilted ones too) or the floor
     function groundAt(list,x,z,top){let g=0;for(const I of list){if(Math.hypot(x-I.c[0],z-I.c[2])>I.rad)continue;const t=rayBox(I,[x,top,z],[0,-1,0]);if(t!=null&&top-t>g)g=top-t}return g}
     function ceilingAt(list,x,z,from){let c=Infinity;for(const I of list){if(Math.hypot(x-I.c[0],z-I.c[2])>I.rad)continue;const t=rayBox(I,[x,from,z],[0,1,0]);if(t!=null&&from+t<c)c=from+t}return c}
     // push a flat disc of radius r at p (one slice of your body) out of the boxes, sideways, so you slide along walls; floors and ceilings are the rays' job
     function pushOut(list,p,r){let dx=0,dz=0;for(const I of list){const P=[p[0]+dx,p[1],p[2]+dz];if(len(sub(P,I.c))>I.rad+r)continue;
+        if(I.S.id!=='box'){const poly=sliceAt(I,P[1]),m=poly&&pushPoly(poly,P[0],P[2],r);if(m){dx+=m[0];dz+=m[1]}continue}
         const q=mv(I.RT,sub(P,I.t));if(q[1]<0||q[1]>I.h)continue;
         const ex=q[0]-clamp(q[0],-I.hw,I.hw),ez=q[2]-clamp(q[2],-I.hd,I.hd),dist=Math.hypot(ex,ez);let n,depth;
         if(dist>1e-9){if(dist>=r)continue;n=mv(I.R,[ex/dist,0,ez/dist]);depth=r-dist}
@@ -1656,15 +1832,17 @@
       const b=sel&&byId(sel.id);q('pvBoxPanel').hidden=!b;q('pvBoxEmpty').hidden=!!b;q('pvSqChip').classList.toggle('active',!!pv.sq);syncTouch();q('pvDup').disabled=q('pvDel').disabled=!b;
       if(b){val('pvW',b.w);val('pvH',b.h);val('pvD',b.d);val('pvY',r1(b.y));val('pvRy',b.ry);q('pvRyValue').textContent=`${Math.round(b.ry)}°`;val('pvRx',b.rx||0);q('pvRxValue').textContent=`${Math.round(b.rx||0)}°`;
         const a=b.arr;val('pvArr',a.type);val('pvCount',a.n);q('pvCountValue').textContent=a.type==='grid'?`${a.n} × ${a.n2}`:a.n;val('pvGap',a.gap);q('pvGapValue').textContent=fmtIn(a.gap);val('pvRows',a.n2);q('pvRowsValue').textContent=a.n2;val('pvSpan',a.span);q('pvSpanValue').textContent=`${Math.round(a.span)}°`;val('pvTwist',a.twist||0);q('pvTwistValue').textContent=`${Math.round(a.twist||0)}° a cube`;
-        const t=a.type,showIf=(id,on)=>q(id).hidden=!on;showIf('pvCountRow',t!=='none');showIf('pvGapRow',['row','grid','tower'].includes(t));showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvTwistRow',t==='tower');showIf('pvAxisRow',t==='row');
+        const t=a.type,showIf=(id,on)=>q(id).hidden=!on,sac=SACRED[t];showIf('pvCountRow',t!=='none'&&!sac);showIf('pvGapRow',['row','grid','tower'].includes(t)||!!sac);showIf('pvPlaneRow',!!(sac&&sac.flat));showIf('pvSacredRow',!!sac);q('pvSprawl').hidden=!(sac&&sac.flat);q('pvGapLabel').textContent=sac?'Spacing':'Gap';q('pvGap').min=sac?-48:0;
+        $$('#pvPlane button').forEach(x=>x.classList.toggle('active',x.dataset.v===(a.plane==='wall'?'wall':'floor')));q('pvLines').classList.toggle('active',a.lines!==false);q('pvSprawl').classList.toggle('active',a.levels>1);showIf('pvRowsRow',t==='grid');showIf('pvSpanRow',t==='ring'||t==='arch');showIf('pvTwistRow',t==='tower');showIf('pvAxisRow',t==='row');
         $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
+        q('pvArrNote').textContent=sac?sac.note:{none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t];
         if(t!=='none'){const n=instances(st(),b).length;q('pvArrNote').textContent+=` Copy ${Math.min(sel.k,n-1)+1} of ${n} selected: moving or resizing it changes them all.`}
-        q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
+        const sh=b.shape||'box';$$('#pvShapes [data-shape]').forEach(x=>{const on=x.dataset.shape===sh;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});q('pvPerfectName').textContent=`Perfect ${SOLIDS[sh].name.toLowerCase()}`;q('pvPerfect').classList.toggle('active',isPerfect(b))}
       $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',x.dataset.show==='guy'?pv.show.guy!==false&&!!pv.guy:!!pv.show[x.dataset.show]));syncLock();if(trayOn()){if(!sel||!byId(sel.id))closeTray();else updateTray()}q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{openTray,closeTray,get trayOn(){return trayOn()},get trayMode(){return trayMode},get viewLock(){return viewLock},get viewS(){return [view.s,view.ox,view.oy]},setLock,placeGuy,get guyHit(){return guyHit},get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{SOLIDS,SACRED,SHAPES,perfectPatch,isPerfect,silhouettes,span,sliceAt,frontOf,sacredLines,setShape,makePerfect,shapeIcon,openTray,closeTray,get trayOn(){return trayOn()},get trayMode(){return trayMode},get viewLock(){return viewLock},get viewS(){return [view.s,view.ox,view.oy]},setLock,placeGuy,get guyHit(){return guyHit},get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -1865,7 +2043,7 @@
   // one table drives the page stylesheet and the exported file: colour token, opacity, width (fixed, or [× line weight, minimum]), dash
   const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],'perspective-box':['perspective',.4,.75],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
-    node:['accent',.9,.9],guy:['accent',1,[1,1]],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
+    node:['accent',.9,.9],guy:['accent',1,[1,1]],sacred:['lineage',.92,[.85,.75]],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
     aux:['perspective',.6,.75,'2 4'],sq:['focus',.5,.75],hidden:['ghost',.8,.8,'4 4'],floor:['ghost',.4,.6],'vp-mark':['perspective',0,.8],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
   function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px * var(--dzw,1)))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):weight==null?`calc(${w}px * var(--dzw,1))`:`${w}px`;
     return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${weight==null?`calc(${o} * var(--dzo,1))`:o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
@@ -1996,7 +2174,10 @@
   // --- read the drawing back out of the SVG ---
   let harvesting=false;
   function layerOf(kind,src){
-    if(kind==='hidden'||kind==='horizon'||kind==='sq')return 'construction';   // a squaring grid you turned on should reach the paperif(kind==='vp-mark')return 'marks';
+    // a squaring grid you turned on should reach the paper
+    if(kind==='hidden'||kind==='horizon'||kind==='sq')return 'construction';
+    if(kind==='vp-mark')return 'marks';
+    if(kind==='sacred')return 'accent';
     if(src==='grid')return 'drafting';
     if(kind==='main'||kind==='web'||kind==='bindu')return 'figure';
     if(kind==='lens'||kind==='boundary'||kind==='phi-spiral')return 'accent';

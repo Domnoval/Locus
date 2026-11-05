@@ -112,11 +112,28 @@ Dragging a box in perspective gets you close; the last inch is easier with butto
 - **Move** ◀ ▲ ▼ ▶ pushes the box left, away, toward or right of you, along the floor direction nearest your view, so its numbers stay clean.
 - **Lift** ▲ ▼ raises and lowers it, and **⤓** sets it back on whatever is under it.
 - **Turn** ⟲ ⟳ and **Tip** ⤺ ⤻ step it round; **0°** squares or levels it.
-- **Size** ＋ － grows or shrinks **All** sides, or just **W**, **H** or **D**.
+- **Size** ＋ － grows or shrinks **All** sides, or just **W**, **H** or **D**; **◆** makes it perfect.
+- **Shape** swaps the solid (cube, Platonic solids, pyramid, prism, cylinder, cone, sphere).
 - **Steps you choose:** 1″, 3″ or 12″, and 1°, 5° or 15°. Values snap to the step.
 - **Hold a button** and it keeps going, faster after a moment. A whole hold is one undo.
 - **The readout** shows the numbers. **⋯** opens the Box tab for exact entries and repeats. **✓** (or Android back) closes the tray.
 - **While walking**, tap any box you're looking at to select it and open the tray (the thumb stick and Jump step aside). ✓ and you walk on.
+
+### Shapes and sacred geometry
+
+Any box can be another solid, and a repeat can be a sacred figure, with every copy one of your solids.
+
+- **Shape** (the row of little drawings at the top of the Box tab, or **Shape** in the edit tray): cube, tetrahedron, octahedron, dodecahedron, icosahedron, square pyramid, triangular prism, cylinder, cone, sphere. Each solid sits inside its box, so sizing, stacking, snapping, the handles and the tray work the same for all of them.
+- **◆ Perfect** gives the shape its true proportions at about the same size (the same volume): a cube with every edge equal, a regular tetrahedron, a sphere that's round, a cylinder as tall as it's wide. It's also in the tray, under Size and Shape. A perfect cube stays perfect when you change its shape (it becomes a regular tetrahedron, say); a box you've stretched keeps its box.
+- **Drawn as they really are:** hidden lines, picking, the plan and walk mode all use the real shape, not its box: you can climb a pyramid, stand on a sphere's crown, and see a cube through the empty corner of an octahedron's box. A curved solid draws its exact outline: the circle (or ellipse) a sphere really makes in perspective, and the two lines where your sight grazes a cylinder or a cone. Its light, half-tone and shadow have smooth edges.
+- **Repeat → Sacred geometry:**
+  - **Seed of Life** (7), **Metatron's Cube** (13) and **Flower of Life** (19): copies on the centres of the figure's circles, **on the floor** or **standing up**.
+  - **Metatron in 3D** (twelve round one: the cuboctahedron), and the **Star tetrahedron** (8).
+  - **On the corners of a solid**: a tetrahedron (4), octahedron (6), cube (8), icosahedron (12) or dodecahedron (20) made of your solids.
+  - **Lines** draws the figure's own lines through the copies: Metatron's 78, a solid's edges, the circles of the Flower. They're in true perspective: on the floor under the copies, or between them in the air, going behind whatever is in front. They export on the Accent layer.
+  - **Figure of figures** puts the whole figure on each of its own centres: 169 cubes for Metatron, with its lines at both scales.
+  - **Spacing**: copies are a diagonal apart plus the spacing, so they never touch however they're turned. Take it below zero to close them up.
+- **Scenes:** *Metatron's Cube · 13 cubes*, *The five Platonic solids*, *Fruit of Life · 13 spheres* and *Metatron of Metatrons* (from straight overhead, in curvilinear).
 
 ### Lock view, and the little guy
 
@@ -205,7 +222,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 239 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
+node tools/verify.js              # 261 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
@@ -231,6 +248,14 @@ node tools/pwa-check.js           # serves the repo over http, asks Chrome wheth
     - a sheet clipped by its own tab strip;
     - a squaring grid that never reached the paper.
   - 190 checks.
+- **v14, Shapes and sacred geometry**:
+  - Ten solids: the five Platonic solids, a pyramid, a prism, a cylinder, a cone and a sphere, each inside its box. Faces come from the convex hull and are checked closed, outward and Euler-correct.
+  - ◆ Perfect: true proportions at the same volume, in the Box tab and the tray. A Shape mode in the tray.
+  - Exact outlines for curved solids, smooth light and shade on them, and coarser meshes when they're small on screen. Exact hidden lines everywhere; a sphere's rays are one quadratic.
+  - Sacred repeats: Seed, Metatron (78 lines) and Flower of Life on the floor or standing; Metatron in 3D; the star tetrahedron; copies on the corners of each Platonic solid; Figure of figures; the figure's own lines in perspective, on the Accent layer.
+  - Four new scenes. Quicker drawing in both projections (corners project once).
+  - Fixed: vanishing-point marks were exporting on the Drafting layer instead of Centre marks.
+  - 22 new checks. 261 checks.
 - **v13, The edit tray**:
   - Fine-tuning without fiddly drags: Move, Lift, Turn, Tip and Size in steps you choose, with hold-to-repeat as one undo.
   - The box kept in view above the tray, so the sheet no longer covers what you're editing.
@@ -265,4 +290,5 @@ node tools/pwa-check.js           # serves the repo over http, asks Chrome wheth
 ## Next
 
 - **Parked:** generating a 13-node Metatron navigation from the kernel.
+- **Ideas:** copies that turn to face the figure's centre; stellated solids (the stella octangula as one solid); a Tree of Life repeat.
 - **Known issues:** in stencils, the slots at six-way junctions merge into thin wedges; they stay attached but are fragile.
