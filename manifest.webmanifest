@@ -1,0 +1,30 @@
+{
+  "id": "./",
+  "name": "Locus",
+  "short_name": "Locus",
+  "description": "Perspective you can paint from: plan boxes, arches and towers in real linear or curvilinear perspective on your canvas's real size, then work from it at the easel. Plus sacred geometry, constructed.",
+  "start_url": "./?app=perspective",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "categories": ["design", "graphics", "productivity"],
+  "icons": [
+    { "src": "app/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "app/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "app/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "app/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "app/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "At the easel (Reference view)", "short_name": "At the easel", "url": "./?app=perspective&ref=1", "icons": [{ "src": "app/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Perspective planner", "short_name": "Perspective", "url": "./?app=perspective", "icons": [{ "src": "app/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Geometry", "short_name": "Geometry", "url": "./?app=geometry", "icons": [{ "src": "app/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    { "src": "app/screenshot-phone.jpg", "sizes": "720x1560", "type": "image/jpeg", "form_factor": "narrow", "label": "The Totem at the easel with a 6-inch squaring grid" },
+    { "src": "app/screenshot-tablet.jpg", "sizes": "2048x1280", "type": "image/jpeg", "form_factor": "wide", "label": "Planning on a tablet: the drawing and the side panel" }
+  ]
+}

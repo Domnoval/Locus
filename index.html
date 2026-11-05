@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <link rel="icon" href="data:," />
+  <meta name="theme-color" content="#0b0d12" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="app/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app/icon-180.png" />
   <title>Locus</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -356,6 +359,17 @@
     body.pv-touch.pv-side .sidebar .panel{column-count:auto}
     body.pv-touch.pv-side.pv-ref .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);grid-template-areas:"canvas";padding:0}
     body.pv-touch .sidebar input{scroll-margin-top:96px}
+    /* installing Locus as an app */
+    .install-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.04em;color:var(--muted)}
+    .install-row[hidden]{display:none}
+    body.pv-touch .sidebar[data-tab="scene"] .install-row:not([hidden]){display:flex}
+    body.pv-touch .sidebar>.install-row{grid-column:1/-1}
+    .install-banner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px;width:max-content;max-width:calc(100% - 24px);padding:6px 6px 6px 14px;background:var(--panel);border:1px solid var(--strong);border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.3);font:500 12px "IBM Plex Sans",sans-serif;color:var(--ink)}
+    .install-banner[hidden],body.pv-ref .install-banner{display:none}
+    .install-banner button{min-height:40px;min-width:40px;padding:0 14px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;touch-action:manipulation}
+    .install-banner button.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+    .install-banner button.no{padding:0}
+    .install-banner button{flex:none}.install-banner span{flex:1 1 auto;min-width:0;line-height:1.3}
     /* on its side at the easel the controls become a rail in the empty margin, so they never sit on the drawing */
     @media(orientation:landscape){
       body.pv-touch.pv-ref .pv-refbar{display:grid;grid-template-columns:repeat(2,60px);gap:6px;left:auto;right:12px;top:50%;bottom:auto;transform:translateY(-50%);max-width:none;max-height:calc(100% - 16px);overflow:visible}
@@ -391,6 +405,7 @@
   <aside class="sidebar" aria-label="Drawing controls" data-sheet="peek" data-tab="scene">
     <div class="pv-sheet-bar" id="pvSheetBar"><div class="pv-grip" aria-hidden="true"></div><div class="pv-tabs" role="tablist" aria-label="Controls"><button type="button" role="tab" data-t="scene">Scene</button><button type="button" role="tab" data-t="canvas">Canvas</button><button type="button" role="tab" data-t="camera">Camera</button><button type="button" role="tab" data-t="box">Box</button><button type="button" role="tab" data-t="guides">Guides</button><button type="button" role="tab" data-t="measure">Measure</button></div></div>
     <div class="brand"><svg viewBox="0 0 30 20" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><circle cx="11" cy="10" r="8.5"/><circle cx="19" cy="10" r="8.5"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg><div><b>LOCUS</b><small>geometry, constructed</small></div></div>
+    <div class="install-row" id="installRow" data-tab="scene" hidden><button class="chip" id="installBtn" type="button">⤓ Install Locus</button><span>full screen at the easel, works offline</span></div>
     <div class="segmented two app-switch" id="appMode" role="group" aria-label="Mode"><button data-app="geometry" type="button">Geometry</button><button data-app="perspective" type="button">Perspective</button></div>
     <div class="side-group" id="geoSide">
     <section class="panel">
@@ -545,6 +560,7 @@
     </div>
   </section>
 </main>
+<div class="install-banner" id="installBanner" role="dialog" aria-label="Install Locus" hidden><span>Put Locus on your home screen: full screen, offline</span><button type="button" class="go">Install</button><button type="button" class="no" aria-label="Not now">✕</button></div>
 <dialog class="studio" id="studio" aria-labelledby="stTitle">
   <div class="st-head"><div><span class="label">Real size · real tools</span><h2 id="stTitle">Studio</h2></div><button class="action" id="stClose" aria-label="Close studio">✕</button></div>
   <div class="st-body">
@@ -1418,6 +1434,9 @@
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
+  // launched from the home screen or one of its shortcuts: ?app= picks the mode, &ref=1 opens Reference view. Then the address is tidied, so a reload remembers your own choice
+  const launch=new URLSearchParams(location.search),launchRef=launch.has('ref');if(['perspective','geometry'].includes(launch.get('app')))state.app=launch.get('app');
+  if(launch.has('app')||launchRef){launch.delete('app');launch.delete('ref');const q=launch.toString();try{history.replaceState(history.state,'',location.pathname+(q?'?'+q:'')+location.hash)}catch{}}
 
   /* ---------- the figures ---------- */
   // Seed: one circle, then six, each centred where the newest circle crosses the first.
@@ -1958,7 +1977,7 @@
   // theme: System follows the OS (or the host page), Night and Paper pin a world
   const hostTheme=document.documentElement.getAttribute('data-theme'),THEMES={system:'System',night:'Night',paper:'Paper'};
   let theme=(()=>{try{return localStorage.getItem('locus-theme')||'system'}catch{return 'system'}})();
-  function applyTheme(){const r=document.documentElement;if(theme==='system'){if(hostTheme)r.setAttribute('data-theme',hostTheme);else r.removeAttribute('data-theme')}else r.setAttribute('data-theme',theme==='night'?'dark':'light');$('#themeBtn span').textContent=THEMES[theme]}
+  function applyTheme(){const r=document.documentElement;if(theme==='system'){if(hostTheme)r.setAttribute('data-theme',hostTheme);else r.removeAttribute('data-theme')}else r.setAttribute('data-theme',theme==='night'?'dark':'light');$('#themeBtn span').textContent=THEMES[theme];const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.content=getComputedStyle(r).getPropertyValue('--paper').trim()||'#0b0d12'}
   $('#themeBtn').addEventListener('click',()=>{theme=theme==='system'?'night':theme==='night'?'paper':'system';try{localStorage.setItem('locus-theme',theme)}catch{}applyTheme();render()});applyTheme();
   {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
   $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
@@ -1970,6 +1989,17 @@
   els.wrap.addEventListener('dblclick',pvOnly(PV.dblclick),true);
   els.wrap.addEventListener('wheel',e=>{if(state.app==='perspective'&&!e.target.closest('#pvPlan'))PV.wheel(e)},{passive:false});
   syncAllControls();updateHistoryButtons();render();
+  if(launchRef&&state.app==='perspective')PV.setRef(true);
+  // as an installed app: offline, and an Install offer (only where Locus is served on its own, never inside another page)
+  {const own=window.top===window&&(location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname));
+    if(own&&'serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    let offer=null;const row=$('#installRow'),banner=$('#installBanner'),seen=()=>{try{return localStorage.getItem('locus-install-seen')}catch{return '1'}},mark=()=>{try{localStorage.setItem('locus-install-seen','1')}catch{}};
+    const installed=()=>matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+    addEventListener('beforeinstallprompt',e=>{e.preventDefault();offer=e;row.hidden=false;if(!seen()&&!installed())banner.hidden=false});
+    async function install(){if(!offer)return;const e=offer;offer=null;row.hidden=true;banner.hidden=true;mark();e.prompt();try{await e.userChoice}catch{}}
+    $('#installBtn').addEventListener('click',install);banner.querySelector('.go').addEventListener('click',install);
+    banner.querySelector('.no').addEventListener('click',()=>{banner.hidden=true;mark()});
+    addEventListener('appinstalled',()=>{offer=null;row.hidden=true;banner.hidden=true;mark()})}
 })();
 </script>
 </body>
