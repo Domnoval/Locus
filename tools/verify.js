@@ -5,6 +5,7 @@ const path = require('path');
 const file = path.resolve(process.argv[2] || path.join(__dirname, '..', 'index.html'));
 const results = [];
 const check = (name, ok, detail) => results.push({ name, ok: !!ok, detail });
+const wrapA = a => ((a + 180) % 360 + 360) % 360 - 180;
 
 (async () => {
   const browser = await chromium.launch();
@@ -488,8 +489,10 @@ for(const k of Object.keys(T))await T[k]();
     check(`${dn}: bar · 90° turns it a quarter`, Math.abs(rot - (st.ry || 0) - 90) < 1e-6, [st.ry, rot]);
     c0 = await n(); await act('del'); check(`${dn}: bar · Delete removes it and the bar goes`, await n() === c0 - 1 && !(await shown('#pvBoxBar')));
     await tap(face.cx, face.cy); await tp.waitForTimeout(250); await act('edit'); await tp.waitForTimeout(350);
-    check(`${dn}: bar · Edit opens the Box tab`, (await sheet()).tab === 'box' && await shown('#pvBoxPanel'), await sheet());
-    await tp.evaluate(() => window.__pv.setSheet('peek')); await tp.waitForTimeout(400);
+    check(`${dn}: bar · Edit opens the edit tray (the sheet stays down)`, await shown('#pvTray') && (await sheet()).sheet === 'peek', await sheet());
+    await tap(...await mid('#pvTray [data-ta="more"]')); await tp.waitForTimeout(400);
+    check(`${dn}: tray · ⋯ opens the Box tab for exact numbers and repeats`, (await sheet()).tab === 'box' && await shown('#pvBoxPanel') && !(await shown('#pvTray')), await sheet());
+    await tp.evaluate(() => { window.__pv.setSheet('peek'); window.__pv.sel = null; window.__pv.render(); window.__pv.sync(); }); await tp.waitForTimeout(400);
     const spot = await tp.evaluate(() => { const W = document.querySelector('#canvasWrap').getBoundingClientRect(), sb = document.querySelector('.sidebar').getBoundingClientRect().top, faces = [...document.querySelectorAll('#geometry .pv-face')].map(f => f.getBoundingClientRect()), bot = Math.min(W.bottom, sb) - 30;
       for (let y = bot; y > W.y + W.height * .55; y -= 12) for (let x = W.x + 30; x < W.right - 120; x += 12) if (!faces.some(r => x > r.left - 14 && x < r.right + 14 && y > r.top - 14 && y < r.bottom + 14)) return [x, y]; return null; });
     c0 = await n(); await tap(...spot); await tp.waitForTimeout(90); await tap(...spot); await tp.waitForTimeout(250);
@@ -682,6 +685,49 @@ for(const k of Object.keys(T))await T[k]();
     const lv1 = await wp.evaluate(() => window.__pv.viewS);
     check('Locked on a phone: pinch magnifies and a one-finger drag moves the picture; the perspective never changes', await wcam() === lk0 && lv1[0] > lv0[0] * 1.2, { lv0, lv1 });
     await wctx.close();
+  }
+  // ── the edit tray: big steps instead of fiddly drags, on a Galaxy S24, in the plan and while walking
+  {
+    const ectx = await touchCtx(devices['Galaxy S24']), ep = await ectx.newPage(); ep.on('pageerror', e => errors.push('tray: ' + e.message));
+    await ep.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await ep.goto('file://' + file);
+    await ep.evaluate(() => { localStorage.clear(); document.querySelector('#appMode [data-app="perspective"]').click(); const s = document.querySelector('#pvScene'); s.value = 'totem'; s.dispatchEvent(new Event('change')); }); await ep.waitForTimeout(400);
+    const cdp = await ectx.newCDPSession(ep), T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
+    const tap = async (x, y) => { await T('touchStart', [{ x, y }]); await ep.waitForTimeout(30); await T('touchEnd', []); await ep.waitForTimeout(140); };
+    const hold = async (x, y, ms) => { await T('touchStart', [{ x, y }]); await ep.waitForTimeout(ms); await T('touchEnd', []); await ep.waitForTimeout(160); };
+    const mid = s => ep.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, s);
+    const sb = () => ep.evaluate(() => { const P = window.__pv, b = P.sel && window.__state.pv.boxes.find(b => b.id === P.sel.id); return b && { x: b.x, y: b.y, z: b.z, ry: b.ry || 0, rx: b.rx || 0, w: b.w, h: b.h, d: b.d }; });
+    const face = await ep.evaluate(() => { let best = null; const W = document.querySelector('#canvasWrap').getBoundingClientRect(); document.querySelectorAll('#geometry .pv-face').forEach(f => { const r = f.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2; if (cy < W.y + 40 || cy > W.bottom - 40 || cx < W.x + 20 || cx > W.right - 20) return; const a = r.width * r.height; if (!best || a > best.a) best = { a, cx, cy }; }); return best; });
+    await tap(face.cx, face.cy); await ep.waitForTimeout(200); await tap(...await mid('#pvBoxBar [data-act="edit"]')); await ep.waitForTimeout(500);
+    const t0 = await ep.evaluate(() => { const t = document.querySelector('#pvTray'), r = t.getBoundingClientRect(), s = [...document.querySelectorAll('#overlayLayer .pv-sel:not(.twin)')].map(e => e.getBoundingClientRect()); return { open: !t.hidden, top: r.top, sheet: document.querySelector('.sidebar').dataset.sheet, bar: !document.querySelector('#pvBoxBar').hidden, boxBottom: s.length ? Math.max(...s.map(q => q.bottom)) : null }; });
+    check('Edit tray: Edit opens a slim tray, not the sheet, and the box bar steps aside', t0.open && t0.sheet === 'peek' && !t0.bar, t0);
+    check('Edit tray: the drag handles step aside while it’s open (buttons, not fiddly drags)', await ep.evaluate(() => document.querySelectorAll('#overlayLayer [data-pv^="face"], #overlayLayer [data-pv="turn"]').length === 0));
+    check('Edit tray: the box stays in view above the tray (the picture slides up, the camera doesn’t)', t0.boxBottom != null && t0.boxBottom <= t0.top + 2, t0);
+    const e0 = await sb(); await tap(...await mid('#pvTrayPad [data-n="right"]')); const e1 = await sb();
+    check('Edit tray: Move ▶ steps exactly 3″ along the floor, to a clean number', Math.abs(Math.abs((e1.x - e0.x) + (e1.z - e0.z)) - 3) < 1e-9 && (e1.x % 3 === 0 || e1.z % 3 === 0), { e0, e1 });
+    await hold(...await mid('#pvTrayPad [data-n="away"]'), 1200); const e2 = await sb();
+    await tap(...await mid('#undoBtn')); const e3 = await sb();
+    check('Edit tray: hold to repeat, and the whole hold is one undo', Math.hypot(e2.x - e1.x, e2.z - e1.z) >= 9 && e3.x === e1.x && e3.z === e1.z, { e1, e2, e3 });
+    await tap(...await mid('.pv-tray-tabs [data-tm="turn"]')); await tap(...await mid('#pvTrayPad [data-n="cw"]')); const e4 = await sb();
+    await tap(...await mid('.pv-tray-tabs [data-tm="tip"]')); await tap(...await mid('#pvTraySteps [data-step="1"]')); await tap(...await mid('#pvTrayPad [data-n="fwd"]')); const e5 = await sb();
+    check('Edit tray: Turn steps 15°, Tip steps the 5° you picked', e4.ry === wrapA(e3.ry + 15) && e5.rx === e4.rx + 5, { ry: [e3.ry, e4.ry], rx: [e4.rx, e5.rx] });
+    await tap(...await mid('.pv-tray-tabs [data-tm="lift"]')); await tap(...await mid('#pvTrayPad [data-n="up"]')); const e6 = await sb(); await tap(...await mid('#pvTrayPad [data-n="floor"]')); const e7 = await sb();
+    await tap(...await mid('.pv-tray-tabs [data-tm="size"]')); await tap(...await mid('#pvTrayPad [data-axis="h"]')); await tap(...await mid('#pvTrayPad [data-n="plus"]')); const e8 = await sb();
+    check('Edit tray: Lift raises a step and ⤓ sets it back down; Size grows just the height when H is picked', e6.y === e7.y + 3 && e8.h === Math.round((e7.h + 3) / 3) * 3 && e8.w === e7.w, { y: [e6.y, e7.y], h: [e7.h, e8.h], w: [e7.w, e8.w] });
+    check('Edit tray: the readout says what you changed', /× /.test(await ep.textContent('#pvTrayRead')));
+    await ep.goBack({ waitUntil: 'commit' }).catch(() => {}); await ep.waitForTimeout(400);
+    check('Edit tray: Android back closes it, and you stay in the planner', await ep.evaluate(() => document.querySelector('#pvTray').hidden && document.body.classList.contains('pv-app')));
+    // while walking: tap what you're looking at, adjust it, ✓, walk on
+    await ep.evaluate(() => { const S = window.__state; S.pv = { ...S.pv, eye: { x: -30, y: 20, z: 40 }, yaw: -20, pitch: 0, guy: null }; window.__pv.render(); });
+    await tap(...await mid('#pvWalkBtn')); await ep.waitForTimeout(400); await ep.evaluate(() => window.__pv.setWalkSize(20)); await ep.waitForTimeout(300);
+    const wf = await ep.evaluate(() => { let best = null; document.querySelectorAll('#geometry .pv-face').forEach(f => { const r = f.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2; if (cx < innerWidth * .5 || cx > innerWidth - 20 || cy < 180 || cy > innerHeight - 200) return; const a = r.width * r.height; if (!best || a > best.a) best = { a, cx, cy }; }); return best; });
+    await tap(wf.cx, wf.cy); await ep.waitForTimeout(300);
+    const w1 = await ep.evaluate(() => ({ sel: window.__pv.sel, tray: window.__pv.trayOn, outline: document.querySelectorAll('#overlayLayer .pv-sel').length, jump: getComputedStyle(document.querySelector('.pv-jump')).display }));
+    check('Walking: tap a box you’re looking at and it’s selected (outlined), with the tray; the stick and Jump step aside', !!w1.sel && w1.tray && w1.outline > 0 && w1.jump === 'none', w1);
+    const wb0 = await sb(); await tap(...await mid('#pvTrayPad [data-n="away"]')); await ep.waitForTimeout(200); const wb1 = await sb();
+    check('Walking: Move ▲ pushes it away from you', wb1.z > wb0.z && wb1.x === wb0.x, { wb0, wb1 });
+    await tap(...await mid('.pv-tray-tabs [data-ta="done"]')); await ep.waitForTimeout(200);
+    check('Walking: ✓ lets go and you walk on', await ep.evaluate(() => !window.__pv.trayOn && !window.__pv.sel && !!window.__pv.walking && getComputedStyle(document.querySelector('.pv-jump')).display !== 'none'));
+    await ectx.close();
   }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
