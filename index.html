@@ -376,6 +376,7 @@
     .pv-walk-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
     .pv-walk-chips button{display:grid;gap:1px;align-content:center;padding:4px 6px;text-transform:none}.pv-walk-chips small{color:var(--muted);font-size:10px}
     .pv-walk-sizes input{width:100%;margin-top:8px}
+    .pv-walk-home{display:block;width:100%;margin-top:6px;min-height:44px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;font:500 11px "IBM Plex Mono",monospace;letter-spacing:.04em;cursor:pointer}
     .pv-stick{position:absolute;left:0;top:0;width:120px;height:120px;margin:-60px 0 0 -60px;border:1.5px solid color-mix(in srgb,var(--ink) 50%,transparent);border-radius:50%;opacity:0;transition:opacity .15s}
     .pv-stick.on{opacity:1}
     .pv-stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:color-mix(in srgb,var(--ink) 38%,transparent)}
@@ -386,6 +387,20 @@
     .pv-walk-hint{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;width:max-content;max-width:calc(100% - 140px);text-align:center;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;transition:opacity .8s}
     .pv-walk-hint.gone{opacity:0}
     @media(max-width:640px){.pv-walk-hud{top:calc(70px + env(safe-area-inset-top))}.pv-walk-bar{left:10px;right:10px}.pv-walk-bar button{flex:1 1 auto;min-width:0;padding:0 6px;font-size:10px}.pv-walk-bar button[data-w="exit"]{flex:none;width:48px}.pv-walk-sizes{right:10px;width:calc(100% - 20px)}.pv-walk-hint{left:12px;transform:none;max-width:calc(100% - 140px);text-align:left}}
+    /* the view lock, and the little guy */
+    .pv-lock{display:none;position:absolute;top:10px;right:10px;z-index:4;align-items:center;gap:6px;min-height:40px;padding:0 12px 0 10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);color:var(--muted);border-radius:3px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;touch-action:manipulation}
+    .pv-lock svg{width:16px;height:16px}.pv-lock:hover{color:var(--ink);border-color:var(--strong)}
+    body.pv-app .pv-lock{display:inline-flex}body.pv-ref .pv-lock{display:none}
+    body.pv-locked .pv-lock{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+    body:not(.pv-locked) .pv-lock .shackle{transform:translate(4px,-1px) rotate(18deg);transform-origin:16px 11px}
+    body.pv-locked .canvas-wrap{cursor:move}
+    body.pv-locked #pvShots{opacity:.45}
+    @media(max-width:600px){.pv-lock{padding:0;width:40px;justify-content:center}.pv-lock span{display:none}}
+    .pv-locked-note{display:none;margin:0 0 10px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+    body.pv-locked .pv-locked-note{display:block}
+    #geometry .pv-face.guy.flat{fill:color-mix(in srgb,var(--accent) 22%,var(--canvas))}
+    #geometry .pv-face.guy.light{fill:color-mix(in srgb,var(--accent) 34%,var(--pv-light))}#geometry .pv-face.guy.mid{fill:color-mix(in srgb,var(--accent) 30%,var(--pv-mid))}#geometry .pv-face.guy.dark{fill:color-mix(in srgb,var(--accent) 26%,var(--pv-dark))}
+    .pv-plan-guy{fill:var(--accent);stroke:var(--canvas);stroke-width:1.5}
     /* installing Locus as an app */
     .install-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.04em;color:var(--muted)}
     .install-row[hidden]{display:none}
@@ -531,7 +546,7 @@
       <div class="toggle-row" id="pvShow">
         <button class="chip" data-show="floor" type="button">Floor grid</button><button class="chip" data-show="horizon" type="button">Horizon</button><button class="chip" data-show="vps" type="button">Vanishing points</button>
         <button class="chip" data-show="guides" type="button" title="Carry the selected box’s edges on to their vanishing points">Lines to VPs</button><button class="chip" data-show="cone" type="button">Cone of vision</button><button class="chip" data-show="hidden" type="button">Hidden edges</button>
-        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap-tos: views click to 1- and 2-point, the horizon and boxes to the thirds, boxes flush to each other">Snap</button><button class="chip" data-show="thirds" type="button" title="Rule-of-thirds lines on the canvas">Thirds</button><button class="chip" data-show="golden" type="button" title="Golden-section lines (φ) on the canvas">Golden φ</button><button class="chip" id="pvSqChip" type="button" title="A squaring grid on the canvas, columns lettered and rows numbered, for transferring the plan to the real canvas. It prints too (Drafting layer).">Squaring grid</button>
+        <button class="chip" data-show="values" type="button" title="Shade the faces light, mid and dark, lit from the upper left">Values</button><button class="chip" data-show="depth" type="button">Depth ink</button><button class="chip" data-show="plan" type="button">Plan</button><button class="chip" data-show="snap" type="button" title="Snap-tos: views click to 1- and 2-point, the horizon and boxes to the thirds, boxes flush to each other">Snap</button><button class="chip" data-show="guy" type="button" title="The little guy: a figure at your walking size, standing in the scene. Tap him to walk as him, drag him to place him">Little guy</button><button class="chip" data-show="thirds" type="button" title="Rule-of-thirds lines on the canvas">Thirds</button><button class="chip" data-show="golden" type="button" title="Golden-section lines (φ) on the canvas">Golden φ</button><button class="chip" id="pvSqChip" type="button" title="A squaring grid on the canvas, columns lettered and rows numbered, for transferring the plan to the real canvas. It prints too (Drafting layer).">Squaring grid</button>
       </div>
     </section>
     <section class="panel">
@@ -567,7 +582,7 @@
       <div class="pv-walk-layer" id="pvWalk" hidden>
         <div class="pv-walk-hud" id="pvWalkHud" aria-live="polite"></div>
         <div class="pv-walk-bar pv-walk-ui" role="toolbar" aria-label="Walking"><button type="button" data-w="size" aria-expanded="false">Size</button><button type="button" data-w="lens">Curvi</button><button type="button" data-w="frame" class="on" title="Show your canvas as a viewfinder">Frame</button><button type="button" data-w="keep" class="go" title="Leave with the camera where you are (Enter)">Use this view</button><button type="button" data-w="exit" aria-label="Back to the plan, as it was (Esc)">✕</button></div>
-        <div class="pv-walk-sizes pv-walk-ui" id="pvWalkSizes" hidden><div class="pv-walk-chips" id="pvWalkChips"></div><input type="range" id="pvWalkSize" min="0" max="100" step="1" aria-label="Your height"></div>
+        <div class="pv-walk-sizes pv-walk-ui" id="pvWalkSizes" hidden><div class="pv-walk-chips" id="pvWalkChips"></div><input type="range" id="pvWalkSize" min="0" max="100" step="1" aria-label="Your height"><button type="button" class="pv-walk-home" data-w="home">Go to the plan’s viewpoint</button></div>
         <div class="pv-stick" id="pvStick"><i></i></div>
         <div class="pv-walk-dot"></div>
         <button type="button" class="pv-jump pv-walk-ui" data-w="jump" aria-label="Jump">Jump</button>
@@ -575,6 +590,7 @@
       </div>
       <div class="pv-refbar" id="pvRefBar" role="toolbar" aria-label="Reference controls"><button type="button" data-r="prev" aria-label="Previous shot">‹</button><span class="pv-ref-shot" id="pvRefShot">Your view</span><button type="button" data-r="next" aria-label="Next shot">›</button><i></i><button type="button" data-r="grid" aria-label="Squaring grid">Grid</button><button type="button" data-r="lines" aria-label="Construction lines">Lines</button><button type="button" data-r="values" aria-label="Light and shade">Values</button><button type="button" data-r="theme" aria-label="Paper or night">◐</button><button type="button" data-r="lock" aria-label="Lock the view">Locked</button><button type="button" id="pvRefExit" data-r="exit" aria-label="Leave reference view">✕</button></div>
       <div class="pv-boxbar" id="pvBoxBar" role="toolbar" aria-label="Selected box" hidden><button type="button" data-act="dup" title="Copy it beside itself (D)">⧉<span>Copy</span></button><button type="button" data-act="stack" title="Copy it on top">⬒<span>Stack</span></button><button type="button" data-act="rot" title="Turn it 90°">⟳<span>90°</span></button><button type="button" data-act="edit" title="Size, turn and repeats">✎<span>Edit</span></button><button type="button" data-act="del" title="Delete (Delete)">✕<span>Delete</span></button></div>
+      <button class="pv-lock" id="pvLockBtn" type="button" aria-pressed="false" title="Lock the view: the perspective can’t change. Scroll, pinch and drag only magnify and move the picture; boxes stay editable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path class="shackle" d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Lock view</span></button>
       <svg id="pvPlan" viewBox="0 0 200 200" role="img" aria-label="Plan: where you stand and what the canvas takes in" hidden></svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
       <div class="axis-key"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span></div>
@@ -864,7 +880,7 @@
     /* ----- scenes ----- */
     const ARR={type:'none',n:6,n2:3,gap:6,span:180,axis:'across',twist:0};
     const box=(id,x,y,z,s,extra={})=>({id,x,y,z,w:s,h:s,d:s,ry:0,rx:0,...extra,arr:{...ARR,...(extra.arr||{})}});
-    const SHOW={floor:true,horizon:true,vps:true,guides:true,cone:false,hidden:false,values:true,depth:true,plan:true,snap:true,thirds:true,golden:false};
+    const SHOW={guy:true,floor:true,horizon:true,vps:true,guides:true,cone:false,hidden:false,values:true,depth:true,plan:true,snap:true,thirds:true,golden:false};
     const SCENES={
       overhead:{name:'Cubes overhead',note:'An arch of cubes rising from the floor in front of you, over your head and down behind. Linear perspective can’t hold it: switch to Linear and watch it tear.',
         pv:{canvas:{w:48,h:48},dist:15,proj:'curvi',eye:{x:0,y:62,z:0},yaw:-32,pitch:42,boxes:[box(1,0,0,84,18,{arr:{type:'arch',n:15,span:250,pivot:{x:0,y:62,z:0}}}),box(2,0,0,132,14,{arr:{type:'ring',n:16,span:360,pivot:{x:0,y:62,z:0}}})]}},
@@ -888,6 +904,7 @@
     function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
     const byId=id=>st().boxes.find(b=>b.id===id);
     let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
+    let viewLock=false,guyHit=null;try{viewLock=localStorage.getItem('locus-view-lock')==='1'}catch{}
     let walking=null;   // first person: {size, p: your feet, v, ground, ...} while you walk the scene
     let lastPtr='mouse',lastSnap='';
     // a tick under the finger when something clicks into place (Android vibrates; elsewhere it's a no-op)
@@ -958,7 +975,7 @@
         for(let i=0;i<n;i++){const Q=turn(axis,i*step);put(mm(Q,R0),add(E,mv(Q,sub(t0,E))),i)}}
       else put(R0,t0,0);
       return out}
-    function sceneOf(pv,K){const list=[];pv.boxes.forEach(b=>instances(pv,b).forEach(I=>{I.RT=tr(I.R);I.P=CORNERS.map(([x,y,z])=>add(I.t,mv(I.R,[x*I.hw,y*I.h,z*I.hd])));
+    function sceneOf(pv,K,boxes=pv.boxes){const list=[];boxes.forEach(b=>instances(pv,b).forEach(I=>{I.RT=tr(I.R);I.P=CORNERS.map(([x,y,z])=>add(I.t,mv(I.R,[x*I.hw,y*I.h,z*I.hd])));
       const c=add(I.t,mv(I.R,[0,I.h/2,0])),dv=sub(c,K.E),dist=len(dv);I.c=c;I.rad=Math.hypot(I.hw,I.h/2,I.hd);I.dist=dist;I.dirC=dist>1e-9?scl(dv,1/dist):[0,0,1];I.cosR=dist>I.rad?Math.cos(Math.asin(I.rad/dist)):-2;list.push(I)}));return list}
     // where the segment E→P first enters box I, as a fraction of the way to P (Infinity if it doesn't, or if the eye is inside)
     function entry(I,E,P){const e=mv(I.RT,sub(E,I.t)),p=mv(I.RT,sub(P,I.t)),d=sub(p,e),lo=[-I.hw,0,-I.hd],hi=[I.hw,I.h,I.hd];let t0=-Infinity,t1=Infinity;
@@ -995,7 +1012,7 @@
       const S=pv.show;
       if(S.floor)drawFloor(K,list);
       if(S.horizon){emit(els.guides,circlePolys(K,circleOf(K,mv(K.CT,[0,1,0]))),'horizon')}
-      drawBoxes(K,list);
+      const guyOn=pv.guy&&!walking&&!harvesting&&S.guy!==false,guys=guyOn?guyList(pv,K):[];drawBoxes(K,list,guys);guyHit=guyOn?screenBounds(K,guys):null;
       if(S.guides&&sel)drawGuides(K,list);
       drawMarks(K);
       drawSquares();
@@ -1013,17 +1030,17 @@
     const EI={};EDGES.forEach(([a,b],e)=>{EI[a*8+b]={e,rev:false};EI[b*8+a]={e,rev:true}});
     const EDGE_FACES=EDGES.map(([a,b])=>FACES.map((F,f)=>F.c.includes(a)&&F.c.includes(b)?f:-1).filter(f=>f>=0));
     let interacting=false;
-    function drawBoxes(K,list){const S=st().show;
+    function drawBoxes(K,list,extra=[]){const S=st().show;
       if(harvesting){list.forEach(I=>EDGES.forEach(([a,b],e)=>runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v&&!S.hidden)return;emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),v?'main':'hidden')})));return}
       // on screen: far to near, each box's lit faces then its edges, so nearer boxes cover farther ones; cheap enough to run every frame
       const far=Math.max(...list.map(I=>I.dist),1),near=Math.min(...list.map(I=>I.dist),far-1),f2=v=>v.toFixed(2);
-      [...list].sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>segPolys(K,I.P[a],I.P[b]));
+      [...list,...extra].sort((a,b)=>b.dist-a.dist).forEach(I=>{const polys=EDGES.map(([a,b])=>segPolys(K,I.P[a],I.P[b]));
         const front=FACES.map(F=>{const n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9});const tones={};
         FACES.forEach((F,fi)=>{if(!front[fi])return;let ring=[],ok=true;F.c.forEach((c,j)=>{const {e,rev}=EI[c*8+F.c[(j+1)%4]],p=polys[e];if(p.length!==1){ok=false;return}ring=ring.concat(rev?[...p[0]].reverse():p[0])});if(!ok)return;
           const n=mv(I.R,F.n),tone=!S.values?'flat':dot(n,LIGHT)>.45?'light':dot(n,LIGHT)>-.15?'mid':'dark';tones[tone]=(tones[tone]||'')+'M'+ring.map(q=>f2(q[0])+','+f2(q[1])).join('L')+'Z'});
-        Object.entries(tones).forEach(([t,d])=>els.shapes.appendChild(svgEl('path',{d,class:'pv-face '+t})));
-        const seen=polys.filter((p,e)=>EDGE_FACES[e].some(f=>front[f])).flat(),el=emit(els.shapes,seen,'main');
-        if(el&&S.depth){const t=(I.dist-near)/Math.max(1,far-near);el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}});
+        Object.entries(tones).forEach(([t,d])=>els.shapes.appendChild(svgEl('path',{d,class:'pv-face '+t+(I.guy?' guy':'')})));
+        const seen=polys.filter((p,e)=>EDGE_FACES[e].some(f=>front[f])).flat(),el=emit(els.shapes,seen,I.guy?'guy':'main');
+        if(el&&S.depth&&!I.guy){const t=(I.dist-near)/Math.max(1,far-near);el.style.setProperty('--dzw',(1.3-.65*t).toFixed(3));el.style.setProperty('--dzo',(1-.45*t).toFixed(3))}});
       // hidden edges, dashed on top: exact when you let go, the backs of boxes while you are moving
       if(S.hidden)list.forEach(I=>EDGES.forEach(([a,b],e)=>{if(interacting){if(!EDGE_FACES[e].some(f=>{const F=FACES[f],n=mv(I.R,F.n),fc=scl(F.c.reduce((s,i)=>add(s,I.P[i]),[0,0,0]),.25);return dot(n,sub(K.E,fc))>1e-9}))emit(els.shapes,segPolys(K,I.P[a],I.P[b]),'hidden');return}
         runsFor(I,e,list,K).forEach(([t0,t1,v])=>{if(!v)emit(els.shapes,segPolys(K,I.P[a],I.P[b],t0,t1),'hidden')})}))}
@@ -1038,7 +1055,7 @@
       vanishing(K,directionsOf(st(),K)).forEach(v=>emit(els.points,cross(v.p),'vp-mark'));emit(els.points,cross([0,0],.5),'vp-mark')}
     function heading(K){const pv=st();els.title.textContent=pv.name||'Perspective';els.phase.textContent=`Perspective planner · ${K.curvi?'curvilinear':'linear'}`;
       els.badge.textContent=`${K.curvi?'CURVILINEAR':'LINEAR'} · ${fmtIn(pv.canvas.w)} × ${fmtIn(pv.canvas.h)} CANVAS · STAND ${fmtIn(pv.dist)} BACK`;
-      const n=st().boxes.reduce((s,b)=>s+instances(pv,b).length,0),status=`<span>${n} box${n===1?'':'es'}</span><span>eye ${fmtIn(pv.eye.y)} up</span><span>looking ${Math.round(pv.pitch)>0?Math.round(pv.pitch)+'° up':Math.round(pv.pitch)<0?-Math.round(pv.pitch)+'° down':'level'}</span><span>${fov(K)}° across</span>${sel?'<span>pull a handle to stretch · dial to turn · Delete removes</span>':`<span>${coarse?'drag: walk round · pinch: zoom':'drag: walk round · scroll: closer · shift-drag: look'}</span>`}`;
+      const n=st().boxes.reduce((s,b)=>s+instances(pv,b).length,0),status=`<span>${n} box${n===1?'':'es'}</span><span>eye ${fmtIn(pv.eye.y)} up</span><span>looking ${Math.round(pv.pitch)>0?Math.round(pv.pitch)+'° up':Math.round(pv.pitch)<0?-Math.round(pv.pitch)+'° down':'level'}</span><span>${fov(K)}° across</span>${sel?'<span>pull a handle to stretch · dial to turn · Delete removes</span>':`<span>${viewLock?(coarse?'view locked · drag: move the picture · pinch: magnify':'view locked · drag: move the picture · scroll: magnify · F: fit'):coarse?'drag: walk round · pinch: zoom':'drag: walk round · scroll: closer · shift-drag: look'}</span>`}${pv.guy&&pv.show.guy!==false&&!sel?'<span>tap the little guy to walk as him</span>':''}`;
       if(status!==lastStatus){els.status.innerHTML=status;lastStatus=status}}
     // when the drawing area changes size, measure it again and fit the canvas to what you can actually see
     let visCache=null;new ResizeObserver(()=>{visCache=null;if(state.app==='perspective'&&els.svg.getBoundingClientRect().width){visCache=measureVisible();fit(true);paint()}}).observe(els.svg);
@@ -1118,7 +1135,8 @@
       const half=K.W/2,ang=K.curvi?[2*Math.atan((-half-pv.cv.x)/(2*K.D)),2*Math.atan((half-pv.cv.x)/(2*K.D))]:[Math.atan((-half-pv.cv.x)/K.D),Math.atan((half-pv.cv.x)/K.D)];
       const yaw=pv.yaw*D2R,[ex,ez]=P(K.E[0],K.E[2]),reach=Math.max(60,Math.min(400,90/planT.k)),ray=a=>{const t=yaw+a;return P(K.E[0]+Math.sin(t)*reach,K.E[2]+Math.cos(t)*reach)};
       const [l,r]=[ray(ang[0]),ray(ang[1])];plan.appendChild(svgEl('path',{d:`M${ex},${ez}L${l.join(',')}A${reach*planT.k},${reach*planT.k} 0 ${Math.abs(ang[1]-ang[0])>Math.PI?1:0} 1 ${r.join(',')}Z`,class:'pv-plan-view'}));
-      plan.appendChild(svgEl('circle',{cx:ex,cy:ez,r:6,class:'pv-plan-eye','data-eye':'1'}));plan.appendChild(lbl(ex+9,ez+14,'YOU','pv-cone-label'))}
+      plan.appendChild(svgEl('circle',{cx:ex,cy:ez,r:6,class:'pv-plan-eye','data-eye':'1'}));plan.appendChild(lbl(ex+9,ez+14,'YOU','pv-cone-label'))
+      if(pv.guy&&pv.show.guy!==false){const [gx,gz]=P(pv.guy.x,pv.guy.z),a=pv.guy.yaw*D2R,f=[Math.sin(a),-Math.cos(a)],q=[-f[1],f[0]];plan.appendChild(svgEl('path',{class:'pv-plan-guy',d:`M${gx+f[0]*7},${gz+f[1]*7}L${gx-f[0]*4+q[0]*4},${gz-f[1]*4+q[1]*4}L${gx-f[0]*4-q[0]*4},${gz-f[1]*4-q[1]*4}Z`}))}}
 
     /* ----- what to mark on the canvas ----- */
     const readout=$('#pvReadout');
@@ -1140,12 +1158,13 @@
     let drag=null;const touches=new Map();
     function down(e){lastPtr=e.pointerType;if(walking){walkDown(e);return}const p=ev(e);if(refMode()&&refLock){drag={type:'swipe',p,x:e.clientX,y:e.clientY};return}touches.set(e.pointerId,p);try{els.wrap.setPointerCapture(e.pointerId)}catch{}beginChange();
       if(touches.size===2){const [a,b]=[...touches.values()];drag={type:'pinch',d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2],s:view.s,ox:view.ox,oy:view.oy};return}
+      if(guyHit&&!e.target.closest('[data-pv^="face"],[data-pv="turn"]')&&p[0]>=guyHit[0]&&p[0]<=guyHit[2]&&p[1]>=guyHit[1]&&p[1]<=guyHit[3]){interacting=true;drag={type:'guy',p,moved:false};return}
       const K=camera(),ctl=e.target.closest('[data-pv]')?.dataset.pv;
-      if(ctl==='cv'){drag={type:'cv',p,cv:{...st().cv}};return}
-      if(ctl&&ctl.startsWith('vp:')){const gEl=e.target.closest('[data-pv]'),c=gEl.querySelector('.vp-handle'),near=!c||Math.hypot(+c.getAttribute('cx')-p[0],+c.getAttribute('cy')-p[1])<5*U;if(near||!pick(p[0],p[1])){drag={type:'vp',dir:gEl.dataset.dir.split(',').map(Number)};return}}
+      if(ctl==='cv'&&!viewLock){drag={type:'cv',p,cv:{...st().cv}};return}
+      if(ctl&&ctl.startsWith('vp:')&&!viewLock){const gEl=e.target.closest('[data-pv]'),c=gEl.querySelector('.vp-handle'),near=!c||Math.hypot(+c.getAttribute('cx')-p[0],+c.getAttribute('cy')-p[1])<5*U;if(near||!pick(p[0],p[1])){drag={type:'vp',dir:gEl.dataset.dir.split(',').map(Number)};return}}
       if(ctl&&ctl.startsWith('face:')&&sel){const G=gizmo();if(G){const F=G.faces[+ctl.slice(5)];drag={type:'face',f:+ctl.slice(5),axis:F.n,at:F.c,start:structuredClone(byId(sel.id)),s0:null};drag.s0=axisParam(drag,p)}return}
       if(ctl==='turn'&&sel){const G=gizmo();if(G&&G.dial){const b=byId(sel.id);drag={type:'turn',ry0:b.ry,base:G.base,up:G.up,a0:null};drag.a0=dialAngle(drag,p)}return}
-      if(ctl==='horizon'&&!pick(p[0],p[1])){drag={type:'horizon',p,cv:{...st().cv}};interacting=true;return}
+      if(ctl==='horizon'&&!viewLock&&!pick(p[0],p[1])){drag={type:'horizon',p,cv:{...st().cv}};interacting=true;return}
       if(e.button===1||e.altKey&&!pick(p[0],p[1])){drag={type:'pan',p,ox:view.ox,oy:view.oy};return}
       const edge=K.curvi&&pickEdge(p[0],p[1]);
       const h=pick(p[0],p[1]);
@@ -1154,6 +1173,7 @@
         // grabbed right at eye level: no level plane can follow the hand, so slide it sideways on an upright plane facing you
         const fw=mv(K.C,[0,0,1]),side=Math.abs(rayDir(K,X0,Y0)[1])<.02&&Math.abs(ph-Ey)<1e-6&&len([fw[0],0,fw[2]])>1e-6?unit([fw[0],0,fw[2]]):null;
         drag={type:'move',id:h.id,p,hit:h.hit,ph,g0,side,start:{x:b.x,y:b.y,z:b.z},vert,rest:Math.abs(b.y-supportUnder(st(),b))<1e-6,edge,moved:false};render();sync();return}
+      if(viewLock){drag={type:'pan',p,ox:view.ox,oy:view.oy};return}   // locked: empty space moves the picture, never the camera
       cancelAnimationFrame(glide);interacting=true;
       // empty space: walk round what you're looking at (Shift or right-drag looks around from where you stand)
       const F=focus(),E=K.E,r=len(sub(E,F));
@@ -1166,6 +1186,7 @@
       if(drag.type==='pinch'){if(touches.size<2)return;const [a,b]=[...touches.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=[(a[0]+b[0])/2,(a[1]+b[1])/2],f=d/drag.d;
         view.s=clamp(drag.s*f,.3,80);view.ox=m[0]-(drag.m[0]-drag.ox)*view.s/drag.s;view.oy=m[1]-(drag.m[1]-drag.oy)*view.s/drag.s;paint();return}
       if(drag.type==='pan'){view.ox=drag.ox+dx;view.oy=drag.oy+dy;paint();return}
+      if(drag.type==='guy'){if(drag.moved){const [X,Y]=fromSvg(p[0],p[1]),g=planeHit(K,X,Y,[0,0,0],[0,1,0]);if(g&&len(sub(g,K.E))<1e5){const L=(lastFrame&&lastFrame.list)||sceneOf(pv,K);set({guy:{...pv.guy,x:g[0],z:g[2],y:groundAt(L,g[0],g[2],1e5)}});paint()}}return}
       if(drag.type==='cv'){set({cv:{x:r1(drag.cv.x+dx/view.s),y:r1(drag.cv.y-dy/view.s)}});paint();return}
       if(drag.type==='look'){const k=R2D/(view.s*K.D),lim=K.curvi?90:80;let pitch=clamp(drag.pitch+dy*k,-lim,lim);const y=detentYaw(wrap180(drag.yaw-dx*k));snapNote=null;
         if(st().show.snap&&!e.ctrlKey&&!e.metaKey){if(Math.abs(pitch)<2){pitch=0;snapNote={text:'LEVEL · VERTICALS PARALLEL',p}}if(y.name)snapNote={text:y.name+(pitch===0?' · LEVEL':''),p}}
@@ -1192,14 +1213,14 @@
             if(!f.cue){const c=compSnap(K,nb);if(c){nb={...nb,x:c.x,z:c.z};snapNote={text:c.name,p};if(drag.rest)nb.y=supportUnder(st(),nb)}}}else snapCue=null;setBox(drag.id,{x:nb.x,z:nb.z,y:nb.y})}
         paint()}}
     let lastTap=null;
-    function up(e){if(walking){walkUp(e);return}if(drag&&drag.type==='swipe'){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag=null;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.3)cycleShot(dx<0?1:-1);else if(Math.hypot(dx,dy)<10){if(refBar.classList.contains('idle'))wakeRefBar();else{clearTimeout(refIdle);refBar.classList.add('idle')}}return}
+    function up(e){if(walking){walkUp(e);return}if(drag&&drag.type==='guy'){const d=drag;drag=null;touches.delete(e.pointerId);interacting=false;commitChange();if(!d.moved)walkStart();else{render();sync()}return}if(drag&&drag.type==='swipe'){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag=null;if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.3)cycleShot(dx<0?1:-1);else if(Math.hypot(dx,dy)<10){if(refBar.classList.contains('idle'))wakeRefBar();else{clearTimeout(refIdle);refBar.classList.add('idle')}}return}
       touches.delete(e.pointerId);if(!drag)return;const d=drag;if(d.type==='pinch'&&touches.size){drag=null;return}drag=null;interacting=false;snapNote=null;snapCue=null;liveDim=null;render();sync();renderShots();
       // double-tap the floor on a touch screen to add a box (the mouse has dblclick)
-      if(e.pointerType==='touch'&&!d.moved&&(d.type==='look'||d.type==='orbit')){const now=performance.now(),p=ev(e);if(lastTap&&now-lastTap.t<350&&Math.hypot(p[0]-lastTap.p[0],p[1]-lastTap.p[1])<30*U){lastTap=null;commitChange();addAtPoint(p);return}lastTap={t:now,p}}
-      if(!d.moved&&(d.type==='look'||d.type==='orbit'||d.type==='move')){if(d.edge&&(d.type==='look'||d.type==='orbit'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type==='look'||d.type==='orbit'){sel=null;pin=null}render();sync()}
+      if(e.pointerType==='touch'&&!d.moved&&(d.type==='look'||d.type==='orbit'||d.type==='pan'&&viewLock)){const now=performance.now(),p=ev(e);if(lastTap&&now-lastTap.t<350&&Math.hypot(p[0]-lastTap.p[0],p[1]-lastTap.p[1])<30*U){lastTap=null;commitChange();addAtPoint(p);return}lastTap={t:now,p}}
+      if(!d.moved&&(d.type==='look'||d.type==='orbit'||d.type==='move'||d.type==='pan'&&viewLock)){if(d.edge&&(d.type==='look'||d.type==='orbit'||d.edge.id===d.id))pin=pin&&pin.edge===d.edge.edge&&pin.k===d.edge.k?null:d.edge;else if(d.type!=='move'){sel=null;pin=null}render();sync()}
       commitChange()}
     const wrap180=a=>((a+180)%360+360)%360-180;let wheelOpen=false,wheelTimer=0,wheelIdle=0;
-    function wheel(e){e.preventDefault();if(walking){if(Math.abs(e.deltaY)>2)walkGrow(e.deltaY<0?1:-1);return}if(!e.ctrlKey&&!e.altKey&&!e.metaKey){cancelAnimationFrame(glide);const pv=st(),F=focus(),E=[pv.eye.x,pv.eye.y,pv.eye.z],v=sub(E,F),r=len(v);if(r<1e-6)return;
+    function wheel(e){e.preventDefault();if(walking){if(Math.abs(e.deltaY)>2)walkGrow(e.deltaY<0?1:-1);return}if(!viewLock&&!e.ctrlKey&&!e.altKey&&!e.metaKey){cancelAnimationFrame(glide);const pv=st(),F=focus(),E=[pv.eye.x,pv.eye.y,pv.eye.z],v=sub(E,F),r=len(v);if(r<1e-6)return;
         const r1=clamp(r*Math.exp(e.deltaY*.0012),6,6000),Q=add(F,scl(v,r1/r));if(!wheelOpen){beginChange();wheelOpen=true}clearTimeout(wheelTimer);wheelTimer=setTimeout(()=>{wheelOpen=false;commitChange();render();sync();renderShots()},260);
         set({eye:{x:Q[0],y:Math.max(1,Q[1]),z:Q[2]}});interacting=true;paint();clearTimeout(wheelIdle);wheelIdle=setTimeout(()=>{interacting=false;paint()},200);return}
       const [x,y]=ev(e),f=Math.exp(-e.deltaY*.0015),s=clamp(view.s*f,.3,80),k=s/view.s;view.ox=x-(x-view.ox)*k;view.oy=y-(y-view.oy)*k;view.s=s;paint()}
@@ -1239,7 +1260,7 @@
         tryAxis('x',mx,hw,x0,x1,z0,z1,mz,hd);tryAxis('z',mz,hd,z0,z1,x0,x1,mx,hw)})});
       const lx=best.x?best.x.t:mx,lz=best.z?best.z.t:mz,[x,z]=toW([lx,lz]);if(best.x||best.z)cue=(best.x||best.z).id;return{x:r1(x*1e4)/1e4,z:r1(z*1e4)/1e4,cue}}
     // turn to look straight at the selected copy, or at the middle of everything
-    function aim(){const pv=st(),K=camera(pv),list=sceneOf(pv,K),I=selInstance(list),pts=I?[add(I.t,mv(I.R,[0,I.h/2,0]))]:list.map(I=>add(I.t,mv(I.R,[0,I.h/2,0])));if(!pts.length)return;
+    function aim(){if(locked())return;const pv=st(),K=camera(pv),list=sceneOf(pv,K),I=selInstance(list),pts=I?[add(I.t,mv(I.R,[0,I.h/2,0]))]:list.map(I=>add(I.t,mv(I.R,[0,I.h/2,0])));if(!pts.length)return;
       const c=scl(pts.reduce(add,[0,0,0]),1/pts.length),v=sub(c,K.E),lim=K.curvi?90:80,yaw=r1(Math.atan2(v[0],v[2])*R2D*100)/100;
       if(pv.pitch===0&&!(pv.roll)){set({yaw,cv:{x:0,y:0}});const K2=camera(),q=img(K2,toCam(K2,c));set({cv:{x:0,y:q?r1(-q[1]*100)/100:0}});return}
       set({yaw,pitch:clamp(Math.atan2(v[1],Math.hypot(v[0],v[2]))*R2D,-lim,lim),cv:{x:0,y:0}})}
@@ -1256,7 +1277,7 @@
     let snapNote=null;
     // glide the camera to a new view: eased, shortest way round, undoable as one step
     let glide=0;
-    function glideTo(target,ms=560){cancelAnimationFrame(glide);const pv=st(),from={eye:{...pv.eye},yaw:pv.yaw,pitch:pv.pitch,roll:pv.roll||0,dist:pv.dist,cv:{...pv.cv}};beginChange();if(target.proj&&target.proj!==pv.proj)set({proj:target.proj});
+    function glideTo(target,ms=560){if(viewLock&&!walking){locked();return}cancelAnimationFrame(glide);const pv=st(),from={eye:{...pv.eye},yaw:pv.yaw,pitch:pv.pitch,roll:pv.roll||0,dist:pv.dist,cv:{...pv.cv}};beginChange();if(target.proj&&target.proj!==pv.proj)set({proj:target.proj});
       const done=()=>{glide=0;set({eye:{...target.eye},yaw:target.yaw,pitch:target.pitch,roll:target.roll||0,dist:target.dist,cv:{...target.cv}});render();sync();commitChange();renderShots()};
       if(ms<=0||matchMedia('(prefers-reduced-motion: reduce)').matches){done();return}
       const t0=performance.now(),dy=wrap180(target.yaw-from.yaw),step=now=>{const u=Math.min(1,(now-t0)/ms),e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,L=(a,b)=>a+(b-a)*e;
@@ -1312,7 +1333,7 @@
     // thumbnails only change with the scene and the canvas, not with where you're standing
     function renderShots(){clearTimeout(shotTimer);shotTimer=setTimeout(()=>{if(state.app!=='perspective'||drag)return;const pv=st(),key=JSON.stringify([pv.boxes,pv.canvas,sel&&sel.id]);if(key===shotKey)return;shotKey=key;
       SHOTS.forEach(S=>{const cam=frameShot(S.spec);shotCams[S.id]=cam;const b=shotBar.querySelector(`[data-shot="${S.id}"] .pv-shot-pic`);if(b)b.innerHTML=cam?thumbSvg(cam):''})},120)}
-    shotBar.addEventListener('click',e=>{const b=e.target.closest('[data-shot]');if(!b)return;const S=SHOTS.find(S=>S.id===b.dataset.shot),cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;glideTo(cam);
+    shotBar.addEventListener('click',e=>{const b=e.target.closest('[data-shot]');if(!b||locked())return;const S=SHOTS.find(S=>S.id===b.dataset.shot),cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;glideTo(cam);
       shotBar.querySelectorAll('.pv-shot').forEach(x=>x.classList.toggle('active',x===b))});
     function nextId(){return Math.max(0,...st().boxes.map(b=>b.id))+1}
     function addBox(at){const K=camera(),f=mv(K.C,[0,0,1]),hz=len([f[0],0,f[2]])>1e-6?unit([f[0],0,f[2]]):[0,0,1],s=18,src=!at&&sel&&byId(sel.id);let b;
@@ -1342,6 +1363,7 @@
     const planWorld=e=>{const r=plan.getBoundingClientRect(),x=(e.clientX-r.left)*200/r.width,y=(e.clientY-r.top)*200/r.height;return[planT.cx+(x-100)/planT.k,planT.cz-(y-100)/planT.k]};
     plan.addEventListener('pointerdown',e=>{e.stopPropagation();if(!planT)return;plan.setPointerCapture(e.pointerId);planHold=true;beginChange();const [x,z]=planWorld(e),pv=st();
       const boxId=e.target.closest('[data-box]')?.dataset.box;
+      if(!boxId&&viewLock){locked();planDrag=null;planHold=false;return}
       if(e.target.closest('[data-eye]'))planDrag={type:'eye'};else if(boxId){const b=byId(+boxId);sel={id:b.id,k:0};planDrag={type:'box',id:b.id,x0:x,z0:z,bx:b.x,bz:b.z}}else planDrag={type:'turn'};
       if(planDrag.type==='turn')set({yaw:r1(Math.atan2(x-pv.eye.x,z-pv.eye.z)*R2D)});render();sync()});
     plan.addEventListener('pointermove',e=>{if(!planDrag)return;e.stopPropagation();const [x,z]=planWorld(e),pv=st();
@@ -1438,7 +1460,7 @@
     /* ----- easel mode: big controls over the reference, swipe between shots, locked against stray touches ----- */
     const refBar=$('#pvRefBar');let refLock=true,refIdle=0,shotIndex=-1;
     function wakeRefBar(){refBar.classList.remove('idle');clearTimeout(refIdle);refIdle=setTimeout(()=>refBar.classList.add('idle'),3500)}
-    function cycleShot(dir){const n=SHOTS.length;shotIndex=((shotIndex<0?(activeShot?SHOTS.findIndex(S=>S.id===activeShot):-1):shotIndex)+dir+n)%n;const S=SHOTS[shotIndex],cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;buzz(6);
+    function cycleShot(dir){if(locked())return;const n=SHOTS.length;shotIndex=((shotIndex<0?(activeShot?SHOTS.findIndex(S=>S.id===activeShot):-1):shotIndex)+dir+n)%n;const S=SHOTS[shotIndex],cam=frameShot(S.spec);if(!cam)return;activeShot=S.id;buzz(6);
       shotBar.querySelectorAll('.pv-shot').forEach(x=>x.classList.toggle('active',x.dataset.shot===S.id));$('#pvRefShot').textContent=`${S.name} · ${S.sub}`;glideTo(cam);wakeRefBar()}
     function refAction(r){const pv=st();if(r==='prev')cycleShot(-1);else if(r==='next')cycleShot(1);else if(r==='exit'){setRef(false);return}
       else if(r==='grid'){const seq=[0,6,3,12,2],i=seq.indexOf(pv.sq||0);beginChange();set({sq:seq[(i+1)%seq.length]});commitChange();render()}
@@ -1448,6 +1470,25 @@
     function syncRefBar(){const pv=st(),b=k=>refBar.querySelector(`[data-r="${k}"]`);b('grid').textContent=pv.sq?`Grid ${pv.sq}″`:'Grid';b('grid').classList.toggle('on',!!pv.sq);
       b('lines').classList.toggle('on',!!(pv.show.floor||pv.show.horizon));b('values').classList.toggle('on',!!pv.show.values);b('lock').textContent=refLock?'Locked':'Unlocked';b('lock').classList.toggle('on',refLock);b('lock').setAttribute('aria-pressed',refLock)}
     refBar.addEventListener('pointerdown',e=>e.stopPropagation());onTap(refBar,'[data-r]',el=>refAction(el.dataset.r));
+
+    /* ----- lock: the composition stays put. Scroll, pinch and drag only magnify and move the picture; boxes stay editable ----- */
+    const lockBtn=$('#pvLockBtn');
+    function locked(){if(viewLock)showToast('The view is locked. Unlock it (top right of the drawing) to move the camera');return viewLock}
+    function setLock(on){viewLock=!!on;try{localStorage.setItem('locus-view-lock',viewLock?'1':'0')}catch{}syncLock();paint()}
+    function syncLock(){document.body.classList.toggle('pv-locked',viewLock&&state.app==='perspective');lockBtn.setAttribute('aria-pressed',viewLock);lockBtn.querySelector('span').textContent=viewLock?'View locked':'Lock view';
+      [...$('#pvSide').children].filter(el=>el.dataset.tab==='canvas'||el.dataset.tab==='camera').forEach(sec=>{sec.querySelectorAll('input,select,button').forEach(c=>c.disabled=viewLock);
+        if(!sec.querySelector('.pv-locked-note'))sec.insertAdjacentHTML('afterbegin','<p class="pv-locked-note">🔒 View locked: unlock to change</p>')});q('pvAim').disabled=viewLock}
+    lockBtn.addEventListener('pointerdown',e=>e.stopPropagation());lockBtn.addEventListener('click',()=>{setLock(!viewLock);showToast(viewLock?'View locked: scroll, pinch and drag now only magnify and move the picture':'View unlocked')});
+    /* ----- the little guy: a box mannequin at your walking size, the painter's scale figure. Tap him to walk as him ----- */
+    function guyParts(g){const B=g.size,a=g.yaw*D2R,c=Math.cos(a),sn=Math.sin(a),at=(ox,oz)=>[g.x+c*ox+sn*oz,g.z-sn*ox+c*oz];
+      const part=(i,ox,oy,oz,w,h,d)=>{const [x,z]=at(ox*B,oz*B);return{id:'guy'+i,x,y:g.y+oy*B,z,w:w*B,h:h*B,d:d*B,ry:g.yaw,rx:0,arr:ARR}};
+      return[part(0,-.07,0,0,.12,.46,.14),part(1,.07,0,0,.12,.46,.14),part(2,0,.47,0,.32,.34,.18),part(3,-.21,.48,0,.08,.32,.1),part(4,.21,.48,0,.08,.32,.1),part(5,0,.84,0,.14,.16,.16),part(6,0,.9,.095,.04,.04,.03)]}
+    const guyList=(pv,K)=>sceneOf(pv,K,guyParts(pv.guy)).map(I=>(I.guy=true,I));
+    function screenBounds(K,list){let b=[1e9,1e9,-1e9,-1e9];list.forEach(I=>I.P.forEach(P=>{const q=img(K,toCam(K,P));if(!q)return;const [x,y]=toSvg(q);b=[Math.min(b[0],x),Math.min(b[1],y),Math.max(b[2],x),Math.max(b[3],y)]}));
+      if(b[0]>b[2])return null;const m=8*U;return[b[0]-m,b[1]-m,b[2]+m,b[3]+m]}
+    // the Little guy chip: turned on with no guy yet, he walks into the scene in front of you
+    function placeGuy(){const pv=st(),F=focus(),E=[pv.eye.x,0,pv.eye.z],P=add(E,scl(sub([F[0],0,F[2]],E),.45)),size=walkPref||68,L=sceneOf(pv,camera(pv));
+      set({guy:{x:P[0],z:P[2],y:groundAt(L,P[0],P[2],1e5),yaw:wrap180(pv.yaw+180),size}})}
 
     /* ----- walk: be in the scene at any size. Gravity, solid boxes and a jump; the camera is your eyes, so every frame is a perspective you could paint ----- */
     const walkUI=$('#pvWalk'),stickEl=$('#pvStick'),walkHud=$('#pvWalkHud'),walkSizes=$('#pvWalkSizes'),walkRange=$('#pvWalkSize'),walkHint=$('#pvWalkHint');
@@ -1497,23 +1538,24 @@
       W.raf=requestAnimationFrame(walkLoop)}
     function walkHudText(){const W=walking;if(!W)return;const med=(()=>{const h=st().boxes.map(b=>b.h).sort((a,b)=>a-b);return h.length?h[h.length>>1]:0})(),ratio=med/W.size;
       walkHud.innerHTML=`<b>${fmtSize(W.size)}</b> tall · eye ${fmtIn(W.p[1]+.92*W.size)} up<br>${W.on>1e-6?`on a box, ${fmtIn(W.on)} up`:'on the floor'}${med?` · boxes ${ratio>=1?`${ratio<10?ratio.toFixed(1):Math.round(ratio)}× your height`:`${Math.round(ratio*100)}% of your height`}`:''}`}
-    function syncWalkUI(){const W=walking;if(!W)return;const pv=st(),b=k=>walkUI.querySelector(`[data-w="${k}"]`);b('lens').textContent=pv.proj==='curvi'?'Curvi':'Linear';b('frame').classList.toggle('on',W.frame);
+    function syncWalkUI(){const W=walking;if(!W)return;const pv=st(),b=k=>walkUI.querySelector(`[data-w="${k}"]`);b('lens').textContent=pv.proj==='curvi'?'Curvi':'Linear';b('frame').classList.toggle('on',W.frame);b('keep').hidden=viewLock;
       b('size').classList.toggle('on',!walkSizes.hidden);b('size').setAttribute('aria-expanded',!walkSizes.hidden);walkRange.value=sizeToRange(W.size);
       $('#pvWalkChips').querySelectorAll('button').forEach(x=>x.classList.toggle('on',Math.abs(+x.dataset.s-W.size)<1e-6))}
     $('#pvWalkChips').innerHTML=SIZES.map(([n,v])=>`<button type="button" data-s="${v}">${n}<small>${fmtSize(v)}</small></button>`).join('');
     function setWalkSize(v){const W=walking;if(!W)return;W.size=clamp(v,SMIN,SMAX);walkPref=W.size;try{localStorage.setItem('locus-walk-size',W.size)}catch{}camFromBody();W.dirty=true;syncWalkUI()}
     const walkGrow=dir=>setWalkSize(walking.size*Math.pow(1.25,dir));
     function walkStart(){if(walking||state.app!=='perspective')return;const pv=st(),list=sceneOf(pv,camera(pv));beginChange();cancelAnimationFrame(glide);sel=null;pin=null;hover=null;boxBar.hidden=true;
-      walking={size:walkPref||(pv.eye.y<=96?clamp(pv.eye.y/.92,SMIN,SMAX):68),p:[pv.eye.x,0,pv.eye.z],v:[0,0,0],ground:true,air:0,jumpT:0,jumpQ:false,on:0,keys:new Set(),stick:[0,0],stickId:null,looks:new Map(),frame:true,dirty:true,
+      const G=pv.guy;walking={size:G?G.size:walkPref||(pv.eye.y<=96?clamp(pv.eye.y/.92,SMIN,SMAX):68),p:G?[G.x,0,G.z]:[pv.eye.x,0,pv.eye.z],v:[0,0,0],ground:true,air:0,jumpT:0,jumpQ:false,on:0,keys:new Set(),stick:[0,0],stickId:null,looks:new Map(),frame:true,dirty:true,
         from:{eye:{...pv.eye},yaw:pv.yaw,pitch:pv.pitch,roll:pv.roll||0,cv:{...(pv.cv||{x:0,y:0})}}};
-      const W=walking;W.p[1]=groundAt(list,W.p[0],W.p[2],Math.max(pv.eye.y,0));
+      const W=walking;W.p[1]=groundAt(list,W.p[0],W.p[2],G?G.y+.3*W.size:Math.max(pv.eye.y,0));
       for(let i=0;i<8;i++){const [dx,dz]=pushOut(list,[W.p[0],W.p[1]+.5*W.size,W.p[2]],.22*W.size);if(!dx&&!dz)break;W.p[0]+=dx;W.p[2]+=dz}   // started inside something: step out of it
-      set({roll:0,cv:{x:0,y:0},pitch:clamp(pv.pitch,-80,80)});camFromBody();
+      set({roll:0,cv:{x:0,y:0},pitch:G?0:clamp(pv.pitch,-80,80),...(G?{yaw:G.yaw}:{})});camFromBody();
       document.body.classList.add('pv-walk');walkUI.hidden=false;walkSizes.hidden=true;setRef(true);
       walkHint.textContent=document.body.classList.contains('pv-touch')?'Left thumb walks · drag to look · Jump · back to leave':'WASD walk · drag to look · Space jumps · Shift runs · Esc back';walkHint.classList.remove('gone');setTimeout(()=>walkHint.classList.add('gone'),5000);
       syncWalkUI();walkHudText();W.raf=requestAnimationFrame(walkLoop)}
     // leave: keep = the camera stays where you stand (one undo puts it back); otherwise the plan comes back as it was
-    function walkStop(keep){const W=walking;if(!W)return;cancelAnimationFrame(W.raf);if(!keep)set({...W.from});walking=null;stickEl.classList.remove('on');walkUI.hidden=true;
+    function walkStop(keep){const W=walking;if(!W)return;if(keep&&locked())return;cancelAnimationFrame(W.raf);const guy={x:W.p[0],y:W.p[1],z:W.p[2],yaw:st().yaw,size:W.size},first=!st().guy;if(!keep)set({...W.from});set({guy});walking=null;
+      if(first&&!keep)setTimeout(()=>showToast('That’s the little guy, where you left him. Tap him to walk again, drag him to place him'),400);stickEl.classList.remove('on');walkUI.hidden=true;
       document.body.classList.remove('pv-walk');setRef(false);commitChange();sync();renderShots();save()}
     function stickKnob(x,y){stickEl.firstElementChild.style.transform=`translate(${x}px,${y}px)`}
     function walkDown(e){const W=walking,r=els.wrap.getBoundingClientRect();try{els.wrap.setPointerCapture(e.pointerId)}catch{}
@@ -1532,16 +1574,17 @@
       else if(a==='lens'){set({proj:st().proj==='curvi'?'linear':'curvi'});walking.dirty=true;syncWalkUI()}
       else if(a==='frame'){walking.frame=!walking.frame;walking.dirty=true;syncWalkUI()}});
     onTap(walkUI,'.pv-walk-chips [data-s]',el=>setWalkSize(+el.dataset.s));
+    onTap(walkUI,'.pv-walk-home',()=>{const W=walking;if(!W)return;const f=W.from;W.p=[f.eye.x,groundAt(solids(),f.eye.x,f.eye.z,f.eye.y),f.eye.z];W.v=[0,0,0];set({yaw:f.yaw,pitch:clamp(f.pitch,-80,80)});camFromBody();W.dirty=true;walkSizes.hidden=true;syncWalkUI()});
     walkRange.addEventListener('input',()=>setWalkSize(rangeToSize(+walkRange.value)));
     // keys win over the planner's own while you walk (D would otherwise duplicate a box)
     {const KEYS=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift']);
       addEventListener('keydown',e=>{if(!walking||e.ctrlKey||e.metaKey||e.altKey)return;if(e.target.closest&&e.target.closest('input,select,textarea'))return;const k=e.key.toLowerCase();
-        if(k==='escape')walkStop(false);else if(k==='enter')walkStop(true);else if(k===' ')walking.jumpQ=true;else if(k==='+'||k==='=')walkGrow(1);else if(k==='-'||k==='_')walkGrow(-1);else if(KEYS.has(k))walking.keys.add(k);else return;
+        if(k==='escape')walkStop(false);else if(k==='enter'){if(!viewLock)walkStop(true);else locked()}else if(k===' ')walking.jumpQ=true;else if(k==='+'||k==='=')walkGrow(1);else if(k==='-'||k==='_')walkGrow(-1);else if(KEYS.has(k))walking.keys.add(k);else return;
         lastPtr='key';e.preventDefault();e.stopImmediatePropagation()},true);
       addEventListener('keyup',e=>{if(walking)walking.keys.delete(e.key.toLowerCase())},true);addEventListener('blur',()=>{if(walking)walking.keys.clear()})}
     els.wrap.addEventListener('contextmenu',e=>{if(state.app==='perspective')e.preventDefault()});
     q('pvAim').addEventListener('click',()=>{beginChange();aim();render();sync();commitChange()});
-    $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();set({show:{...st().show,[k]:!st().show[k]}});render();sync();commitChange()}));
+    $$('#pvShow [data-show]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.show;beginChange();const on=k==='guy'?st().show.guy===false:!st().show[k];set({show:{...st().show,[k]:on}});if(k==='guy'&&on&&!st().guy)placeGuy();render();sync();commitChange()}));
     function sync(skip){const pv=st(),K=camera(pv),val=(id,v)=>{if(id!==skip)q(id).value=v};
       val('pvScene',pv.scene in SCENES?pv.scene:'blank');const wide=pv.canvas.w>pv.canvas.h;if(sizesWide!==wide){q('pvCanvas').innerHTML=sizeOptions(wide);sizesWide=wide}const ck=Math.min(pv.canvas.w,pv.canvas.h)+'x'+Math.max(pv.canvas.w,pv.canvas.h),known=CANVASES.some(([w,h])=>w+'x'+h===ck);q('pvCanvas').value=known?ck:'custom';q('pvCustom').hidden=known;val('pvCw',pv.canvas.w);val('pvCh',pv.canvas.h);
       val('pvDist',pv.dist);q('pvDistValue').textContent=`${fov(K)}° across · reads true ${fmtIn(pv.dist)} back`;
@@ -1555,11 +1598,11 @@
         $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
         if(t!=='none'){const n=instances(st(),b).length;q('pvArrNote').textContent+=` Copy ${Math.min(sel.k,n-1)+1} of ${n} selected: moving or resizing it changes them all.`}
         q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
-      $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',!!pv.show[x.dataset.show]));q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
+      $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',x.dataset.show==='guy'?pv.show.guy!==false&&!!pv.guy:!!pv.show[x.dataset.show]));syncLock();q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{get viewLock(){return viewLock},get viewS(){return [view.s,view.ox,view.oy]},setLock,placeGuy,get guyHit(){return guyHit},get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -1760,7 +1803,7 @@
   // one table drives the page stylesheet and the exported file: colour token, opacity, width (fixed, or [× line weight, minimum]), dash
   const KIND={grid:['grid',.65,.6],'axis-x':['accent',.45,.8],'axis-y':['focus',.45,.8],'axis-z':['z-axis',.78,1.15],horizon:['perspective',.72,1],'perspective-line':['perspective',.3,.8,'5 6'],'perspective-box':['perspective',.4,.75],
     construction:['ghost',.72,[.75,.7]],boundary:['accent',.55,.9],web:['ink',.62,[.72,.65]],main:['ink',1,[1,0]],lens:['accent',1,[1.35,0]],'sphere-ring':['ink',.34,[.72,.65]],
-    node:['accent',.9,.9],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
+    node:['accent',.9,.9],guy:['accent',1,[1,1]],cube:['accent',.88,.85],phi:['z-axis',.34,.8,'3 5'],'phi-spiral':['z-axis',.78,1.2],dimension:['accent',.8,.8],extension:['accent',.35,.65,'3 4'],
     aux:['perspective',.6,.75,'2 4'],sq:['focus',.5,.75],hidden:['ghost',.8,.8,'4 4'],floor:['ghost',.4,.6],'vp-mark':['perspective',0,.8],shadow:['focus',.45,[.5,.5]],lit:['lineage',1,[1.15,1.6]],ghost:['focus',.75,.8]};
   function kindCss(prefix,colour,weight){return Object.entries(KIND).map(([k,[c,o,w,d]])=>{const width=Array.isArray(w)?(weight==null?`max(${w[1]}px,calc(var(--w) * ${w[0]}px * var(--dzw,1)))`:`${+Math.max(w[1],weight*w[0]).toFixed(3)}px`):weight==null?`calc(${w}px * var(--dzw,1))`:`${w}px`;
     return `${prefix}[data-kind="${k}"]{fill:none;stroke:${colour(c)};opacity:${weight==null?`calc(${o} * var(--dzo,1))`:o};stroke-width:${width};stroke-linecap:round;stroke-linejoin:round${d?`;stroke-dasharray:${d}`:''}}`}).join('\n')}
@@ -1839,7 +1882,7 @@
     // A standalone SVG has no page stylesheet and no custom properties: resolve every var(--token) to a literal colour
     // and inline the class rules the live page gets from CSS.
     const root=getComputedStyle(document.documentElement),T=n=>root.getPropertyValue('--'+n).trim(),resolve=v=>v.replace(/var\(--([\w-]+)\)/g,(_,n)=>T(n));
-    const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();const pvFrame=state.app==='perspective'?PV.frame():null;if(pvFrame){clone.querySelector('#overlayLayer')?.remove();clone.setAttribute('viewBox',`${pvFrame.x} ${pvFrame.y} ${pvFrame.w} ${pvFrame.h}`)}clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height',pvFrame?String(Math.round(1800*pvFrame.h/pvFrame.w)):'1400');
+    const clone=els.svg.cloneNode(true);clone.querySelector('#lineageLayer')?.remove();clone.querySelectorAll('.guy,[data-kind="guy"]').forEach(n=>n.remove());const pvFrame=state.app==='perspective'?PV.frame():null;if(pvFrame){clone.querySelector('#overlayLayer')?.remove();clone.setAttribute('viewBox',`${pvFrame.x} ${pvFrame.y} ${pvFrame.w} ${pvFrame.h}`)}clone.classList.remove('tracing');clone.setAttribute('xmlns',NS);clone.setAttribute('width','1800');clone.setAttribute('height',pvFrame?String(Math.round(1800*pvFrame.h/pvFrame.w)):'1400');
     clone.querySelectorAll('[style*="--dzw"]').forEach(n=>{const k=KIND[n.dataset.kind];if(!k)return;const dw=+n.style.getPropertyValue('--dzw'),dop=+n.style.getPropertyValue('--dzo'),w=Array.isArray(k[2])?Math.max(k[2][1],state.weight*k[2][0]*dw):k[2]*dw;n.setAttribute('style',`stroke-width:${w.toFixed(3)}px;opacity:${(k[1]*dop).toFixed(3)}`)});
     clone.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes]){if(a.value.includes('var(--'))n.setAttribute(a.name,resolve(a.value));if(a.name.startsWith('data-')&&a.name!=='data-kind')n.removeAttribute(a.name)}});
     const mono='"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace',label=`font-family:${mono};font-size:10px;font-weight:500;letter-spacing:.08em`;
@@ -2111,7 +2154,7 @@
   {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
   $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
   // in Perspective the planner takes the pointer first; the plan inset and the floating bars handle their own
-  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan,#pvBoxBar,#pvRefBar,.pv-walk-ui'))return;e.stopPropagation();fn(e)};
+  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan,#pvBoxBar,#pvRefBar,.pv-walk-ui,.pv-lock'))return;e.stopPropagation();fn(e)};
   els.wrap.addEventListener('pointerdown',pvOnly(e=>{e.preventDefault();getSelection()?.removeAllRanges();els.wrap.classList.add('dragging');PV.down(e)}),true);
   els.wrap.addEventListener('pointermove',pvOnly(PV.move),true);
   ['pointerup','pointercancel'].forEach(t=>els.wrap.addEventListener(t,pvOnly(e=>{els.wrap.classList.remove('dragging');PV.up(e)}),true));
