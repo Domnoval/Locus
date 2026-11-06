@@ -72,11 +72,16 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
   - *Straight up* (5-point, lying on your back)
 
   Click one and the camera glides there with the whole scene framed on your canvas. Level shots keep verticals vertical: they shift the lens rather than tilting it, put your eye just above the subject's top, and put the horizon on a third.
-- **Hands on the view:**
+- **Steady (the default): nothing moves unless you mean it.**
+  - Touching or dragging the canvas only **slides** the picture; pinching or scrolling only **magnifies** it. The perspective never changes by accident.
+  - You change the view on purpose: the **shots**, the **Camera** tab's sliders (eye height, look up/down, head turn, tilt, lens), **Aim**, or **YOU** in the plan.
+  - **Shapes:** the first touch on a shape only chooses it. Drag a chosen shape and it follows your finger along the floor in whole inches. It can't outrun your finger, so dragged toward the horizon it slides back a little and stops instead of shooting off. On a touch screen the drag handles step aside; size and turn go through **Edit** (the tray).
+  - The horizon line and vanishing points can't be grabbed by accident, and the "on the thirds" magnet doesn't tug shapes while you drag (snapping flush to neighbours still works).
+- **Drag moves the camera** (Camera tab) switches to the free way of working:
   - Drag empty space to walk round what you're looking at (the selected box, or the scene). Scroll to come closer or step back. Shift-drag (or right-drag) to look around from where you stand.
+  - Drag the horizon line to slide it up or down the canvas, or a vanishing point to turn your head.
   - Pinch, or Ctrl-scroll, zooms the view itself.
-  - Drag the horizon line to slide it up or down the canvas.
-  - In the plan (bottom right), drag **YOU** to walk.
+- **New** (top bar): **Clear shapes** takes every shape away and keeps your canvas and your view, for a new composition on the same canvas. **Start fresh** gives you a clean slate: an empty 36 × 48 canvas, standing at eye level. Both have an **Undo** in the message that pops up.
 - **Snap-tos** (hold Ctrl/⌘ to switch them off):
   - Views click to 1-point square-on, 2-point at 45° and the classic 30/60, level (verticals parallel), and straight up.
   - The horizon clicks to the centre, the thirds and the golden section.
@@ -222,7 +227,7 @@ tools/                  Playwright checks (see below)
 
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
-node tools/verify.js              # 261 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
+node tools/verify.js              # 275 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
 node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
 node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
 node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
@@ -248,6 +253,11 @@ node tools/pwa-check.js           # serves the repo over http, asks Chrome wheth
     - a sheet clipped by its own tab strip;
     - a squaring grid that never reached the paper.
   - 190 checks.
+- **v15, Steady**: after "the controls just feel not right… this shit flies all over".
+  - The two culprits: dragging the canvas swung the camera round the subject, and a shape grabbed at a touch could race up to 20× its distance toward the horizon. Also, on a phone, a chosen shape's turn dial sat right on top of it, so grabbing the shape spun it.
+  - Steady is now the default: the canvas only slides and magnifies, the first touch only chooses, shapes move in whole inches at the speed of your finger, the handles step aside on touch, the horizon and VPs can't be grabbed by accident, and the thirds magnet stays out of drags. **Drag moves the camera** brings the free way back.
+  - **New** in the top bar: Clear shapes, or Start fresh, each with an Undo. An *Empty canvas* scene, and a hint on an empty canvas.
+  - 14 new checks on a Galaxy S24 and the desktop. The older checks now run with "Drag moves the camera" on. 275 checks.
 - **v14, Shapes and sacred geometry**:
   - Ten solids: the five Platonic solids, a pyramid, a prism, a cylinder, a cone and a sphere, each inside its box. Faces come from the convex hull and are checked closed, outward and Euler-correct.
   - ◆ Perfect: true proportions at the same volume, in the Box tab and the tray. A Shape mode in the tray.

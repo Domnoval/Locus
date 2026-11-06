@@ -10,6 +10,9 @@ const wrapA = a => ((a + 180) % 360 + 360) % 360 - 180;
 (async () => {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  // most checks drive the camera by dragging the canvas, so they run with "Drag moves the camera" on; Steady (the default) has its own checks below
+  const freeCam = () => { try { if (localStorage.getItem('locus-steady') == null) localStorage.setItem('locus-steady', '0'); } catch { } };
+  await ctx.addInitScript(freeCam);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -436,7 +439,7 @@ for(const k of Object.keys(T))await T[k]();
 for(const k of Object.keys(T))await T[k]();
   }
   // ── at the easel: Android phone and tablet, driven with real touch events (CDP), so pointerType is 'touch'
-  const touchCtx = async dev => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); return c; };
+  const touchCtx = async (dev, steady) => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); if (!steady) await c.addInitScript(freeCam); return c; };
   for (const [dn, dev] of [['Galaxy S24', devices['Galaxy S24']], ['Galaxy Tab S9', devices['Galaxy Tab S9']]]) {
     const tctx = await touchCtx(dev), tp = await tctx.newPage();
     tp.on('pageerror', e => errors.push(dn + ': ' + e.message));
@@ -805,6 +808,67 @@ for(const k of Object.keys(T))await T[k]();
     await sp.tap('#pvTrayPad [data-n="perfect"]'); await sp.waitForTimeout(150); const s3 = await sp.evaluate(() => window.__pv.isPerfect(window.__state.pv.boxes[0]));
     check('Tray: Size ＋ stretches it; ◆ makes it perfect again', !s2 && s3, { s2, s3 });
     await sctx.close();
+  }
+  // ── Steady (the default): touching the canvas never swings the perspective, and shapes never shoot off. New: clear the shapes or start fresh
+  {
+    const kctx = await touchCtx(devices['Galaxy S24'], true), kp = await kctx.newPage(); kp.on('pageerror', e => errors.push('steady: ' + e.message));
+    await kp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await kp.goto('file://' + file + '?app=perspective'); await kp.waitForTimeout(500);
+    await kp.evaluate(() => { const s = document.querySelector('#pvScene'); s.value = 'platonic'; s.dispatchEvent(new Event('change')); }); await kp.waitForTimeout(400);
+    const cdp = await kctx.newCDPSession(kp), T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
+    const drag = async (a, z, steps = 12) => { await T('touchStart', [{ x: a[0], y: a[1] }]); for (let i = 1; i <= steps; i++) { await T('touchMove', [{ x: a[0] + (z[0] - a[0]) * i / steps, y: a[1] + (z[1] - a[1]) * i / steps }]); await kp.waitForTimeout(16); } await T('touchEnd', []); await kp.waitForTimeout(150); };
+    const tap = async (x, y, wob = 0) => { await T('touchStart', [{ x, y }]); if (wob) await T('touchMove', [{ x: x + wob, y: y + wob / 2 }]); await kp.waitForTimeout(40); await T('touchEnd', []); await kp.waitForTimeout(150); };
+    const cam = () => kp.evaluate(() => { const v = window.__state.pv; return JSON.stringify([v.eye, v.yaw, v.pitch, v.roll || 0, v.cv, v.dist]); });
+    const view = () => kp.evaluate(() => window.__pv.viewS.join());
+    const recentre = () => kp.evaluate(() => { window.__pv.fit(true); window.__pv.render(); });
+    const centre = id => kp.evaluate(id => { const P = window.__pv, K = P.camera(), I = P.sceneOf(window.__state.pv, K).find(I => I.b.id === id), [x, y] = P.toSvg(P.img(K, P.toCam(K, I.c))), q = new DOMPoint(x, y).matrixTransform(document.querySelector('#geometry').getScreenCTM()); return [q.x, q.y]; }, id);
+    const box = id => kp.evaluate(id => { const v = window.__state.pv, b = v.boxes.find(b => b.id === id); return { x: b.x, z: b.z, dist: Math.hypot(b.x - v.eye.x, b.z - v.eye.z) }; }, id);
+    const d0 = await kp.evaluate(() => ({ steady: window.__pv.steady, chip: document.querySelector('#pvFreeCam').classList.contains('active') }));
+    check('Steady is how it starts: “Drag moves the camera” is off', d0.steady && !d0.chip, d0);
+    const c0 = await cam(), v0 = await view(); await drag([60, 500], [240, 600]); const t1 = { cam: (await cam()) === c0, slid: (await view()) !== v0 };
+    await recentre(); const c1 = await cam(), s1 = await view(); await T('touchStart', [{ x: 150, y: 480 }, { x: 230, y: 540 }]); for (let i = 1; i <= 8; i++) { await T('touchMove', [{ x: 150 - i * 8, y: 480 - i * 4 }, { x: 230 + i * 8, y: 540 + i * 4 }]); await kp.waitForTimeout(16); } await T('touchEnd', []); await kp.waitForTimeout(150);
+    t1.pinch = (await cam()) === c1 && (await view()) !== s1;
+    check('Steady: dragging the canvas slides the picture and pinching magnifies it; the perspective never changes', t1.cam && t1.slid && t1.pinch, t1);
+    await recentre(); const a = await centre(2), b0 = await box(2), c2 = await cam(); await drag(a, [a[0] + 30, a[1] - 20]); const b1 = await box(2);
+    const t2 = { sel: await kp.evaluate(() => window.__pv.sel && window.__pv.sel.id), still: b1.x === b0.x && b1.z === b0.z, cam: (await cam()) === c2 };
+    check('Steady: the first touch on a shape only chooses it; it doesn’t move', t2.sel === 2 && t2.still && t2.cam, t2);
+    await recentre(); const a2 = await centre(2); await tap(a2[0], a2[1], 6); const b2 = await box(2);
+    const handles = await kp.evaluate(() => document.querySelectorAll('#overlayLayer [data-pv^="face"],#overlayLayer [data-pv="turn"]').length);
+    check('Steady: a wobbly tap on the chosen shape leaves it where it is, and no drag handles sit on top of it', b2.x === b1.x && b2.z === b1.z && handles === 0, { b1, b2, handles });
+    await drag(a2, [a2[0] + 60, a2[1]]); const b3 = await box(2), c3 = await cam();
+    check('Steady: drag the chosen shape and it follows your finger along the floor, in whole inches', Math.hypot(b3.x - b2.x, b3.z - b2.z) > 5 && Number.isInteger(b3.x) && Number.isInteger(b3.z) && c3 === c2, { b2, b3 });
+    await recentre(); const a4 = await centre(2), dd0 = (await box(2)).dist; await drag(a4, [a4[0], a4[1] - 150], 25); const dd1 = (await box(2)).dist;
+    check('Steady: dragged toward the horizon it slides back a little and stops; it never shoots off', dd1 > dd0 && dd1 < dd0 * 1.6, { from: dd0, to: dd1 });
+    await kp.evaluate(() => { const P = window.__pv; P.sel = null; P.render(); P.sync(); }); await kp.waitForTimeout(100); await recentre();
+    const hz = await kp.evaluate(() => { const h = document.querySelector('#overlayLayer [data-pv="horizon"]'); if (!h) return null; const r = h.getBoundingClientRect(); return [r.x + r.width * .2, r.y + r.height / 2]; });
+    const c5 = await cam(); if (hz) await drag(hz, [hz[0], hz[1] + 60]);
+    check('Steady: the horizon line can’t be dragged by accident', (await cam()) === c5, hz);
+    await kp.evaluate(() => window.__pv.openTab('camera')); await kp.waitForTimeout(300); await kp.evaluate(() => document.querySelector('#pvFreeCam').click()); await kp.evaluate(() => window.__pv.setSheet('peek')); await kp.waitForTimeout(300); await recentre();
+    const c6 = await cam(); await drag([60, 500], [240, 520]); const free = { steady: await kp.evaluate(() => window.__pv.steady), moved: (await cam()) !== c6 };
+    await kp.evaluate(() => window.__pv.setSteady(true));
+    check('“Drag moves the camera” brings back walking round by dragging, for when you want it', !free.steady && free.moved, free);
+    // New, in the top bar on a phone
+    const nb = await kp.evaluate(() => { const r = document.querySelector('#pvNewBtn').getBoundingClientRect(); return r.width > 0 && r.top < 80; });
+    await kp.tap('#pvNewBtn'); await kp.waitForTimeout(150); const menu = await kp.evaluate(() => !document.querySelector('#pvNewMenu').hidden);
+    check('New sits in the top bar on a phone and offers Clear shapes or Start fresh', nb && menu, { nb, menu });
+    const before = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, cam: JSON.stringify([v.eye, v.yaw, v.pitch, v.dist]) }; });
+    await kp.tap('#pvNewMenu [data-new="clear"]'); await kp.waitForTimeout(250);
+    const cl = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, cam: JSON.stringify([v.eye, v.yaw, v.pitch, v.dist]), toast: document.querySelector('#toast').textContent, undo: !!document.querySelector('#toast.show button'), hint: !!document.querySelector('.pv-empty-hint') }; });
+    check('Clear shapes takes every shape away and keeps your canvas and your view, with an Undo', cl.n === 0 && cl.canvas === before.canvas && cl.cam === before.cam && cl.undo && cl.hint && /Cleared 5 shapes/.test(cl.toast), { before, cl });
+    await kp.tap('#toast button'); await kp.waitForTimeout(250); const un = await kp.evaluate(() => window.__state.pv.boxes.length);
+    check('Undo in the toast brings them all back', un === before.n, un);
+    await kp.tap('#pvNewBtn'); await kp.waitForTimeout(150); await kp.tap('#pvNewMenu [data-new="fresh"]'); await kp.waitForTimeout(250);
+    const fr = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, eye: v.eye.y, pitch: v.pitch, scene: document.querySelector('#pvScene').value, title: document.querySelector('#patternTitle').textContent }; });
+    check('Start fresh: an empty 36 × 48 canvas, standing at eye level', fr.n === 0 && fr.canvas === '36x48' && fr.eye === 62 && fr.scene === 'empty' && fr.title === 'Empty canvas', fr);
+    await recentre(); const fl = await kp.evaluate(() => { const r = document.querySelector('#geometry').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height * .8]; });
+    await tap(fl[0], fl[1]); await kp.waitForTimeout(60); await tap(fl[0], fl[1]); await kp.waitForTimeout(200);
+    check('On the empty canvas, double-tap the floor and a shape appears', await kp.evaluate(() => window.__state.pv.boxes.length) === 1);
+    await kctx.close();
+    // the desktop: the wheel magnifies in Steady, and drag-to-orbit is one switch away
+    const dp = await ctx.newPage(); dp.on('pageerror', e => errors.push('steady desk: ' + e.message)); await dp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await dp.goto('file://' + file + '?app=perspective');
+    await dp.evaluate(() => { localStorage.setItem('locus-steady', '1'); }); await dp.reload(); await dp.waitForTimeout(400);
+    const w = await dp.evaluate(() => { const P = window.__pv, v = window.__state.pv, c = JSON.stringify([v.eye, v.yaw, v.pitch]), s = P.viewS[0]; const svg = document.querySelector('#geometry'), r = svg.getBoundingClientRect(); svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true, cancelable: true })); const v2 = window.__state.pv; return { steady: P.steady, cam: JSON.stringify([v2.eye, v2.yaw, v2.pitch]) === c, mag: P.viewS[0] > s }; });
+    check('Steady on the desktop: the scroll wheel magnifies the picture; the perspective stays put', w.steady && w.cam && w.mag, w);
+    await dp.evaluate(() => localStorage.setItem('locus-steady', '0')); await dp.close();
   }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
