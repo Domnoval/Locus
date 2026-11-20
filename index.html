@@ -387,6 +387,25 @@
     .pv-walk-hint{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;width:max-content;max-width:calc(100% - 140px);text-align:center;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;transition:opacity .8s}
     .pv-walk-hint.gone{opacity:0}
     @media(max-width:640px){.pv-walk-hud{top:calc(70px + env(safe-area-inset-top))}.pv-walk-bar{left:10px;right:10px}.pv-walk-bar button{flex:1 1 auto;min-width:0;padding:0 6px;font-size:10px}.pv-walk-bar button[data-w="exit"]{flex:none;width:48px}.pv-walk-sizes{right:10px;width:calc(100% - 20px)}.pv-walk-hint{left:12px;transform:none;max-width:calc(100% - 140px);text-align:left}}
+    /* the edit tray: big steps instead of fiddly drags, the box kept in view above it */
+    .pv-tray{position:absolute;left:0;right:0;bottom:0;z-index:7;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--strong);box-shadow:0 -12px 30px rgba(0,0,0,.25);font:500 11px "IBM Plex Mono",monospace;letter-spacing:.04em;color:var(--ink);touch-action:manipulation}
+    .pv-tray[hidden]{display:none}
+    .pv-tray button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:3px;font:inherit;letter-spacing:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+    .pv-tray button.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+    .pv-tray-tabs{display:flex;gap:4px;align-items:center}
+    .pv-tray-tabs [data-tm]{flex:1 1 0;min-width:0;min-height:42px;padding:0 2px;text-transform:uppercase;font-size:10.5px}
+    .pv-tray-end{display:flex;gap:4px;margin-left:4px}.pv-tray-end button{width:42px;min-height:42px;font-size:16px}
+    .pv-tray-end .go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+    body.pv-walk .pv-tray [data-ta="more"]{display:none}
+    .pv-tray-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px;min-height:34px}
+    .pv-tray-steps{display:flex;gap:4px;flex:none}.pv-tray-steps button{min-height:34px;min-width:42px;padding:0 6px;color:var(--muted)}.pv-tray-steps button.on{color:var(--ink)}
+    .pv-tray-read{min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+    .pv-tray-pad{display:flex;gap:6px}.pv-tray-pad button{flex:1 1 0;min-width:0;min-height:58px;font-size:22px;line-height:1}
+    .pv-tray-pad button small{display:block;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+    .pv-tray-pad button.held{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+    .pv-tray-pad .axis{flex:.7 1 0;font-size:11px}
+    body.pv-tray-open .pv-jump,body.pv-tray-open .pv-stick,body.pv-tray-open .pv-walk-hint{display:none}
+    body.pv-tray-open #pvBoxBar{display:none}
     /* the view lock, and the little guy */
     .pv-lock{display:none;position:absolute;top:10px;right:10px;z-index:4;align-items:center;gap:6px;min-height:40px;padding:0 12px 0 10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);color:var(--muted);border-radius:3px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;touch-action:manipulation}
     .pv-lock svg{width:16px;height:16px}.pv-lock:hover{color:var(--ink);border-color:var(--strong)}
@@ -590,6 +609,11 @@
       </div>
       <div class="pv-refbar" id="pvRefBar" role="toolbar" aria-label="Reference controls"><button type="button" data-r="prev" aria-label="Previous shot">‹</button><span class="pv-ref-shot" id="pvRefShot">Your view</span><button type="button" data-r="next" aria-label="Next shot">›</button><i></i><button type="button" data-r="grid" aria-label="Squaring grid">Grid</button><button type="button" data-r="lines" aria-label="Construction lines">Lines</button><button type="button" data-r="values" aria-label="Light and shade">Values</button><button type="button" data-r="theme" aria-label="Paper or night">◐</button><button type="button" data-r="lock" aria-label="Lock the view">Locked</button><button type="button" id="pvRefExit" data-r="exit" aria-label="Leave reference view">✕</button></div>
       <div class="pv-boxbar" id="pvBoxBar" role="toolbar" aria-label="Selected box" hidden><button type="button" data-act="dup" title="Copy it beside itself (D)">⧉<span>Copy</span></button><button type="button" data-act="stack" title="Copy it on top">⬒<span>Stack</span></button><button type="button" data-act="rot" title="Turn it 90°">⟳<span>90°</span></button><button type="button" data-act="edit" title="Size, turn and repeats">✎<span>Edit</span></button><button type="button" data-act="del" title="Delete (Delete)">✕<span>Delete</span></button></div>
+      <div class="pv-tray" id="pvTray" role="group" aria-label="Fine-tune the selected box" hidden>
+        <div class="pv-tray-tabs" role="tablist"><button type="button" data-tm="move">Move</button><button type="button" data-tm="lift">Lift</button><button type="button" data-tm="turn">Turn</button><button type="button" data-tm="tip">Tip</button><button type="button" data-tm="size">Size</button><span class="pv-tray-end"><button type="button" data-ta="more" title="More: exact numbers, repeats" aria-label="More">⋯</button><button type="button" data-ta="done" class="go" aria-label="Done">✓</button></span></div>
+        <div class="pv-tray-row"><div class="pv-tray-steps" id="pvTraySteps"></div><b class="pv-tray-read" id="pvTrayRead"></b></div>
+        <div class="pv-tray-pad" id="pvTrayPad"></div>
+      </div>
       <button class="pv-lock" id="pvLockBtn" type="button" aria-pressed="false" title="Lock the view: the perspective can’t change. Scroll, pinch and drag only magnify and move the picture; boxes stay editable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path class="shackle" d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Lock view</span></button>
       <svg id="pvPlan" viewBox="0 0 200 200" role="img" aria-label="Plan: where you stand and what the canvas takes in" hidden></svg>
       <div class="canvas-badge" id="canvasBadge">3D · 1-POINT PERSPECTIVE</div>
@@ -904,7 +928,7 @@
     function setBox(id,patch){set({boxes:st().boxes.map(b=>b.id===id?{...b,...patch,arr:{...b.arr,...(patch.arr||{})}}:b)})}
     const byId=id=>st().boxes.find(b=>b.id===id);
     let sel=null,hover=null,pin=null;   // {id,k}: the box (and which of its copies) under the hand; pin: an edge whose arc is shown
-    let viewLock=false,guyHit=null;try{viewLock=localStorage.getItem('locus-view-lock')==='1'}catch{}
+    let viewLock=false,guyHit=null,trayPan=null;const trayOn=()=>{const t=document.getElementById('pvTray');return!!t&&!t.hidden};try{viewLock=localStorage.getItem('locus-view-lock')==='1'}catch{}
     let walking=null;   // first person: {size, p: your feet, v, ground, ...} while you walk the scene
     let lastPtr='mouse',lastSnap='';
     // a tick under the finger when something clicks into place (Android vibrates; elsewhere it's a no-op)
@@ -1067,7 +1091,7 @@
     const fov=K=>Math.round(K.curvi?4*Math.atan(K.W/(4*K.D))*R2D:2*Math.atan(K.W/(2*K.D))*R2D);
     const lbl=(x,y,text,cls='vp-label',anchor='start')=>{const t=svgEl('text',{x,y,'text-anchor':anchor,class:cls});t.textContent=text;return t};
     const refMode=()=>document.body.classList.contains('pv-ref');
-    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];if(walking){if(walking.frame){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim walk','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}))}return}if(refMode()){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim solid','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));squareLabels(g,R);return}
+    function drawOverlay(K,list){const g=els.overlay,R=canvasRect(),pv=st(),placed=[];if(walking){if(sel)list.filter(I=>I.b.id===sel.id).forEach(I=>emit(g,frontEdges(K,I),null,{class:I.k===sel.k?'pv-sel':'pv-sel twin'}));if(walking.frame){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim walk','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}))}return}if(refMode()){g.appendChild(svgEl('path',{d:`M-4000,-4000H4900V4700H-4000Z M${R.x},${R.y}v${R.h}h${R.w}v${-R.h}Z`,class:'pv-dim solid','fill-rule':'evenodd'}));g.appendChild(svgEl('rect',{x:R.x,y:R.y,width:R.w,height:R.h,class:'pv-frame'}));squareLabels(g,R);return}
       visibleRect();const tag=(x,y,text,anchor='start',cls='vp-label')=>{const w=(text.length*6.1+4)*U,x0=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;let yy=y;
         for(let k=0;k<10;k++){if(!placed.some(r=>x0<r[0]+r[2]&&x0+w>r[0]&&yy-10*U<r[1]+r[3]&&yy+2*U>r[1]))break;yy=y+(k%2?-1:1)*13*U*Math.ceil((k+1)/2)}placed.push([x0,yy-10*U,w,12*U]);return lbl(x,yy,text,cls,anchor)};
       // dim everything off the canvas, frame it and rule it in inches
@@ -1104,7 +1128,7 @@
       const outline=(I,cls)=>emit(g,frontEdges(K,I),null,{class:cls});
       if(hover&&!(sel&&hover.id===sel.id))list.filter(I=>I.b.id===hover.id).forEach(I=>outline(I,'pv-hover'));
       if(sel)list.filter(I=>I.b.id===sel.id).forEach(I=>outline(I,I.k===sel.k?'pv-sel':'pv-sel twin'));
-      if(sel&&!harvesting){const G=gizmo();if(G){const at=w=>{const q=img(K,toCam(K,w));return q&&toSvg(q)};
+      if(sel&&!harvesting&&!trayOn()){const G=gizmo();if(G){const at=w=>{const q=img(K,toCam(K,w));return q&&toSvg(q)};
         G.faces.forEach(F=>{if(!F.front)return;const a=at(F.c),t=at(F.tip);if(!a||!t)return;g.appendChild(svgEl('path',{d:`M${a[0]},${a[1]}L${t[0]},${t[1]}`,class:'pv-stalk'}));
           const h=svgEl('g',{'data-pv':'face:'+F.f,class:'pv-handle'}),hs=(coarse?14:10)*U;h.appendChild(svgEl('rect',{x:t[0]-hs/2,y:t[1]-hs/2,width:hs,height:hs}));h.appendChild(svgEl('circle',{cx:t[0],cy:t[1],r:(coarse?24:12)*U,class:'pv-handle-hit'}));g.appendChild(h);
           if(liveDim&&liveDim.f===F.f)g.appendChild(tag(t[0]+12,t[1]-10,liveDim.text,'start','vp-label pv-live'))});
@@ -1397,7 +1421,7 @@
     q('pvDel').addEventListener('click',remove);
     q('pvFit').addEventListener('click',()=>{fit(true);render()});
     let wake=null;
-    function setRef(on){document.body.classList.toggle('pv-ref',on);if(on)armBack();else disarmBack();if(on){refLock=true;shotIndex=-1;$('#pvRefShot').textContent=activeShot?SHOTS.find(S=>S.id===activeShot).name:'Your view';syncRefBar();wakeRefBar()}try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
+    function setRef(on){if(on&&!walking)closeTray();document.body.classList.toggle('pv-ref',on);if(on)armBack();else disarmBack();if(on){refLock=true;shotIndex=-1;$('#pvRefShot').textContent=activeShot?SHOTS.find(S=>S.id===activeShot).name:'Your view';syncRefBar();wakeRefBar()}try{if(on&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{});else if(!on&&wake){wake.release();wake=null}}catch{}visCache=null;requestAnimationFrame(()=>{visCache=null;fit(true);render();sync()});
       try{if(on&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen?.().catch(()=>{})}catch{}}
     $('#pvRefBtn').addEventListener('click',()=>setRef(!refMode()));
 
@@ -1418,14 +1442,14 @@
       root.addEventListener('pointerup',e=>{const t=e.target.closest(selector);if(t&&t===down&&!t.disabled){ate=performance.now();fn(t)}down=null},true);
       root.addEventListener('click',e=>{const t=e.target.closest(selector);if(!t)return;if(performance.now()-ate<800){ate=0;return}fn(t)})}
     const boxBar=$('#pvBoxBar');
-    function placeBoxBar(K,list){const I=sel&&selInstance(list);if(!I||interacting||refMode()||drag){boxBar.hidden=true;return}let x0=1e9,x1=-1e9,y1=-1e9,y0=1e9;
+    function placeBoxBar(K,list){const I=sel&&selInstance(list);if(!I||interacting||refMode()||drag||trayOn()){boxBar.hidden=true;return}let x0=1e9,x1=-1e9,y1=-1e9,y0=1e9;
       I.P.forEach(p=>{const q=img(K,toCam(K,p));if(!q)return;const [x,y]=toSvg(q);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});if(x0>x1){boxBar.hidden=true;return}
       const V=visibleRect(),px=x=>svgOff.x+(x-V.x0)/U,py=y=>svgOff.y+(y-V.y0)/U,W=els.wrap.clientWidth,H=els.wrap.clientHeight;boxBar.hidden=false;
       const bw=boxBar.offsetWidth||260,bh=boxBar.offsetHeight||48;let left=clamp(px((x0+x1)/2)-bw/2,8,W-bw-8),top=py(y1)+14;if(top+bh>H-8)top=py(y0)-bh-14;top=clamp(top,8,H-bh-8);
       boxBar.style.transform=`translate(${Math.round(left)}px,${Math.round(top)}px)`}
     boxBar.addEventListener('pointerdown',e=>e.stopPropagation());
     onTap(boxBar,'[data-act]',el=>{const a=el.dataset.act,b=sel&&byId(sel.id);if(!a||!b)return;
-      if(a==='edit'){openTab('box');if(!touchMQ.matches)q('pvBoxPanel').scrollIntoView({behavior:'smooth',block:'start'});return}
+      if(a==='edit'){if(document.body.classList.contains('pv-touch')||walking){openTray();return}openTab('box');if(!touchMQ.matches)q('pvBoxPanel').scrollIntoView({behavior:'smooth',block:'start'});return}
       beginChange();if(a==='dup')addBox();else if(a==='stack'){const c={...structuredClone(b),id:nextId(),y:b.y+b.h,arr:{...ARR}};set({boxes:[...st().boxes,c]});sel={id:c.id,k:0}}
       else if(a==='rot')setBox(b.id,{ry:wrap180((b.ry||0)+90)});else if(a==='del'){set({boxes:st().boxes.filter(x=>x.id!==b.id)});sel=null;pin=null}
       render();sync();commitChange()});
@@ -1440,10 +1464,10 @@
     const sheetMode=()=>document.body.classList.contains('pv-touch')&&!document.body.classList.contains('pv-side');
     // Android's back gesture closes the sheet, or leaves Reference view, before it leaves the page: one history entry, held only while something is open
     // (the step back waits for the gesture to finish: stepping back mid-touch makes Chrome drop the next tap's click)
-    let backArmed=false,skipPop=false,pendingBack=0;const overlayUp=()=>refMode()||(sheetMode()&&side.dataset.sheet!=='peek');
+    let backArmed=false,skipPop=false,pendingBack=0;const overlayUp=()=>refMode()||trayOn()||(sheetMode()&&side.dataset.sheet!=='peek');
     function armBack(){if(backArmed||!overlayUp())return;if(pendingBack){clearTimeout(pendingBack);pendingBack=0;skipPop=false;backArmed=true;return}try{history.pushState({locus:'open'},'');backArmed=true}catch{}}
     function disarmBack(){if(backArmed&&!overlayUp()){backArmed=false;skipPop=true;pendingBack=setTimeout(()=>{pendingBack=0;try{history.back()}catch{skipPop=false}},60)}}
-    addEventListener('popstate',()=>{if(skipPop){skipPop=false;return}if(!backArmed)return;backArmed=false;if(walking)walkStop(false);else if(refMode())setRef(false);else setSheet('peek');armBack()});
+    addEventListener('popstate',()=>{if(skipPop){skipPop=false;return}if(!backArmed)return;backArmed=false;if(trayOn()){sel=null;closeTray();if(walking)walking.dirty=true;else{render();sync()}}else if(walking)walkStop(false);else if(refMode())setRef(false);else setSheet('peek');armBack()});
     // type into a size and the sheet lifts, with the field clear of the keyboard
     side.addEventListener('focusin',e=>{const t=e.target;if(!document.body.classList.contains('pv-touch')||!t.matches('input[type=number],input[type=text]'))return;if(sheetMode()&&side.dataset.sheet!=='full')setSheet('full');setTimeout(()=>t.scrollIntoView({block:'start'}),340)});
     function openTab(t){side.dataset.tab=t;if(side.dataset.sheet==='peek')setSheet('half');syncTouch()}
@@ -1470,6 +1494,41 @@
     function syncRefBar(){const pv=st(),b=k=>refBar.querySelector(`[data-r="${k}"]`);b('grid').textContent=pv.sq?`Grid ${pv.sq}″`:'Grid';b('grid').classList.toggle('on',!!pv.sq);
       b('lines').classList.toggle('on',!!(pv.show.floor||pv.show.horizon));b('values').classList.toggle('on',!!pv.show.values);b('lock').textContent=refLock?'Locked':'Unlocked';b('lock').classList.toggle('on',refLock);b('lock').setAttribute('aria-pressed',refLock)}
     refBar.addEventListener('pointerdown',e=>e.stopPropagation());onTap(refBar,'[data-r]',el=>refAction(el.dataset.r));
+
+    /* ----- the edit tray: fine-tune the selected box with steps you choose; each press is one undo, hold to repeat ----- */
+    const trayEl=$('#pvTray'),traySteps=$('#pvTraySteps'),trayRead=$('#pvTrayRead'),trayPad=$('#pvTrayPad');
+    const STEPS={move:[1,3,12],lift:[1,3,12],turn:[1,5,15],tip:[1,5,15],size:[1,3,12]},stepAt={move:1,lift:1,turn:2,tip:2,size:1};let trayMode='move',sizeAxis='all';
+    const PADS={move:[['left','◀','left'],['away','▲','away'],['toward','▼','toward'],['right','▶','right']],lift:[['down','▼','lower'],['floor','⤓','on what’s under'],['up','▲','raise']],
+      turn:[['ccw','⟲','turn'],['zero','0°','square'],['cw','⟳','turn']],tip:[['back','⤺','tip back'],['zero','0°','level'],['fwd','⤻','tip forward']],size:[['minus','－','smaller'],['plus','＋','bigger']]};
+    function buildTray(){trayEl.querySelectorAll('[data-tm]').forEach(b=>{b.classList.toggle('on',b.dataset.tm===trayMode);b.setAttribute('aria-selected',b.dataset.tm===trayMode)});
+      const unit=trayMode==='turn'||trayMode==='tip'?'°':'″';traySteps.innerHTML=STEPS[trayMode].map((v,i)=>`<button type="button" data-step="${i}">${v}${unit}</button>`).join('');
+      trayPad.innerHTML=(trayMode==='size'?['all','w','h','d'].map(a=>`<button type="button" class="axis" data-axis="${a}">${a==='all'?'All':a.toUpperCase()}</button>`).join(''):'')+PADS[trayMode].map(([n,g,t])=>`<button type="button" data-n="${n}" aria-label="${t}">${g}<small>${t}</small></button>`).join('');updateTray()}
+    function updateTray(){const b=sel&&byId(sel.id);if(!b)return;traySteps.querySelectorAll('[data-step]').forEach(x=>x.classList.toggle('on',+x.dataset.step===stepAt[trayMode]));trayPad.querySelectorAll('[data-axis]').forEach(x=>x.classList.toggle('on',x.dataset.axis===sizeAxis));
+      const r=v=>fmtIn(v).replace(' in','″');trayRead.textContent=trayMode==='move'?`x ${r(b.x)} · z ${r(b.z)}`:trayMode==='lift'?`${r(b.y)} up`:trayMode==='turn'?`turned ${Math.round(b.ry||0)}°`:trayMode==='tip'?`tipped ${Math.round(b.rx||0)}°`:`${r(b.w)} × ${r(b.h)} × ${r(b.d)}`}
+    // the tray covers the bottom of the drawing: slide the picture up so the box sits above it (the picture, never the camera)
+    function keepInView(){if(walking||!sel)return;const K=camera(),I=(lastFrame?lastFrame.list:sceneOf(st(),K)).find(I=>I.b.id===sel.id&&I.k===sel.k);if(!I)return;const bb=screenBounds(K,[I]);if(!bb)return;
+      const V=visibleRect(),wr=els.wrap.getBoundingClientRect(),top=V.y0+(trayEl.getBoundingClientRect().top-wr.top-svgOff.y)*U,need=bb[3]-(top-10*U);
+      if(need>0){if(!trayPan)trayPan=[view.ox,view.oy];view.oy-=Math.min(need,Math.max(0,bb[1]-(V.y0+40*U)));paint()}}
+    function openTray(mode){if(!sel)return;const was=trayOn();trayMode=mode||(was?trayMode:'move');trayEl.hidden=false;boxBar.hidden=true;document.body.classList.add('pv-tray-open');buildTray();if(!was){armBack();requestAnimationFrame(keepInView)}if(walking)walking.dirty=true;else paint()}
+    function closeTray(){if(!trayOn())return;trayEl.hidden=true;document.body.classList.remove('pv-tray-open');if(trayPan){view.ox=trayPan[0];view.oy=trayPan[1];trayPan=null}disarmBack();if(walking)walking.dirty=true;else paint()}
+    const snapTo=(v,s)=>Math.round(v/s)*s;
+    function nudge(n){const b=sel&&byId(sel.id);if(!b)return;const s=STEPS[trayMode][stepAt[trayMode]];let patch=null;
+      if(trayMode==='move'){const a=st().yaw*D2R,f=[Math.sin(a),Math.cos(a)],fw=Math.abs(f[0])>Math.abs(f[1])?[Math.sign(f[0]),0]:[0,Math.sign(f[1])],rt=[fw[1],-fw[0]];   // the floor direction nearest your view, so numbers stay clean
+        const d=n==='away'?fw:n==='toward'?[-fw[0],-fw[1]]:n==='right'?rt:[-rt[0],-rt[1]];patch={};if(d[0])patch.x=snapTo(b.x+d[0]*s,s);if(d[1])patch.z=snapTo(b.z+d[1]*s,s)}
+      else if(trayMode==='lift')patch={y:n==='floor'?supportUnder(st(),b):Math.max(0,snapTo(b.y+(n==='up'?s:-s),s))};
+      else if(trayMode==='turn')patch={ry:n==='zero'?0:wrap180(snapTo((b.ry||0)+(n==='cw'?s:-s),s))};
+      else if(trayMode==='tip')patch={rx:n==='zero'?0:clamp(snapTo((b.rx||0)+(n==='fwd'?s:-s),s),-90,90)};
+      else if(trayMode==='size'){const k=n==='plus'?s:-s,ax=sizeAxis==='all'?['w','h','d']:[sizeAxis];patch={};ax.forEach(a=>patch[a]=Math.max(.5,snapTo(b[a]+k,s)||s))}
+      if(!patch)return;setBox(b.id,patch);if(walking)walking.dirty=true;else{render();sync()}updateTray();buzz(4)}
+    // press = one step; hold = keep going (faster after a moment); the whole hold is one undo
+    {let rep=0,held=null;const stop=()=>{clearTimeout(rep);rep=0;if(held){held.classList.remove('held');held=null;commitChange();if(!walking)renderShots()}};
+      trayPad.addEventListener('pointerdown',e=>{const btn=e.target.closest('[data-n]');if(!btn)return;e.preventDefault();lastPtr=e.pointerType;try{btn.setPointerCapture(e.pointerId)}catch{}stop();held=btn;btn.classList.add('held');beginChange();nudge(btn.dataset.n);
+        let wait=380;const go=()=>{nudge(btn.dataset.n);wait=Math.max(60,wait*.8);rep=setTimeout(go,wait)};rep=setTimeout(go,wait)});
+      ['pointerup','pointercancel','lostpointercapture'].forEach(t=>trayPad.addEventListener(t,stop));
+      trayPad.addEventListener('click',e=>{const btn=e.target.closest('[data-n]');if(btn&&e.detail===0){beginChange();nudge(btn.dataset.n);commitChange()}})}
+    trayEl.addEventListener('pointerdown',e=>e.stopPropagation());
+    onTap(trayEl,'[data-tm],[data-step],[data-axis],[data-ta]',el=>{if(el.dataset.tm){trayMode=el.dataset.tm;buildTray()}else if(el.dataset.step!=null){stepAt[trayMode]=+el.dataset.step;updateTray()}else if(el.dataset.axis){sizeAxis=el.dataset.axis;updateTray()}
+      else if(el.dataset.ta==='done'){sel=null;closeTray();if(walking)walking.dirty=true;else{render();sync()}}else if(el.dataset.ta==='more'){closeTray();openTab('box')}});
 
     /* ----- lock: the composition stays put. Scroll, pinch and drag only magnify and move the picture; boxes stay editable ----- */
     const lockBtn=$('#pvLockBtn');
@@ -1544,7 +1603,7 @@
     $('#pvWalkChips').innerHTML=SIZES.map(([n,v])=>`<button type="button" data-s="${v}">${n}<small>${fmtSize(v)}</small></button>`).join('');
     function setWalkSize(v){const W=walking;if(!W)return;W.size=clamp(v,SMIN,SMAX);walkPref=W.size;try{localStorage.setItem('locus-walk-size',W.size)}catch{}camFromBody();W.dirty=true;syncWalkUI()}
     const walkGrow=dir=>setWalkSize(walking.size*Math.pow(1.25,dir));
-    function walkStart(){if(walking||state.app!=='perspective')return;const pv=st(),list=sceneOf(pv,camera(pv));beginChange();cancelAnimationFrame(glide);sel=null;pin=null;hover=null;boxBar.hidden=true;
+    function walkStart(){if(walking||state.app!=='perspective')return;const pv=st(),list=sceneOf(pv,camera(pv));beginChange();cancelAnimationFrame(glide);sel=null;pin=null;hover=null;boxBar.hidden=true;closeTray();
       const G=pv.guy;walking={size:G?G.size:walkPref||(pv.eye.y<=96?clamp(pv.eye.y/.92,SMIN,SMAX):68),p:G?[G.x,0,G.z]:[pv.eye.x,0,pv.eye.z],v:[0,0,0],ground:true,air:0,jumpT:0,jumpQ:false,on:0,keys:new Set(),stick:[0,0],stickId:null,looks:new Map(),frame:true,dirty:true,
         from:{eye:{...pv.eye},yaw:pv.yaw,pitch:pv.pitch,roll:pv.roll||0,cv:{...(pv.cv||{x:0,y:0})}}};
       const W=walking;W.p[1]=groundAt(list,W.p[0],W.p[2],G?G.y+.3*W.size:Math.max(pv.eye.y,0));
@@ -1554,17 +1613,20 @@
       walkHint.textContent=document.body.classList.contains('pv-touch')?'Left thumb walks · drag to look · Jump · back to leave':'WASD walk · drag to look · Space jumps · Shift runs · Esc back';walkHint.classList.remove('gone');setTimeout(()=>walkHint.classList.add('gone'),5000);
       syncWalkUI();walkHudText();W.raf=requestAnimationFrame(walkLoop)}
     // leave: keep = the camera stays where you stand (one undo puts it back); otherwise the plan comes back as it was
-    function walkStop(keep){const W=walking;if(!W)return;if(keep&&locked())return;cancelAnimationFrame(W.raf);const guy={x:W.p[0],y:W.p[1],z:W.p[2],yaw:st().yaw,size:W.size},first=!st().guy;if(!keep)set({...W.from});set({guy});walking=null;
+    function walkStop(keep){const W=walking;if(!W)return;if(keep&&locked())return;sel=null;closeTray();cancelAnimationFrame(W.raf);const guy={x:W.p[0],y:W.p[1],z:W.p[2],yaw:st().yaw,size:W.size},first=!st().guy;if(!keep)set({...W.from});set({guy});walking=null;
       if(first&&!keep)setTimeout(()=>showToast('That’s the little guy, where you left him. Tap him to walk again, drag him to place him'),400);stickEl.classList.remove('on');walkUI.hidden=true;
       document.body.classList.remove('pv-walk');setRef(false);commitChange();sync();renderShots();save()}
     function stickKnob(x,y){stickEl.firstElementChild.style.transform=`translate(${x}px,${y}px)`}
     function walkDown(e){const W=walking,r=els.wrap.getBoundingClientRect();try{els.wrap.setPointerCapture(e.pointerId)}catch{}
-      if(e.pointerType!=='mouse'&&W.stickId==null&&e.clientX<r.left+r.width*.45){W.stickId=e.pointerId;W.stick0=[e.clientX,e.clientY];W.stick=[0,0];stickEl.style.left=(e.clientX-r.left)+'px';stickEl.style.top=(e.clientY-r.top)+'px';stickEl.classList.add('on');stickKnob(0,0);return}
-      W.looks.set(e.pointerId,[e.clientX,e.clientY])}
+      if(e.pointerType!=='mouse'&&W.stickId==null&&!trayOn()&&e.clientX<r.left+r.width*.45){W.stickT={x:e.clientX,y:e.clientY,t:performance.now()};W.stickId=e.pointerId;W.stick0=[e.clientX,e.clientY];W.stick=[0,0];stickEl.style.left=(e.clientX-r.left)+'px';stickEl.style.top=(e.clientY-r.top)+'px';stickEl.classList.add('on');stickKnob(0,0);return}
+      W.looks.set(e.pointerId,[e.clientX,e.clientY]);W.taps=W.taps||new Map();W.taps.set(e.pointerId,{x:e.clientX,y:e.clientY,t:performance.now()})}
     function walkMove(e){const W=walking;if(e.pointerId===W.stickId){const R=60,dx=e.clientX-W.stick0[0],dy=e.clientY-W.stick0[1],m=Math.hypot(dx,dy),k=m>R?R/m:1;let x=dx*k/R,y=dy*k/R;if(Math.hypot(x,y)<.12)x=y=0;W.stick=[x,y];stickKnob(dx*k,dy*k);return}
       const L=W.looks.get(e.pointerId);if(!L)return;const sens=e.pointerType==='touch'?.24:.2,dx=e.clientX-L[0],dy=e.clientY-L[1];L[0]=e.clientX;L[1]=e.clientY;
       const pv=st();set({yaw:wrap180(pv.yaw+dx*sens),pitch:clamp(pv.pitch-dy*sens,-88,88)});W.dirty=true}
-    function walkUp(e){const W=walking;if(e.pointerId===W.stickId){W.stickId=null;W.stick=[0,0];stickEl.classList.remove('on');return}W.looks.delete(e.pointerId)}
+    function walkUp(e){const W=walking,tapped=T=>T&&Math.hypot(e.clientX-T.x,e.clientY-T.y)<10&&performance.now()-T.t<350;
+      if(e.pointerId===W.stickId){W.stickId=null;W.stick=[0,0];stickEl.classList.remove('on');if(tapped(W.stickT))walkTap(e);return}
+      W.looks.delete(e.pointerId);const T=W.taps&&W.taps.get(e.pointerId);if(W.taps)W.taps.delete(e.pointerId);if(tapped(T))walkTap(e)}
+    function walkTap(e){const p=ev(e),h=pick(p[0],p[1]);if(h){sel={id:h.id,k:h.k};openTray()}else if(sel){sel=null;closeTray()}walking.dirty=true}
     $('#pvWalkBtn').addEventListener('click',walkStart);
     // Jump answers on the press, not the lift: it's a jump
     {const jb=walkUI.querySelector('[data-w="jump"]');jb.addEventListener('pointerdown',e=>{e.preventDefault();if(walking){walking.jumpQ=true;lastPtr=e.pointerType}jb.classList.add('down')});['pointerup','pointercancel','pointerleave'].forEach(t=>jb.addEventListener(t,()=>jb.classList.remove('down')))}
@@ -1579,7 +1641,7 @@
     // keys win over the planner's own while you walk (D would otherwise duplicate a box)
     {const KEYS=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift']);
       addEventListener('keydown',e=>{if(!walking||e.ctrlKey||e.metaKey||e.altKey)return;if(e.target.closest&&e.target.closest('input,select,textarea'))return;const k=e.key.toLowerCase();
-        if(k==='escape')walkStop(false);else if(k==='enter'){if(!viewLock)walkStop(true);else locked()}else if(k===' ')walking.jumpQ=true;else if(k==='+'||k==='=')walkGrow(1);else if(k==='-'||k==='_')walkGrow(-1);else if(KEYS.has(k))walking.keys.add(k);else return;
+        if(k==='escape'){if(trayOn()){sel=null;closeTray();walking.dirty=true}else walkStop(false)}else if(k==='enter'){if(!viewLock)walkStop(true);else locked()}else if(k===' ')walking.jumpQ=true;else if(k==='+'||k==='=')walkGrow(1);else if(k==='-'||k==='_')walkGrow(-1);else if(KEYS.has(k))walking.keys.add(k);else return;
         lastPtr='key';e.preventDefault();e.stopImmediatePropagation()},true);
       addEventListener('keyup',e=>{if(walking)walking.keys.delete(e.key.toLowerCase())},true);addEventListener('blur',()=>{if(walking)walking.keys.clear()})}
     els.wrap.addEventListener('contextmenu',e=>{if(state.app==='perspective')e.preventDefault()});
@@ -1598,11 +1660,11 @@
         $$('#pvAxis button').forEach(x=>x.classList.toggle('active',x.dataset.v===a.axis));
         if(t!=='none'){const n=instances(st(),b).length;q('pvArrNote').textContent+=` Copy ${Math.min(sel.k,n-1)+1} of ${n} selected: moving or resizing it changes them all.`}
         q('pvArrNote').textContent={none:'',row:'Copies side by side, across or running away from you.',grid:'A grid of copies on the floor.',tower:'Copies stacked straight up.',ring:'Copies in a circle around where you stand.',arch:'Copies swung over your head, from this box up and over to behind you.'}[t]}
-      $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',x.dataset.show==='guy'?pv.show.guy!==false&&!!pv.guy:!!pv.show[x.dataset.show]));syncLock();q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
+      $$('#pvShow [data-show]').forEach(x=>x.classList.toggle('active',x.dataset.show==='guy'?pv.show.guy!==false&&!!pv.guy:!!pv.show[x.dataset.show]));syncLock();if(trayOn()){if(!sel||!byId(sel.id))closeTray();else updateTray()}q('pvSceneNote').textContent=SCENES[pv.scene]?.note||'';syncPressed()}
 
     // Studio: the canvas is the page, at its real size
     function frame(){const R=canvasRect();return{...R,W:st().canvas.w*25.4,H:st().canvas.h*25.4}}
-    return{get viewLock(){return viewLock},get viewS(){return [view.s,view.ox,view.oy]},setLock,placeGuy,get guyHit(){return guyHit},get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
+    return{openTray,closeTray,get trayOn(){return trayOn()},get trayMode(){return trayMode},get viewLock(){return viewLock},get viewS(){return [view.s,view.ox,view.oy]},setLock,placeGuy,get guyHit(){return guyHit},get walking(){return walking},walkStart,walkStop,walkStep,setWalkSize,groundAt,rayBox,solids,get refLock(){return refLock},cycleShot,refAction,openTab,setSheet,syncTouch,addAtPoint,get frames(){return frames},get snapNote(){return snapNote},SHOTS,frameShot,thumbSvg,renderShots,focus,glideTo,setRef,compSnap,detentYaw,gizmo,flush,aim,initial,render,sync,key,down,move,up,wheel,dblclick,frame,fit,clip:clipPoly,camera,img,dirImg,rayDir,circleOf,toCam,instances,sceneOf,segPolys,toSvg,fromSvg,onCanvas,vanishing,runsOf,hidden,aimAt,
       get sel(){return sel},set sel(v){sel=v},get pin(){return pin},set pin(v){pin=v},view,EDGES,SCENES,fromScene,arcOf:e=>lastFrame&&arcOf(lastFrame.K,lastFrame.list,e)}})();
 
   state.pv=PV.initial();try{if(localStorage.getItem('locus-app')==='perspective')state.app='perspective'}catch{}
@@ -2154,7 +2216,7 @@
   {const f=FIG[state.pattern];if(f.start)state.step=figure().steps.findIndex(s=>s.label===f.start)+1}
   $$('#appMode button').forEach(b=>b.addEventListener('click',()=>{if(state.app===b.dataset.app)return;beginChange();state.app=b.dataset.app;try{localStorage.setItem('locus-app',state.app)}catch{}syncAllControls();render();commitChange()}));
   // in Perspective the planner takes the pointer first; the plan inset and the floating bars handle their own
-  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan,#pvBoxBar,#pvRefBar,.pv-walk-ui,.pv-lock'))return;e.stopPropagation();fn(e)};
+  const pvOnly=fn=>e=>{if(state.app!=='perspective'||e.target.closest?.('#pvPlan,#pvBoxBar,#pvRefBar,.pv-walk-ui,.pv-lock,.pv-tray'))return;e.stopPropagation();fn(e)};
   els.wrap.addEventListener('pointerdown',pvOnly(e=>{e.preventDefault();getSelection()?.removeAllRanges();els.wrap.classList.add('dragging');PV.down(e)}),true);
   els.wrap.addEventListener('pointermove',pvOnly(PV.move),true);
   ['pointerup','pointercancel'].forEach(t=>els.wrap.addEventListener(t,pvOnly(e=>{els.wrap.classList.remove('dragging');PV.up(e)}),true));
