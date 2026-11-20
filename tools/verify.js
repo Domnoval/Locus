@@ -428,8 +428,9 @@ for(const k of Object.keys(T))await T[k]();
   async aimLevel(){const r=await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='street';s.dispatchEvent(new Event('change'));const P=window.__pv,S=window.__state;P.sel={id:2,k:3};P.aim();P.render();const K=P.camera(),I=P.sceneOf(S.pv,K).find(I=>I.b.id===2&&I.k===3),c=[0,1,2].map(k=>I.t[k]+I.R[k][1]*I.h/2),q=P.img(K,P.toCam(K,c));return{pitch:S.pv.pitch,q:[q[0]+S.pv.cv.x,q[1]+S.pv.cv.y]}});
     check('Aim from a level view stays level (it shifts the lens rather than tilting) and centres the box',r.pitch===0&&Math.hypot(...r.q)<.02,r)},
   async exportClean(){await page.evaluate(()=>{window.__pv.sel={id:1,k:0};window.__pv.render()});const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#exportBtn')]);const svg=require('fs').readFileSync(await dl.path(),'utf8');
-    const vb=(svg.match(/viewBox="([^"]+)"/)||[])[1].split(' ').map(Number),fr=await page.evaluate(()=>window.__pv.frame());
-    check('Export in Perspective is just the canvas: cropped to it, no rulers, markers or selection',!svg.includes('id="overlayLayer"')&&!svg.includes('class="pv-sel')&&Math.abs(vb[2]-fr.w)<1e-6&&Math.abs(vb[3]-fr.h)<1e-6,{vb,fr:[fr.w,fr.h]})},
+    // the file is drawn on the fixed view of the canvas (not the screen's magnification), so its viewBox is the canvas's frame on that view, in the canvas's own proportions
+    const vb=(svg.match(/viewBox="([^"]+)"/)||[])[1].split(' ').map(Number),fr=await page.evaluate(()=>{const P=window.__pv;return{...P.onCanvasView(()=>P.frame()),cw:window.__state.pv.canvas.w,ch:window.__state.pv.canvas.h}});
+    check('Export in Perspective is just the canvas: cropped to it, no rulers, markers or selection',!svg.includes('id="overlayLayer"')&&!svg.includes('class="pv-sel')&&Math.abs(vb[0]-fr.x)<1e-6&&Math.abs(vb[1]-fr.y)<1e-6&&Math.abs(vb[2]-fr.w)<1e-6&&Math.abs(vb[3]-fr.h)<1e-6&&Math.abs(vb[2]/vb[3]-fr.cw/fr.ch)<1e-9,{vb,fr:[fr.x,fr.y,fr.w,fr.h]})},
   async planDrag(){await page.evaluate(()=>{const s=document.querySelector('#pvScene');s.value='blank';s.dispatchEvent(new Event('change'))});await page.waitForTimeout(100);
     const r=await page.evaluate(()=>{const e=document.querySelector('#pvPlan [data-box]').getBoundingClientRect();return{x:e.x+e.width/2,y:e.y+e.height/2,b:{...window.__state.pv.boxes[0]}}});
     await page.mouse.move(r.x,r.y);await page.mouse.down();await page.mouse.move(r.x-25,r.y,{steps:5});await page.mouse.up();const b=await page.evaluate(()=>window.__state.pv.boxes[0]);
@@ -864,11 +865,12 @@ for(const k of Object.keys(T))await T[k]();
     check('On the empty canvas, double-tap the floor and a shape appears', await kp.evaluate(() => window.__state.pv.boxes.length) === 1);
     await kctx.close();
     // the desktop: the wheel magnifies in Steady, and drag-to-orbit is one switch away
-    const dp = await ctx.newPage(); dp.on('pageerror', e => errors.push('steady desk: ' + e.message)); await dp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await dp.goto('file://' + file + '?app=perspective');
-    await dp.evaluate(() => { localStorage.setItem('locus-steady', '1'); }); await dp.reload(); await dp.waitForTimeout(400);
+    // (its own context: Steady is on there because nothing has switched it off, as for a first-time user. Writing the setting from a second page of the shared context and reloading at once raced the write, and the reload also leaned on a stored mode)
+    const dctx = await browser.newContext({ viewport: { width: 1400, height: 900 } }), dp = await dctx.newPage(); dp.on('pageerror', e => errors.push('steady desk: ' + e.message)); await dp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await dp.goto('file://' + file + '?app=perspective');
+    await dp.waitForFunction(() => window.__pv && window.__state && window.__state.app === 'perspective' && document.querySelector('#geometry').getBoundingClientRect().width > 0); await dp.waitForTimeout(400);
     const w = await dp.evaluate(() => { const P = window.__pv, v = window.__state.pv, c = JSON.stringify([v.eye, v.yaw, v.pitch]), s = P.viewS[0]; const svg = document.querySelector('#geometry'), r = svg.getBoundingClientRect(); svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true, cancelable: true })); const v2 = window.__state.pv; return { steady: P.steady, cam: JSON.stringify([v2.eye, v2.yaw, v2.pitch]) === c, mag: P.viewS[0] > s }; });
     check('Steady on the desktop: the scroll wheel magnifies the picture; the perspective stays put', w.steady && w.cam && w.mag, w);
-    await dp.evaluate(() => localStorage.setItem('locus-steady', '0')); await dp.close();
+    await dctx.close();
   }
   check('No script errors', errors.length === 0, errors);
   await browser.close();

@@ -8,4 +8,6 @@ const r=await p.evaluate(()=>{const S=window.__studio,res=[];const pats=[...docu
   const bad=g.strokes.some(s=>s.pts.some(q=>q.some(v=>!isFinite(v))))||sh.some(s=>s.slots.some(poly=>poly.some(q=>q.some(v=>!isFinite(v)))));
   res.push({k:pat+'/'+m+'/'+prim,ms:Math.round(ms),bad})}
  return {n:res.length,worst:res.sort((a,b)=>b.ms-a.ms).slice(0,3),bad:res.filter(x=>x.bad).map(x=>x.k)}});
-console.log(JSON.stringify({...r,errs}));await b.close()})();
+console.log(JSON.stringify({...r,errs}));await b.close();
+// a sweep that finds something fails
+if(errs.length||r.bad.length||!r.n){console.error(`FAIL  ${errs.length} script error(s), ${r.bad.length} output(s) with a number that is not finite, ${r.n} outputs`);process.exit(1)}})();
