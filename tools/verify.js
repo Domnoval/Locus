@@ -10,6 +10,9 @@ const wrapA = a => ((a + 180) % 360 + 360) % 360 - 180;
 (async () => {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  // most checks drive the camera by dragging the canvas, so they run with "Drag moves the camera" on; Steady (the default) has its own checks below
+  const freeCam = () => { try { if (localStorage.getItem('locus-steady') == null) localStorage.setItem('locus-steady', '0'); } catch { } };
+  await ctx.addInitScript(freeCam);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -436,7 +439,7 @@ for(const k of Object.keys(T))await T[k]();
 for(const k of Object.keys(T))await T[k]();
   }
   // ── at the easel: Android phone and tablet, driven with real touch events (CDP), so pointerType is 'touch'
-  const touchCtx = async dev => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); return c; };
+  const touchCtx = async (dev, steady) => { const c = await browser.newContext({ ...dev, colorScheme: 'dark' }); await c.addInitScript(() => { window.__buzz = []; navigator.vibrate = ms => { window.__buzz.push(ms); return true; }; }); if (!steady) await c.addInitScript(freeCam); return c; };
   for (const [dn, dev] of [['Galaxy S24', devices['Galaxy S24']], ['Galaxy Tab S9', devices['Galaxy Tab S9']]]) {
     const tctx = await touchCtx(dev), tp = await tctx.newPage();
     tp.on('pageerror', e => errors.push(dn + ': ' + e.message));
@@ -728,6 +731,144 @@ for(const k of Object.keys(T))await T[k]();
     await tap(...await mid('.pv-tray-tabs [data-ta="done"]')); await ep.waitForTimeout(200);
     check('Walking: ✓ lets go and you walk on', await ep.evaluate(() => !window.__pv.trayOn && !window.__pv.sel && !!window.__pv.walking && getComputedStyle(document.querySelector('.pv-jump')).display !== 'none'));
     await ectx.close();
+  }
+  // ── shapes and sacred geometry: any box can be another solid; repeats can be the figures themselves
+  {
+    await page.goto('file://' + file); await page.evaluate(() => { localStorage.clear(); document.querySelector('#appMode [data-app="perspective"]').click(); }); await page.waitForTimeout(300);
+    const A0 = { type: 'none', n: 6, n2: 3, gap: 6, span: 180, axis: 'across', twist: 0, plane: 'floor', levels: 1, lines: true };
+    const solids = await page.evaluate(() => Object.fromEntries(Object.entries(window.__pv.SOLIDS).map(([id, S]) => { const used = new Set(S.F.flatMap(f => f.c));
+      return [id, { V: used.size, E: S.E.length, F: S.F.length, closed: S.EF.every(f => f.length === 2), out: S.F.every(f => S.V.every((v, i) => !used.has(i) || f.n[0] * v[0] + f.n[1] * v[1] + f.n[2] * v[2] <= f.d + 1e-9)) }]; })));
+    check('Solids: all ten are closed, faces outward, V − E + F = 2', Object.values(solids).length === 10 && Object.values(solids).every(s => s.closed && s.out && s.V - s.E + s.F === 2), solids);
+    const pc = ({ tetra, box, octa, dodeca, icosa }) => [tetra, box, octa, dodeca, icosa].map(s => s.F + '/' + s.E).join(' ');
+    check('Solids: the Platonic five have their faces and edges (4/6, 6/12, 8/12, 12/30, 20/30)', pc(solids) === '4/6 6/12 8/12 12/30 20/30', pc(solids));
+    const perf = await page.evaluate(A0 => { const P = window.__pv, S = window.__state, b = { id: 1, x: 0, y: 0, z: 90, w: 30, h: 12, d: 20, ry: 20, rx: 0, arr: A0 }, c = { ...b, ...P.perfectPatch(b) };
+      const t = { ...b, shape: 'tetra', ...P.perfectPatch(b, 'tetra') }; S.pv = { ...S.pv, boxes: [t] }; const K = P.camera(), I = P.sceneOf(S.pv, K)[0], L = I.S.E.map(([a, q]) => Math.hypot(I.P[a][0] - I.P[q][0], I.P[a][1] - I.P[q][1], I.P[a][2] - I.P[q][2]));
+      return { cube: [c.w, c.h, c.d], vol: c.w * c.h * c.d, edges: [Math.min(...L), Math.max(...L)], perfect: P.isPerfect(t) }; }, A0);
+    check('Perfect: a 30 × 12 × 20 box becomes a cube of about the same volume (19″)', perf.cube.join() === '19,19,19' && Math.abs(perf.vol - 7200) / 7200 < .05, perf);
+    check('Perfect: a perfect tetrahedron is regular (all six edges equal)', perf.perfect && (perf.edges[1] - perf.edges[0]) / perf.edges[1] < .003, perf.edges);
+    const sil = await page.evaluate(A0 => { const P = window.__pv, S = window.__state; S.pv = { ...S.pv, eye: { x: 13, y: 70, z: -4 }, boxes: [{ id: 1, x: 10, y: 6, z: 80, w: 24, h: 24, d: 24, ry: 31, rx: 12, shape: 'sphere', arr: A0 }, { id: 2, x: -40, y: 0, z: 90, w: 20, h: 30, d: 20, ry: 10, rx: 0, shape: 'cyl', arr: A0 }, { id: 3, x: 50, y: 0, z: 70, w: 20, h: 26, d: 20, ry: 0, rx: 0, shape: 'cone', arr: A0 }] };
+      const K = P.camera(), L = P.sceneOf(S.pv, K), E = K.E, u = v => { const l = Math.hypot(...v); return v.map(x => x / l); }, dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], sub = (a, b) => a.map((x, i) => x - b[i]);
+      let worst = 0; const sp = L[0], C = sp.c; P.silhouettes(sp, E)[0].forEach(Q => worst = Math.max(worst, Math.abs(dot(u(sub(Q, C)), u(sub(E, Q))))));
+      [L[1], L[2]].forEach(I => P.silhouettes(I, E).forEach(([A, B]) => { const ax = [0, 1, 0], foot = [I.t[0], A[1], I.t[2]], n = u(sub(A, foot)), m = I.S.id === 'cone' ? u([n[0] * I.h, I.hw, n[2] * I.h]) : n; worst = Math.max(worst, Math.abs(dot(m, u(sub(E, A))))); }));
+      return { worst, n: L.map(I => P.silhouettes(I, E).length) }; }, A0);
+    check('Curved solids: the outlines are exact (sphere, cylinder and cone: the line of sight just grazes the surface)', sil.worst < 1e-6 && sil.n.join() === '1,2,2', sil);
+    const pk = await page.evaluate(A0 => { const P = window.__pv, S = window.__state; S.pv = { ...S.pv, eye: { x: 0, y: 30, z: 0 }, yaw: 0, pitch: 0, boxes: [{ id: 1, x: 0, y: 0, z: 100, w: 40, h: 40, d: 40, ry: 0, rx: 0, shape: 'octa', arr: A0 }] }; P.render();
+      const K = P.camera(), I = P.sceneOf(S.pv, K)[0], hit = Q => P.span(I, K.E, Q.map((x, i) => x - K.E[i]));
+      return { centre: !!hit([0, 20, 100]), corner: !!hit([18, 38, 80]) }; }, A0);
+    check('Picking and hidden lines see the real shape: through an octahedron’s middle hits, through the empty corner of its box misses', pk.centre && !pk.corner, pk);
+    const gr = await page.evaluate(A0 => { const P = window.__pv, S = window.__state; S.pv = { ...S.pv, guy: null, eye: { x: 0, y: 30, z: 40 }, yaw: 0, pitch: 0, boxes: [{ id: 1, x: 0, y: 0, z: 100, w: 40, h: 20, d: 40, ry: 0, rx: 0, shape: 'pyramid', arr: A0 }] }; P.render();
+      const L = P.solids(), g = [P.groundAt(L, 0, 100, 1e5), P.groundAt(L, 10, 100, 1e5)]; P.walkStart(); P.setWalkSize(36); let top = 0; for (let i = 0; i < 240; i++) { P.walkStep(1 / 60, { fwd: 1 }); top = Math.max(top, P.walking.p[1]); } const z = P.walking.p[2]; P.walkStop(false); return { g, top, z }; }, A0);
+    check('Walk: you stand on the real shape (a pyramid is 20″ at its tip, 10″ halfway down) and can climb over it', Math.abs(gr.g[0] - 20) < 1e-6 && Math.abs(gr.g[1] - 10) < 1e-6 && gr.top > 19 && gr.z > 125, gr);
+    const fig = await page.evaluate(A0 => { const P = window.__pv, S = window.__state, out = {};
+      for (const t of ['seed', 'metatron', 'flower', 'metatron3', 'merkaba', 'p-tetra', 'p-octa', 'p-box', 'p-icosa', 'p-dodeca']) { const b = { id: 1, x: 0, y: 0, z: 150, w: 12, h: 12, d: 12, ry: 0, rx: 0, arr: { ...A0, type: t, gap: 0 } }; S.pv = { ...S.pv, boxes: [b] };
+        const K = P.camera(), L = P.sceneOf(S.pv, K), F = P.sacredLines(b, L); let near = 1e9; L.forEach((I, i) => L.forEach((J, j) => { if (j > i) near = Math.min(near, Math.hypot(...I.c.map((x, k) => x - J.c[k]))); }));
+        out[t] = [L.length, F.segs.length, F.loops.length, +(near / Math.hypot(12, 12, 12)).toFixed(3), +Math.min(...L.map(I => I.t[1])).toFixed(6)]; }
+      const b2 = { id: 1, x: 0, y: 0, z: 300, w: 8, h: 8, d: 8, ry: 0, rx: 0, arr: { ...A0, type: 'metatron', levels: 2 } }; S.pv = { ...S.pv, boxes: [b2] }; const L2 = P.sceneOf(S.pv, P.camera()); out.sprawl = [L2.length, P.sacredLines(b2, L2).segs.length];
+      const bw = { ...b2, arr: { ...A0, type: 'metatron', plane: 'wall' } }; S.pv = { ...S.pv, boxes: [bw] }; const Lw = P.sceneOf(S.pv, P.camera()), ys = Lw.map(I => I.t[1]); out.wall = [Math.min(...ys), Math.max(...ys) > 30, Lw.every(I => Math.abs(I.t[2] - 300) < 1e-9)];
+      const bf = { ...b2, arr: { ...A0, type: 'metatron' } }; S.pv = { ...S.pv, boxes: [bf] }; const Lf = P.sceneOf(S.pv, P.camera()); out.floorLines = P.sacredLines(bf, Lf).segs.every(([A, B]) => A[1] === 0 && B[1] === 0);
+      return out; }, A0);
+    const cnt = t => fig[t].slice(0, 3).join('/');
+    check('Metatron’s Cube: 13 copies and every one joined to every other (78 lines), with the 13 circles of the Fruit of Life', cnt('metatron') === '13/78/13', fig.metatron);
+    check('Seed of Life 7 and Flower of Life 19, each with its circles and the circle round them', cnt('seed') === '7/0/8' && cnt('flower') === '19/0/20', [fig.seed, fig.flower]);
+    check('In 3D: Metatron as twelve round one (78 lines), the star tetrahedron (two tetrahedra, 12 lines)', cnt('metatron3') === '13/78/0' && cnt('merkaba') === '8/12/0', [fig.metatron3, fig.merkaba]);
+    check('On the corners of each Platonic solid, joined along its edges (4/6, 6/12, 8/12, 12/30, 20/30)', ['p-tetra', 'p-octa', 'p-box', 'p-icosa', 'p-dodeca'].map(t => fig[t][0] + '/' + fig[t][1]).join(' ') === '4/6 6/12 8/12 12/30 20/30', fig);
+    check('Copies never touch at no gap (centres at least a diagonal apart), and solid figures rest on the floor', Object.entries(fig).filter(([k]) => fig[k].length === 5).every(([k, v]) => v[3] >= (['seed', 'metatron', 'flower'].includes(k) ? Math.sqrt(2 / 3) : 1) * .999 && v[4] === 0), fig);
+    check('Figure of figures: Metatron on each of its own 13 centres, 169 copies, lines at both scales (14 × 78)', fig.sprawl.join() === '169,1092', fig.sprawl);
+    check('Standing up: the figure rises off the floor in its own plane; on the floor, its lines lie on the floor', fig.wall[0] === 0 && fig.wall[1] && fig.wall[2] && fig.floorLines, fig);
+    // the panel: shape chips, Perfect, the sacred repeats
+    await page.evaluate(() => { const s = document.querySelector('#pvScene'); s.value = 'blank'; s.dispatchEvent(new Event('change')); const P = window.__pv; P.sel = { id: 1, k: 0 }; P.render(); P.sync(); }); await page.waitForTimeout(200);
+    await page.click('#pvShapes [data-shape="tetra"]'); await page.waitForTimeout(120);
+    const u1 = await page.evaluate(() => { const b = window.__state.pv.boxes[0]; return { shape: b.shape, perfect: window.__pv.isPerfect(b), on: document.querySelector('#pvShapes .on')?.dataset.shape, name: document.querySelector('#pvPerfectName').textContent, faces: document.querySelectorAll('#geometry .pv-face').length }; });
+    check('Shape picker: tap Tetra and a perfect cube becomes a regular tetrahedron; the chip and the Perfect button follow', u1.shape === 'tetra' && u1.perfect && u1.on === 'tetra' && u1.name === 'Perfect tetrahedron' && u1.faces > 0, u1);
+    await page.fill('#pvH', '40'); await page.dispatchEvent('#pvH', 'change'); await page.click('#pvShapes [data-shape="cyl"]'); await page.waitForTimeout(100);
+    const u2 = await page.evaluate(() => { const b = window.__state.pv.boxes[0]; return { shape: b.shape, h: b.h, active: document.querySelector('#pvPerfect').classList.contains('active') }; });
+    await page.click('#pvPerfect'); await page.waitForTimeout(100);
+    const u3 = await page.evaluate(() => { const b = window.__state.pv.boxes[0]; return { w: b.w, h: b.h, d: b.d, perfect: window.__pv.isPerfect(b) }; });
+    check('A stretched shape keeps its box when it changes; Perfect then gives the cylinder height = diameter', u2.shape === 'cyl' && u2.h === 40 && !u2.active && u3.perfect && u3.w === u3.h && u3.h === u3.d, { u2, u3 });
+    await page.selectOption('#pvArr', 'metatron'); await page.waitForTimeout(200);
+    const u4 = await page.evaluate(() => ({ n: window.__pv.instances(window.__state.pv, window.__state.pv.boxes[0]).length, rows: ['pvPlaneRow', 'pvSacredRow', 'pvGapRow'].map(id => !document.getElementById(id).hidden), count: !document.getElementById('pvCountRow').hidden, lines: document.querySelectorAll('#geometry [data-kind="sacred"]').length, gap: document.getElementById('pvGapLabel').textContent }));
+    check('Repeat → Metatron’s Cube: 13 copies with its lines; the panel offers floor or standing, Lines, Figure of figures and Spacing', u4.n === 13 && u4.rows.every(Boolean) && !u4.count && u4.lines > 0 && u4.gap === 'Spacing', u4);
+    await page.click('#pvLines'); await page.waitForTimeout(100); const off = await page.evaluate(() => document.querySelectorAll('#geometry [data-kind="sacred"]').length);
+    await page.click('#pvLines'); await page.click('#pvPlane [data-v="wall"]'); await page.waitForTimeout(100);
+    const u5 = await page.evaluate(() => { const ys = window.__pv.instances(window.__state.pv, window.__state.pv.boxes[0]).map(I => I.t[1]); return { plane: window.__state.pv.boxes[0].arr.plane, rise: Math.max(...ys) - Math.min(...ys) }; });
+    check('Lines toggles the figure’s lines; Standing up stands the figure on its edge', off === 0 && u5.plane === 'wall' && u5.rise > 50, { off, u5 });
+    // exports: exact hidden lines for every shape; the figure's lines on the Accent layer
+    const ex = await page.evaluate(() => { const r = {}; for (const sc of ['fruit', 'metatron', 'platonic', 'sprawl']) { const s = document.querySelector('#pvScene'); s.value = sc; s.dispatchEvent(new Event('change')); const g = window.__studio.geometry(); const k = {}; g.strokes.forEach(x => { const key = x.kind + '/' + x.layer; k[key] = (k[key] || 0) + 1; }); r[sc] = k; } return r; });
+    check('Studio: the spheres’ outlines export whole (13), Metatron’s lines go on the Accent layer, every shape draws', ex.fruit['main/figure'] === 13 && ex.fruit['sacred/accent'] > 0 && ex.metatron['sacred/accent'] > 0 && ex.metatron['main/figure'] > 50 && ex.platonic['main/figure'] > 30 && ex.sprawl['main/figure'] > 300, ex);
+    const ms = await page.evaluate(() => { const s = document.querySelector('#pvScene'); s.value = 'fruit'; s.dispatchEvent(new Event('change')); const P = window.__pv; P.render(); const t = performance.now(); for (let i = 0; i < 5; i++) P.render(); return (performance.now() - t) / 5; });
+    check('Smooth: thirteen spheres with Metatron’s lines draw in well under a frame budget for editing (< 40 ms)', ms < 40, Math.round(ms));
+    // the tray on a phone: a Shape tab, and Perfect
+    const sctx = await touchCtx(devices['Galaxy S24']), sp = await sctx.newPage(); sp.on('pageerror', e => errors.push('shape tray: ' + e.message));
+    await sp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await sp.goto('file://' + file);
+    await sp.evaluate(() => { localStorage.clear(); document.querySelector('#appMode [data-app="perspective"]').click(); const s = document.querySelector('#pvScene'); s.value = 'blank'; s.dispatchEvent(new Event('change')); const P = window.__pv; P.sel = { id: 1, k: 0 }; P.render(); P.sync(); P.openTray(); }); await sp.waitForTimeout(400);
+    await sp.tap('.pv-tray-tabs [data-tm="shape"]'); await sp.waitForTimeout(150); await sp.tap('#pvTrayPad [data-shape="dodeca"]'); await sp.waitForTimeout(200);
+    const s1 = await sp.evaluate(() => ({ shape: window.__state.pv.boxes[0].shape, read: document.querySelector('#pvTrayRead').textContent, on: document.querySelector('#pvTrayPad .on')?.dataset.shape }));
+    check('Tray on a phone: Shape → Dodeca turns it into a dodecahedron, and says so', s1.shape === 'dodeca' && s1.on === 'dodeca' && /^Dodecahedron/.test(s1.read), s1);
+    await sp.tap('.pv-tray-tabs [data-tm="size"]'); await sp.tap('#pvTrayPad [data-axis="h"]'); await sp.tap('#pvTrayPad [data-n="plus"]'); await sp.waitForTimeout(150); const s2 = await sp.evaluate(() => window.__pv.isPerfect(window.__state.pv.boxes[0]));
+    await sp.tap('#pvTrayPad [data-n="perfect"]'); await sp.waitForTimeout(150); const s3 = await sp.evaluate(() => window.__pv.isPerfect(window.__state.pv.boxes[0]));
+    check('Tray: Size ＋ stretches it; ◆ makes it perfect again', !s2 && s3, { s2, s3 });
+    await sctx.close();
+  }
+  // ── Steady (the default): touching the canvas never swings the perspective, and shapes never shoot off. New: clear the shapes or start fresh
+  {
+    const kctx = await touchCtx(devices['Galaxy S24'], true), kp = await kctx.newPage(); kp.on('pageerror', e => errors.push('steady: ' + e.message));
+    await kp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await kp.goto('file://' + file + '?app=perspective'); await kp.waitForTimeout(500);
+    await kp.evaluate(() => { const s = document.querySelector('#pvScene'); s.value = 'platonic'; s.dispatchEvent(new Event('change')); }); await kp.waitForTimeout(400);
+    const cdp = await kctx.newCDPSession(kp), T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
+    const drag = async (a, z, steps = 12) => { await T('touchStart', [{ x: a[0], y: a[1] }]); for (let i = 1; i <= steps; i++) { await T('touchMove', [{ x: a[0] + (z[0] - a[0]) * i / steps, y: a[1] + (z[1] - a[1]) * i / steps }]); await kp.waitForTimeout(16); } await T('touchEnd', []); await kp.waitForTimeout(150); };
+    const tap = async (x, y, wob = 0) => { await T('touchStart', [{ x, y }]); if (wob) await T('touchMove', [{ x: x + wob, y: y + wob / 2 }]); await kp.waitForTimeout(40); await T('touchEnd', []); await kp.waitForTimeout(150); };
+    const cam = () => kp.evaluate(() => { const v = window.__state.pv; return JSON.stringify([v.eye, v.yaw, v.pitch, v.roll || 0, v.cv, v.dist]); });
+    const view = () => kp.evaluate(() => window.__pv.viewS.join());
+    const recentre = () => kp.evaluate(() => { window.__pv.fit(true); window.__pv.render(); });
+    const centre = id => kp.evaluate(id => { const P = window.__pv, K = P.camera(), I = P.sceneOf(window.__state.pv, K).find(I => I.b.id === id), [x, y] = P.toSvg(P.img(K, P.toCam(K, I.c))), q = new DOMPoint(x, y).matrixTransform(document.querySelector('#geometry').getScreenCTM()); return [q.x, q.y]; }, id);
+    const box = id => kp.evaluate(id => { const v = window.__state.pv, b = v.boxes.find(b => b.id === id); return { x: b.x, z: b.z, dist: Math.hypot(b.x - v.eye.x, b.z - v.eye.z) }; }, id);
+    const d0 = await kp.evaluate(() => ({ steady: window.__pv.steady, chip: document.querySelector('#pvFreeCam').classList.contains('active') }));
+    check('Steady is how it starts: “Drag moves the camera” is off', d0.steady && !d0.chip, d0);
+    const c0 = await cam(), v0 = await view(); await drag([60, 500], [240, 600]); const t1 = { cam: (await cam()) === c0, slid: (await view()) !== v0 };
+    await recentre(); const c1 = await cam(), s1 = await view(); await T('touchStart', [{ x: 150, y: 480 }, { x: 230, y: 540 }]); for (let i = 1; i <= 8; i++) { await T('touchMove', [{ x: 150 - i * 8, y: 480 - i * 4 }, { x: 230 + i * 8, y: 540 + i * 4 }]); await kp.waitForTimeout(16); } await T('touchEnd', []); await kp.waitForTimeout(150);
+    t1.pinch = (await cam()) === c1 && (await view()) !== s1;
+    check('Steady: dragging the canvas slides the picture and pinching magnifies it; the perspective never changes', t1.cam && t1.slid && t1.pinch, t1);
+    await recentre(); const a = await centre(2), b0 = await box(2), c2 = await cam(); await drag(a, [a[0] + 30, a[1] - 20]); const b1 = await box(2);
+    const t2 = { sel: await kp.evaluate(() => window.__pv.sel && window.__pv.sel.id), still: b1.x === b0.x && b1.z === b0.z, cam: (await cam()) === c2 };
+    check('Steady: the first touch on a shape only chooses it; it doesn’t move', t2.sel === 2 && t2.still && t2.cam, t2);
+    await recentre(); const a2 = await centre(2); await tap(a2[0], a2[1], 6); const b2 = await box(2);
+    const handles = await kp.evaluate(() => document.querySelectorAll('#overlayLayer [data-pv^="face"],#overlayLayer [data-pv="turn"]').length);
+    check('Steady: a wobbly tap on the chosen shape leaves it where it is, and no drag handles sit on top of it', b2.x === b1.x && b2.z === b1.z && handles === 0, { b1, b2, handles });
+    await drag(a2, [a2[0] + 60, a2[1]]); const b3 = await box(2), c3 = await cam();
+    check('Steady: drag the chosen shape and it follows your finger along the floor, in whole inches', Math.hypot(b3.x - b2.x, b3.z - b2.z) > 5 && Number.isInteger(b3.x) && Number.isInteger(b3.z) && c3 === c2, { b2, b3 });
+    await recentre(); const a4 = await centre(2), dd0 = (await box(2)).dist; await drag(a4, [a4[0], a4[1] - 150], 25); const dd1 = (await box(2)).dist;
+    check('Steady: dragged toward the horizon it slides back a little and stops; it never shoots off', dd1 > dd0 && dd1 < dd0 * 1.6, { from: dd0, to: dd1 });
+    await kp.evaluate(() => { const P = window.__pv; P.sel = null; P.render(); P.sync(); }); await kp.waitForTimeout(100); await recentre();
+    const hz = await kp.evaluate(() => { const h = document.querySelector('#overlayLayer [data-pv="horizon"]'); if (!h) return null; const r = h.getBoundingClientRect(); return [r.x + r.width * .2, r.y + r.height / 2]; });
+    const c5 = await cam(); if (hz) await drag(hz, [hz[0], hz[1] + 60]);
+    check('Steady: the horizon line can’t be dragged by accident', (await cam()) === c5, hz);
+    await kp.evaluate(() => window.__pv.openTab('camera')); await kp.waitForTimeout(300); await kp.evaluate(() => document.querySelector('#pvFreeCam').click()); await kp.evaluate(() => window.__pv.setSheet('peek')); await kp.waitForTimeout(300); await recentre();
+    const c6 = await cam(); await drag([60, 500], [240, 520]); const free = { steady: await kp.evaluate(() => window.__pv.steady), moved: (await cam()) !== c6 };
+    await kp.evaluate(() => window.__pv.setSteady(true));
+    check('“Drag moves the camera” brings back walking round by dragging, for when you want it', !free.steady && free.moved, free);
+    // New, in the top bar on a phone
+    const nb = await kp.evaluate(() => { const r = document.querySelector('#pvNewBtn').getBoundingClientRect(); return r.width > 0 && r.top < 80; });
+    await kp.tap('#pvNewBtn'); await kp.waitForTimeout(150); const menu = await kp.evaluate(() => !document.querySelector('#pvNewMenu').hidden);
+    check('New sits in the top bar on a phone and offers Clear shapes or Start fresh', nb && menu, { nb, menu });
+    const before = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, cam: JSON.stringify([v.eye, v.yaw, v.pitch, v.dist]) }; });
+    await kp.tap('#pvNewMenu [data-new="clear"]'); await kp.waitForTimeout(250);
+    const cl = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, cam: JSON.stringify([v.eye, v.yaw, v.pitch, v.dist]), toast: document.querySelector('#toast').textContent, undo: !!document.querySelector('#toast.show button'), hint: !!document.querySelector('.pv-empty-hint') }; });
+    check('Clear shapes takes every shape away and keeps your canvas and your view, with an Undo', cl.n === 0 && cl.canvas === before.canvas && cl.cam === before.cam && cl.undo && cl.hint && /Cleared 5 shapes/.test(cl.toast), { before, cl });
+    await kp.tap('#toast button'); await kp.waitForTimeout(250); const un = await kp.evaluate(() => window.__state.pv.boxes.length);
+    check('Undo in the toast brings them all back', un === before.n, un);
+    await kp.tap('#pvNewBtn'); await kp.waitForTimeout(150); await kp.tap('#pvNewMenu [data-new="fresh"]'); await kp.waitForTimeout(250);
+    const fr = await kp.evaluate(() => { const v = window.__state.pv; return { n: v.boxes.length, canvas: v.canvas.w + 'x' + v.canvas.h, eye: v.eye.y, pitch: v.pitch, scene: document.querySelector('#pvScene').value, title: document.querySelector('#patternTitle').textContent }; });
+    check('Start fresh: an empty 36 × 48 canvas, standing at eye level', fr.n === 0 && fr.canvas === '36x48' && fr.eye === 62 && fr.scene === 'empty' && fr.title === 'Empty canvas', fr);
+    await recentre(); const fl = await kp.evaluate(() => { const r = document.querySelector('#geometry').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height * .8]; });
+    await tap(fl[0], fl[1]); await kp.waitForTimeout(60); await tap(fl[0], fl[1]); await kp.waitForTimeout(200);
+    check('On the empty canvas, double-tap the floor and a shape appears', await kp.evaluate(() => window.__state.pv.boxes.length) === 1);
+    await kctx.close();
+    // the desktop: the wheel magnifies in Steady, and drag-to-orbit is one switch away
+    const dp = await ctx.newPage(); dp.on('pageerror', e => errors.push('steady desk: ' + e.message)); await dp.route(/fonts\.(googleapis|gstatic)/, r => r.abort()); await dp.goto('file://' + file + '?app=perspective');
+    await dp.evaluate(() => { localStorage.setItem('locus-steady', '1'); }); await dp.reload(); await dp.waitForTimeout(400);
+    const w = await dp.evaluate(() => { const P = window.__pv, v = window.__state.pv, c = JSON.stringify([v.eye, v.yaw, v.pitch]), s = P.viewS[0]; const svg = document.querySelector('#geometry'), r = svg.getBoundingClientRect(); svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true, cancelable: true })); const v2 = window.__state.pv; return { steady: P.steady, cam: JSON.stringify([v2.eye, v2.yaw, v2.pitch]) === c, mag: P.viewS[0] > s }; });
+    check('Steady on the desktop: the scroll wheel magnifies the picture; the perspective stays put', w.steady && w.cam && w.mag, w);
+    await dp.evaluate(() => localStorage.setItem('locus-steady', '0')); await dp.close();
   }
   check('No script errors', errors.length === 0, errors);
   await browser.close();
