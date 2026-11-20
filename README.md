@@ -32,10 +32,17 @@ Once installed, Locus keeps the screen awake in Reference view, and snaps give a
 - **Views:** plan, axonometric, and 1/2/3-point perspective. Undo and redo cover everything.
 - **Studio outputs**, built from whatever figure, step and view is on screen:
   - *Print SVG*: true millimetres, one layer per group, real pen widths.
-  - *Plotter SVG*: one path per stroke, one numbered layer per pen (works with AxiDraw layer mode). Overlapping lines are merged so nothing is drawn twice, and strokes are ordered to keep pen-up travel short.
-  - *Stencil set*: one sheet per layer. Lines become slots, every stretch of slot between two crossings keeps at least one bridge so no piece falls out, and cut-through registration crosses let you line the sheets up.
-  - *Tiling*: splits big pieces onto Letter, A4, Tabloid, A3 or 24×36 Mylar, with row and column labels and alignment crosses in the overlaps.
-  - *PNG*: 4× screen, or print resolution at 150/300/600 dpi.
+  - *Plotter SVG*: one path per stroke, one numbered layer per pen (works with AxiDraw layer mode). A stretch that runs along another line (straight or curved) is drawn once, strokes that meet end to end are joined into one path, and nothing is moved, and strokes are ordered to keep pen-up travel short.
+  - *Stencil set*: one sheet per layer. Lines become slots, every stretch of slot between two crossings keeps at least one bridge, and cut-through registration crosses let you line the sheets up. The real slot shapes are then checked at 8 pixels to the mm for pieces that would still fall out: a bridge is added where one fits, and what cannot be held is reported in the panel (and in a read-me in the zip) with how much falls out.
+  - *Tiling*: splits big pieces onto Letter, A4, Tabloid, A3 or 24×36 Mylar, with row and column labels, alignment crosses in the overlaps, and a 100 mm check rule on each sheet's margin. Each tile holds only the lines inside its own rectangle (they are trimmed to it, not hidden behind a clip), and the overlap is held to a third of the tile's smaller side.
+  - *PNG*: 4× screen (in the drawing's own proportions: your canvas's shape in Perspective), or print resolution at 150/300/600 dpi. A print PNG carries its dpi, so it opens at its real size.
+  - *Setting-out sheet*: how to build the thing by hand at the size chosen in the Studio, with a compass (or a pin, a string and a pencil), a straightedge and a tape. One file, on Letter or A4, that opens in any browser and prints at true size. It carries a 100 mm and a 4 in rule to check the print with.
+    - **A figure** gets a key drawing with every point named (the same names the lineage tip shows on screen, and a small letter where Locus has none), one numbered step for each step of the timeline up to the one on screen, and a table of every point measured across and up from the sheet's bottom-left corner and from the figure's centre. The steps are the kernel's own moves in workshop words: "Set the compass to 7 3/8 in (186.5 mm). Point on P1: draw a circle." "Mark D1 where the circle about P1 crosses the line through O and P1, at the crossing that is not O." A line that only finds a point is ruled "lightly" and is dashed on the key.
+    - Every length is given twice: inches to the nearest 1/16 and millimetres to the nearest 0.5. Millimetres are the finer, and the sheet says so. A compass setting that is stepped from point to point also gives what ten steps of it must measure, so its rounding is not carried across the figure.
+    - Seen square-on (2D, or the 3D view with no tilt) a flat figure is a true compass construction. In a tilted 3D view nothing can be struck with a compass, so every point is plotted from the table and a circle seen at an angle is given as an ellipse: its long axis between two marked points, its width, and where to put two pins for a loop of string. Geometry's own perspective view gets no sheet, and the app says why.
+    - The Sri Yantra's sheet prints its nine levels as a table and places the triangles from them. The Continuum's prints the heights that lift its plane figure into the cubes.
+    - **A scene** gets its canvas size, centre of vision and viewing distance, the horizon, the squaring grid, the vanishing point of every direction any shape's edges run in (with how far off the canvas each one is), and every visible corner of every shape, across and up, keyed to a numbered drawing. A curvilinear scene gets its corners and a plain note that straight-line vanishing points do not apply.
+    - Crowded places on a key drawing are enlarged beside it, so no two names sit on top of each other.
 
 ## How a figure is made
 
@@ -51,7 +58,7 @@ The solids are 3D, so they start from canonical coordinates (noted on every vert
 
 **Symmetry axes** are not typed in. They are found from each solid's own vertices by testing which turns map it onto itself, which recovers each rotation group exactly (tetrahedron 3·2-fold + 4·3-fold, cube 6 + 4 + 3, icosahedron 15 + 10 + 6). A readout shows the nearest axis and how far off it you are. Release within 5°, press **Look down it**, or press `S` to snap. Near a 3-fold axis of a cube-family solid, Metatron's Cube fades in behind it; on the axis the solid sits exactly on top of it.
 
-**Depth ink** makes nearer lines heavier and darker and farther lines lighter, so wireframes stop flipping (the Necker-cube effect). Exports bake the depth into each stroke.
+**Depth ink** makes nearer lines heavier and darker and farther lines lighter, so wireframes stop flipping (the Necker-cube effect). Export bakes the depth into each stroke, and so does the Studio's print SVG and Print PNG: each line prints at its share of the layer's pen width and strength. A plotter pen has one width and a stencil slot one size, so those two leave it out, and the Studio panel says so while Depth ink is on. Turn Depth ink off for one even line.
 
 ## Look
 
@@ -100,10 +107,10 @@ Open the **Perspective** tab at the top of the sidebar. It's built around the re
 - **Linear** projection keeps edges straight, and every family of parallel edges meets at one vanishing point. That's 1-, 2- or 3-point depending only on how you're turned and tilted. Drag a vanishing point to turn your head so it follows your hand. Past 90° linear stretches, and it can't show anything beside or behind you.
 - **Curvilinear** projection is stereographic. A straight edge and your eye span a plane, which meets the sphere of directions around your eye in a great circle, and stereographic projection maps every circle to a circle. So each edge is an exact circular arc. Click an edge of the selected box to get its pin position and string length on your canvas.
 - **Reference view** (the button in the heading) shows just the picture, as big as the screen allows, with no instruments. It goes full screen and keeps the screen awake where the browser allows. Esc brings the tools back.
-- **Drawing:** the screen draws boxes far to near, lit faces then edges (a painter's algorithm), which keeps dragging smooth. The exact ray-cast hidden lines are used for Studio output and the Hidden edges guide.
+- **Drawing:** the screen draws boxes far to near, lit faces then edges (a painter's algorithm), which keeps dragging smooth. The exact ray-cast hidden lines are used for Studio output and the Hidden edges guide. They are exact for thin things too: each edge is cut where its image really crosses another solid's outline, so a 1 in post hides its inch of a 300 in wall.
 - **On your canvas** lists the horizon, every box's vanishing points and the centre of vision, measured from the canvas's bottom-left corner. Rows marked *off canvas* go on the wall beside it. When more than two differently turned families of boxes share a scene, the picture shows only the world's vanishing points and the selected box's. Otherwise a crowd of labels buries the drawing.
-- **Studio and Export** use your canvas as the page at full size. Box edges go on the Figure layer; hidden edges, the horizon and the squaring grid on Construction; and vanishing-point marks on Centre marks.
-- **Squaring grid** (Guides, or *Grid* in Reference view) lays squares in real inches on the canvas: 6, 3, 12 or 2 in. Columns are lettered A, B, C… and rows numbered from the top, so you can carry the drawing across square by square. It prints with the drawing.
+- **Studio and Export** use your canvas as the page at full size. The file is built from the scene and the canvas, never from the screen: magnify, slide, lock the view or resize the window, and the file is the same to the byte. Box edges go on the Figure layer; hidden edges, the horizon and the squaring grid on Construction; and vanishing-point marks on Centre marks.
+- **Squaring grid** (Guides, or *Grid* in Reference view) lays squares in real inches on the canvas: 6, 3, 12 or 2 in. Columns are lettered A, B, C… and rows numbered from the top, so you can carry the drawing across square by square. It prints with the drawing, on the Construction layer, and its letters and numbers print with it: on screen they sit just outside the canvas, and on paper (print SVG and Print PNG) just inside it, letters along the top and numbers down the left. A plotter or stencil file gets the grid's lines only, since a pen would skip text and a knife would cut it out.
 - **Scenes** include *Totem · 36 × 48*, built after a canvas on the easel: a column of cubes twisting up the middle, blocks turned in from both sides, two arches overhead, and a ring at your feet that bends into a bowl. It's all curvilinear.
 - Keys:
   - **Delete** removes the selected box, **D** duplicates it and **R** turns it. The arrow keys nudge it (Shift for 1 in), and PageUp and PageDown lift it.
@@ -218,7 +225,7 @@ sw.js                   offline: the page network-first (3 s, then the saved cop
 app/                    the icon (vesica, horizon and vanishing point; SVG, PNG and maskable) and the install screenshots
 archive/v0-original.html    the file as first received (52,169 bytes)
 archive/v1-pass0.html       after the Pass 0 geometry and export fixes
-docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes; perspective-planner/ and easel/ for the planner
+docs/evidence/          before/after renders for every Pass 0 fix; pass1/ kernel; pass2/ continuum and axes; perspective-planner/ and easel/ for the planner; true-output/ for v16's print files
 docs/samples/           a 48×48 in Flower of Life: print SVG, plotter SVG, stencil zip
 tools/                  Playwright checks (see below)
 ```
@@ -228,13 +235,29 @@ tools/                  Playwright checks (see below)
 ```
 npm i -D playwright       # or set PLAYWRIGHT to an existing install
 node tools/verify.js              # 275 pass/fail checks: kernel provenance, 78 chords, Flower r = d, √3, the Sri Yantra, planner VPs and arcs, hidden lines, drag, export, and the planner on an emulated Galaxy S24 and Galaxy Tab S9 (upright and on its side) driven by real touch events …
-node tools/sweep.js               # every figure × view × step × overlay, looking for script errors
-node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive
+node tools/output-check.js        # 56 pass/fail checks on what leaves the Studio, read from the real downloaded files: the same file at any magnification, slide, lock or window size; every line in a print, plotter or stencil file is a line on screen (every figure, four scenes); the grid's letters; thin things hiding what is behind them, against an independent ray cast; PNG shape, name and dpi; depth ink; millimetres (Inkscape reads the size too, if it is installed)
+node tools/sweep.js               # every figure × view × step × overlay, looking for script errors and for a step that does not show its own label; fails if it finds one
+node tools/studio-sweep.js        # print / plotter / stencil for every figure × view × primitive; fails on a script error or a number that is not finite
 node tools/pwa-check.js           # serves the repo over http, asks Chrome whether Locus is installable, launches it offline, and tries the shortcuts and the install offer
+node tools/sheet-check.js         # 32 pass/fail checks on the setting-out sheet. An independent reader follows the downloaded sheet's words and tables with its own arithmetic and the drawing it ends with is compared, both ways, with the print SVG: all 12 figures at their last step, four part-way, tilted and turned views. Then names, the table, inches against millimetres, the size, the check rule measured in the PDF Chromium prints (and by poppler, if it is installed), the page size, fonts, and a scene's corners and vanishing points against its print
+node tools/touch-check.js         # phone, tablet and desktop: each mode shows only its own drawing and controls, Walk toolbar clicks, shortcut modifiers, heavy scenes not freezing the page, Paper contrast, desktop pictures against the old file (about 4 minutes)
 ```
 
 ## History
 
+- **v16, True output**: what leaves the Studio is what is on screen.
+  - **The file no longer follows the screen.** In Perspective the Studio read its lines back off the screen drawing, trimmed to a window round whatever you had magnified, and kept that reading. After a few scrolls and a slide a 215-stroke Street printed 78 strokes, and Fit didn't bring them back. The planner now hands the Studio its own list of strokes, drawn on a fixed view of the canvas. Print, plotter, stencil, Export, Screen SVG and PNG are the same to the byte fitted, magnified, slid, locked or in a smaller window.
+  - **No stray lines.** Separate lines that shared one screen path came back joined end to end: a diagonal across every square of the squaring grid, a zigzag floor, a slash through each vanishing-point cross. In one scene that came to 144 m of line that was never drawn. Every line is now its own stroke.
+  - **The squaring grid's letters and numbers print**, as text, in the print SVG and Print PNG. Its tooltip names the right layer.
+  - **Thin things hide what's behind them.** Hidden lines were tested at 49 points along an edge, so a 1 in post missed its place on a 300 in wall, and in Metatron of Metatrons 108 of 2,868 line pieces tested came out wrong, by up to 10.7 in. Edges are now cut exactly where their image crosses each solid's outline. It's quicker too.
+  - **PNG 4×** keeps your canvas's shape and the scene's name. **Print PNG** carries its dpi.
+  - **Depth ink prints**, in the print SVG and Print PNG, and the panel says where it can't go. This changes the default print: nearer lines heavier, farther ones finer and paler, as on screen (before and after in `docs/evidence/true-output/`).
+  - `tools/output-check.js`: 51 checks on the real downloaded files (33 of them fail on v15). The two sweeps now fail when they find something, the false `metatron18` alarm is gone, and the Steady wheel check no longer races its own setup.
+  - **Cut and plot.** The plotter draws nothing twice, in curves as well as straight lines, and a cylinder is 4 paths where it was 72. Stencil sheets are tested for loose pieces at the real size, bridged where they can be, and the panel says so where they cannot. Tiles are trimmed for real and each carries a 100 mm check rule.
+  - **Your work survives.** Geometry comes back after a reload as Perspective does. A scene or a figure saves to a file and opens from one. Whatever is read back is checked field by field. A message's Undo undoes its own action. The offline app cannot be replaced by a wifi sign-in page, and fonts never hold up startup.
+  - **Two modes on a phone.** Each mode shows only its own controls on a fresh load, upright or on its side. The Walk toolbar answers the mouse, shortcuts ignore Ctrl, Meta and Alt, every control is reachable by keyboard, Paper's small text is readable, and heavy scenes are prepared in turns with a "Working" note.
+  - **The setting-out sheet.** A new Studio output: a key drawing with named points, one workshop sentence per step, every length in inches and millimetres, and tables of every point, for rebuilding a figure by hand at real size. A separate reader follows the sheet alone and rebuilds all 12 figures.
+  - Checks added: `tools/keep-check.js`, `tools/touch-check.js`, `tools/sheet-check.js`.
 - **v0**: the original single-file drawing tool.
 - **v1, Pass 0**: fixed the Flower (radius = spacing), all 78 Metatron chords plus Fruit circles, a Vesica lens made of two arcs with its √3 proportion, a Yantra with 4 up and 5 down, whirling φ squares, circumsphere radii, tilt in 2/3-point perspective, and a standalone SVG export. Also fixed the smaller bugs: phase labels, the aria-live status, undo inertia, the VP dot.
 - **v2, Studio**: the physical outputs above.
